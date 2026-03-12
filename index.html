@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jo's Pares Mami – Defend the Cart!</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #1a1a2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #gameCanvas {
+      display: block;
+      background-color: #000;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="1280" height="720"></canvas>
+  <script src="js/utils/Constants.js"></script>
+  <script src="js/utils/Physics.js"></script>
+  <script src="js/core/AssetLoader.js"></script>
+  <script src="js/core/InputHandler.js"></script>
+  <script src="js/core/SaveManager.js"></script>
+  <script src="js/entities/Player.js"></script>
+  <script src="js/entities/Enemy.js"></script>
+  <script src="js/entities/Projectiles.js"></script>
+  <script src="js/managers/LevelManager.js"></script>
+  <script src="js/managers/WaveManager.js"></script>
+  <script src="js/managers/ShopManager.js"></script>
+  <script src="js/managers/UIManager.js"></script>
+  <script src="js/core/Game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
