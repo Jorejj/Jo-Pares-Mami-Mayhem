@@ -61,18 +61,55 @@ class AssetLoader {
       return;
     }
 
+    // --- UPDATED IMAGE LOADING LOGIC ---
     imageEntries.forEach(([key, src]) => {
       const img = new Image();
       img.onload = () => this._onAssetLoaded();
-      img.onerror = () => this._onAssetLoaded(); // skip missing files gracefully
+      
+      // Fallback: If image fails to load, create a pink square placeholder
+      img.onerror = () => {
+        console.warn(`[AssetLoader] Missing image: ${src}. Using pink fallback.`);
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 50; 
+        tempCanvas.height = 50;
+        const tCtx = tempCanvas.getContext('2d');
+        
+        // Draw magenta box
+        tCtx.fillStyle = '#ff00ff';
+        tCtx.fillRect(0, 0, 50, 50);
+        
+        // Add text label to box
+        tCtx.fillStyle = 'white';
+        tCtx.font = '10px Arial';
+        tCtx.fillText(key.substring(0, 8), 5, 25); 
+
+        const fallbackImg = new Image();
+        fallbackImg.src = tempCanvas.toDataURL();
+        
+        this.images[key] = fallbackImg; // Replace the broken image
+        this._onAssetLoaded();
+      };
+      
       img.src = src;
       this.images[key] = img;
     });
 
+    // --- UPDATED AUDIO LOADING LOGIC ---
     audioEntries.forEach(([key, src]) => {
       const audio = new Audio();
       audio.addEventListener('canplaythrough', () => this._onAssetLoaded(), { once: true });
-      audio.addEventListener('error', () => this._onAssetLoaded(), { once: true });
+      
+      // Fallback: If audio fails, replace with a dummy object so .play() doesn't crash the game
+      audio.addEventListener('error', () => {
+        console.warn(`[AssetLoader] Missing audio: ${src}. Skipping safely.`);
+        this.audio[key] = { 
+            play: () => {}, 
+            pause: () => {}, 
+            currentTime: 0 
+        };
+        this._onAssetLoaded();
+      }, { once: true });
+
       audio.src = src;
       this.audio[key] = audio;
     });

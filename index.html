@@ -18,30 +18,44 @@
       align-items: center;
       height: 100vh;
       overflow: hidden;
+      font-family: Arial, sans-serif;
     }
 
     #gameCanvas {
       display: block;
       background-color: #000;
       image-rendering: pixelated;
+      border: 3px solid #FFD700;
     }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+  <!-- UTILITIES FIRST -->
   <script src="js/utils/Constants.js"></script>
   <script src="js/utils/Physics.js"></script>
+
+  <!-- CORE SYSTEMS -->
   <script src="js/core/AssetLoader.js"></script>
-  <script src="js/core/InputHandler.js"></script>
   <script src="js/core/SaveManager.js"></script>
+  <script src="js/core/InputHandler.js"></script>
+
+  <!-- ENTITIES -->
   <script src="js/entities/Player.js"></script>
   <script src="js/entities/Enemy.js"></script>
   <script src="js/entities/Projectiles.js"></script>
+
+  <!-- MANAGERS -->
   <script src="js/managers/LevelManager.js"></script>
   <script src="js/managers/WaveManager.js"></script>
   <script src="js/managers/ShopManager.js"></script>
   <script src="js/managers/UIManager.js"></script>
+
+  <!-- MAIN GAME ENGINE -->
   <script src="js/core/Game.js"></script>
+
+  <!-- ENTRY POINT -->
   <script src="js/main.js"></script>
 </body>
 </html>

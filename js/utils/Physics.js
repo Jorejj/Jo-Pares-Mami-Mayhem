@@ -3,7 +3,7 @@
 
 const Physics = {
   // Gravitational acceleration applied to projectiles (pixels per frame²)
-  GRAVITY: 0.3,
+  GRAVITY: CONSTANTS.GRAVITY,
 
   /**
    * Axis-Aligned Bounding Box (AABB) collision check.
@@ -29,6 +29,35 @@ const Physics = {
   },
 
   /**
+   * Calculates trajectory points for preview line during drag.
+   * Used to show where projectile will go.
+   * 40-frame simulation with gravity applied each frame.
+   *
+   * @param {number} startX - Projectile spawn X
+   * @param {number} startY - Projectile spawn Y
+   * @param {number} vx - Initial velocity X
+   * @param {number} vy - Initial velocity Y
+   * @param {number} frames - Number of frames to simulate
+   * @returns {Array<{x, y}>} Array of trajectory points
+   */
+  getTrajectoryPoints(startX, startY, vx, vy, frames = CONSTANTS.TRAJECTORY_FRAMES) {
+    const points = [];
+    let x = startX;
+    let y = startY;
+    let currentVx = vx;
+    let currentVy = vy;
+
+    for (let i = 0; i < frames; i++) {
+      points.push({ x, y });
+      currentVy += this.GRAVITY;
+      x += currentVx;
+      y += currentVy;
+    }
+
+    return points;
+  },
+
+  /**
    * Calculates the velocity components needed to reach a target
    * from an origin with a given initial speed.
    *
@@ -51,6 +80,19 @@ const Physics = {
   },
 
   /**
+   * Calculates distance between two points.
+   *
+   * @param {number} x1
+   * @param {number} y1
+   * @param {number} x2
+   * @param {number} y2
+   * @returns {number}
+   */
+  getDistance(x1, y1, x2, y2) {
+    return Math.hypot(x2 - x1, y2 - y1);
+  },
+
+  /**
    * Linearly interpolates between two values.
    *
    * @param {number} a
@@ -60,5 +102,15 @@ const Physics = {
    */
   lerp(a, b, t) {
     return a + (b - a) * t;
+  },
+
+  /**
+   * Detects if projectile has reached arc apex (vy changed direction).
+   * @param {number} prevVy - Previous vertical velocity
+   * @param {number} currVy - Current vertical velocity
+   * @returns {boolean}
+   */
+  isApexReached(prevVy, currVy) {
+    return prevVy < 0 && currVy >= 0;
   },
 };
