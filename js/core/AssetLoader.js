@@ -15,14 +15,18 @@ class AssetLoader {
 
     const imageSources = {
       // Backgrounds
-      bg_caloocan: 'assets/backgrounds/caloocan.png',
-      bg_intramuros: 'assets/backgrounds/intramuros.png',
-      bg_quiapo: 'assets/backgrounds/quiapo.png',
-      bg_binondo: 'assets/backgrounds/binondo.png',
-      bg_makati: 'assets/backgrounds/makati.png',
+      bg_monumento: 'assets/backgrounds/monumento.jpg',
+      bg_bagong_barrio: 'assets/backgrounds/bagongBarrio.jpg',
+      bg_c3: 'assets/backgrounds/c3.png',
+      bg_sangandaan: 'assets/backgrounds/sangandaan.jpg',
+      bg_intramuros: 'assets/backgrounds/INTRAMUROS.png',
+      bg_guadalupe: 'assets/backgrounds/guadalupe.jpg',
+      bg_legazpi: 'assets/backgrounds/legazpiVillage.jpg',
 
       // Sprites
-      player: 'assets/sprites/jo.png',
+      player_idle: 'assets/animations/jo.png',
+      player_hold: 'assets/animations/jo/Jo Catapult.png',
+      jo_portrait: 'assets/sprites/cartniJO.jpg',
       catapult: 'assets/sprites/catapult.png',
       enemy_gangster: 'assets/sprites/enemy_gangster.png',
       enemy_cockroach: 'assets/sprites/enemy_cockroach.png',
@@ -30,6 +34,11 @@ class AssetLoader {
       enemy_dog: 'assets/sprites/enemy_dog.png',
       boss_inspector: 'assets/sprites/boss_inspector.png',
       boss_vlogger: 'assets/sprites/boss_vlogger.png',
+
+      // Story/Prologue Assets
+      story_caloocan: 'assets/animations/enemy/Gemini_Generated_Image_vjuv9gvjuv9gvjuv.png',
+      story_villains: 'assets/animations/enemy/Gemini_Generated_Image_z5q5nez5q5nez5q5 (1).png',
+      story_jo_sad: 'assets/sprites/cartniJO.jpg',
 
       // Projectiles
       proj_mami: 'assets/sprites/proj_mami.png',

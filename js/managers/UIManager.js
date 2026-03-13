@@ -16,7 +16,7 @@ class UIManager {
   update(delta) {
     if (this.game.currentState === CONSTANTS.STATES.PROLOGUE) {
       this.prologueTimer += delta;
-      if (this.prologueTimer > 3000) { // Auto-advance every 3 seconds
+      if (this.prologueTimer > 4000) {
         this.prologueIndex++;
         this.prologueTimer = 0;
       }
@@ -25,295 +25,349 @@ class UIManager {
 
   /**
    * Main draw dispatcher based on current game state.
-   * @param {CanvasRenderingContext2D} ctx
    */
   draw(ctx) {
     const state = this.game.currentState;
-
     switch (state) {
-      case CONSTANTS.STATES.MAIN_MENU:
-        this._drawMainMenu(ctx);
-        break;
-      case CONSTANTS.STATES.DIFFICULTY_SELECT:
-        this._drawDifficultySelect(ctx);
-        break;
-      case CONSTANTS.STATES.PROLOGUE:
-        this._drawPrologue(ctx);
-        break;
-      case CONSTANTS.STATES.ARSENAL_SELECT:
-        this._drawArsenalSelect(ctx);
-        break;
-      case CONSTANTS.STATES.PLAYING:
-        this._drawPlayingHUD(ctx);
-        break;
-      case CONSTANTS.STATES.VICTORY:
-        this._drawVictory(ctx);
-        break;
-      case CONSTANTS.STATES.SHOP:
-        this._drawShop(ctx);
-        break;
-      case CONSTANTS.STATES.GAMEOVER:
-        this._drawGameOver(ctx);
-        break;
+      case CONSTANTS.STATES.MAIN_MENU: this._drawMainMenu(ctx); break;
+      case CONSTANTS.STATES.DIFFICULTY_SELECT: this._drawDifficultySelect(ctx); break;
+      case CONSTANTS.STATES.PROLOGUE: this._drawPrologue(ctx); break;
+      case CONSTANTS.STATES.ARSENAL_SELECT: this._drawArsenalSelect(ctx); break;
+      case CONSTANTS.STATES.PLAYING: this._drawPlayingHUD(ctx); break;
+      case CONSTANTS.STATES.VICTORY: this._drawVictory(ctx); break;
+      case CONSTANTS.STATES.SHOP: this._drawShop(ctx); break;
+      case CONSTANTS.STATES.GAMEOVER: this._drawGameOver(ctx); break;
     }
   }
 
-  /**
-   * Draw main menu screen.
-   * @private
-   */
+  _drawSunburst(ctx, color1, color2) {
+    ctx.fillStyle = color1;
+    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+    ctx.save();
+    ctx.translate(this.game.canvas.width / 2, this.game.canvas.height / 2);
+    ctx.fillStyle = color2;
+    const rays = 16;
+    for (let i = 0; i < rays; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, Math.max(this.game.canvas.width, this.game.canvas.height), (i * 2 * Math.PI) / rays, ((i + 0.5) * 2 * Math.PI) / rays);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  _drawComicText(ctx, text, x, y, fontSize, fillColor, outlineColor = '#000') {
+    ctx.font = `900 italic ${fontSize}px "Comic Sans MS", "Impact", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = outlineColor;
+    ctx.fillText(text, x + 4, y + 4);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = outlineColor;
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = fillColor;
+    ctx.fillText(text, x, y);
+  }
+
+  _drawComicBox(ctx, x, y, w, h, bgColor = '#fff', borderColor = '#000') {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(x + 6, y + 6, w, h);
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x, y, w, h);
+  }
+
   _drawMainMenu(ctx) {
-    ctx.fillStyle = CONSTANTS.COLORS.BACKGROUND;
-    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
-
-    ctx.fillStyle = CONSTANTS.COLORS.TEXT;
-    ctx.font = 'bold 48px Arial';
+    this._drawSunburst(ctx, '#ffcc00', '#ffb300');
+    this._drawComicText(ctx, "JO'S PARES MAMI: MAYHEM", this.game.canvas.width / 2, 150, 64, '#e74c3c');
+    const menuOptions = [
+      { text: '[1] NEW GAME', y: 300 },
+      { text: '[2] LOAD GAME', y: 380 },
+      { text: '[3] QUIT', y: 460 }
+    ];
+    ctx.font = 'bold 32px "Comic Sans MS", "Impact", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText("JO'S PARES MAMI: MAYHEM", this.game.canvas.width / 2, 100);
-
-    ctx.font = '28px Arial';
-    ctx.fillText('[1] NEW GAME', this.game.canvas.width / 2, 200);
-    ctx.fillText('[2] LOAD GAME', this.game.canvas.width / 2, 270);
-    ctx.fillText('[3] QUIT', this.game.canvas.width / 2, 340);
-
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#999';
-    ctx.fillText('Use keyboard numpad to select', this.game.canvas.width / 2, this.game.canvas.height - 40);
+    ctx.textBaseline = 'middle';
+    menuOptions.forEach(opt => {
+      this._drawComicBox(ctx, this.game.canvas.width / 2 - 150, opt.y - 35, 300, 70, '#fff');
+      ctx.fillStyle = '#000';
+      ctx.fillText(opt.text, this.game.canvas.width / 2, opt.y);
+    });
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 250, this.game.canvas.height - 60, 500, 40, '#fff');
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 18px "Comic Sans MS", "Impact", sans-serif';
+    ctx.fillText('USE KEYBOARD NUMPAD TO SELECT', this.game.canvas.width / 2, this.game.canvas.height - 40);
+    ctx.textBaseline = 'alphabetic';
   }
 
-  /**
-   * Draw difficulty select screen.
-   * @private
-   */
   _drawDifficultySelect(ctx) {
-    ctx.fillStyle = CONSTANTS.COLORS.BACKGROUND;
-    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
-
-    ctx.fillStyle = CONSTANTS.COLORS.TEXT;
-    ctx.font = 'bold 48px Arial';
+    this._drawSunburst(ctx, '#3498db', '#2980b9');
+    this._drawComicText(ctx, "SELECT DIFFICULTY", this.game.canvas.width / 2, 150, 64, '#f1c40f');
+    const diffOptions = [
+      { text: '[E] EASY', y: 300, color: '#2ecc71' },
+      { text: '[M] MEDIUM', y: 380, color: '#f39c12' },
+      { text: '[H] HARD', y: 460, color: '#e74c3c' }
+    ];
+    ctx.font = 'bold 32px "Comic Sans MS", "Impact", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('SELECT DIFFICULTY', this.game.canvas.width / 2, 100);
-
-    ctx.font = '28px Arial';
-    ctx.fillText('[E] EASY', this.game.canvas.width / 2, 200);
-    ctx.fillText('[M] MEDIUM', this.game.canvas.width / 2, 270);
-    ctx.fillText('[H] HARD', this.game.canvas.width / 2, 340);
-
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#FFD700';
-    const diffText = this.game.currentDifficulty 
-      ? `Current: ${this.game.currentDifficulty.label}`
-      : 'Current: None';
+    ctx.textBaseline = 'middle';
+    diffOptions.forEach(opt => {
+      this._drawComicBox(ctx, this.game.canvas.width / 2 - 150, opt.y - 35, 300, 70, opt.color);
+      ctx.fillStyle = '#000';
+      ctx.fillText(opt.text, this.game.canvas.width / 2, opt.y);
+    });
+    const diffText = this.game.currentDifficulty ? `CURRENT: ${this.game.currentDifficulty.label}` : 'CURRENT: NONE';
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 200, this.game.canvas.height - 60, 400, 40, '#fff');
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 20px "Comic Sans MS", "Impact", sans-serif';
     ctx.fillText(diffText, this.game.canvas.width / 2, this.game.canvas.height - 40);
+    ctx.textBaseline = 'alphabetic';
   }
 
   /**
-   * Draw prologue narrative screen.
-   * @private
+   * Draw prologue with dynamic images related to the story.
    */
   _drawPrologue(ctx) {
-    ctx.fillStyle = CONSTANTS.COLORS.BACKGROUND;
+    ctx.fillStyle = '#f4f4f0';
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
 
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 28px Arial';
-    ctx.textAlign = 'center';
-    ctx.lineWidth = 2;
-
     const lines = CONSTANTS.PROLOGUE_LINES;
-    if (this.prologueIndex >= lines.length) {
-      ctx.fillText('---END OF PROLOGUE---', this.game.canvas.width / 2, this.game.canvas.height / 2);
-      return;
-    }
+    const maxIndex = Math.min(this.prologueIndex, lines.length);
+    
+    const cols = 4;
+    const rows = 2;
+    const panelWidth = 280;
+    const panelHeight = 260;
+    const gapX = (this.game.canvas.width - (cols * panelWidth)) / (cols + 1);
+    const gapY = (this.game.canvas.height - 120 - (rows * panelHeight)) / (rows + 1);
+    
+    this._drawComicText(ctx, "THE STORY OF JO", this.game.canvas.width / 2, 45, 48, '#f1c40f');
 
-    const text = lines[this.prologueIndex] || '';
-    const maxWidth = this.game.canvas.width - 40;
+    ctx.textBaseline = 'middle';
+
+    for (let i = 0; i <= maxIndex; i++) {
+      if (i >= lines.length) break;
+
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = gapX + col * (panelWidth + gapX);
+      const y = 70 + gapY + row * (panelHeight + gapY);
+      
+      this._drawComicBox(ctx, x, y, panelWidth, panelHeight, '#fff');
+      
+      // Determine which image to show based on story point
+      let storyImage = null;
+      let label = "NARRATOR:";
+      
+      if (i < 2) {
+        storyImage = this.game.assetLoader.images.story_caloocan;
+      } else if (i < 5) {
+        storyImage = this.game.assetLoader.images.story_villains;
+        label = "VILLAIN:";
+      } else {
+        storyImage = this.game.assetLoader.images.story_jo_sad;
+        label = "JO:";
+      }
+
+      if (storyImage && storyImage.complete) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x + 5, y + 5, panelWidth - 10, panelHeight / 2 - 10);
+        ctx.clip();
+        
+        // Fill logic for various aspect ratios
+        const scale = Math.max(panelWidth / storyImage.width, (panelHeight / 2) / storyImage.height);
+        const drawW = storyImage.width * scale;
+        const drawH = storyImage.height * scale;
+        ctx.drawImage(storyImage, x + (panelWidth - drawW) / 2, y + (panelHeight / 2 - drawH) / 2, drawW, drawH);
+        
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 5, y + 5, panelWidth - 10, panelHeight / 2 - 10);
+        ctx.restore();
+      }
+      
+      // Dialogue/Caption bubble
+      ctx.fillStyle = '#fffae6';
+      const bubbleY = y + panelHeight / 2 + 10;
+      const bubbleH = panelHeight / 2 - 20;
+      ctx.fillRect(x + 10, bubbleY, panelWidth - 20, bubbleH);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 10, bubbleY, panelWidth - 20, bubbleH);
+      
+      // Text centered in the bubble
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 15px "Comic Sans MS", "Impact", sans-serif';
+      ctx.textAlign = 'center';
+      const text = lines[i].toUpperCase();
+      // Centering Y: Start of bubble + half bubble height
+      this._wrapText(ctx, text, x + panelWidth / 2, bubbleY + bubbleH / 2, panelWidth - 50, 20);
+    }
+    
+    ctx.textBaseline = 'alphabetic';
+
+    if (this.prologueIndex >= lines.length) {
+      this._drawComicBox(ctx, this.game.canvas.width / 2 - 200, this.game.canvas.height - 60, 400, 45, '#e74c3c');
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 22px "Comic Sans MS", "Impact", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PRESS [SPACE] TO START!', this.game.canvas.width / 2, this.game.canvas.height - 30);
+    } else {
+      this._drawComicBox(ctx, this.game.canvas.width / 2 - 200, this.game.canvas.height - 60, 400, 45, '#bdc3c7');
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 18px "Comic Sans MS", "Impact", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('LOADING STORY... (PRESS SPACE TO SKIP)', this.game.canvas.width / 2, this.game.canvas.height - 32);
+    }
+  }
+
+  _wrapText(ctx, text, x, y, maxWidth, lineHeight) {
     const words = text.split(' ');
     let line = '';
-    let y = this.game.canvas.height / 2 - 60;
-
-    for (let word of words) {
-      const testLine = line + word + ' ';
+    const lines = [];
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
       const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && line) {
-        ctx.fillText(line, this.game.canvas.width / 2, y);
-        line = word + ' ';
-        y += 40;
+      if (metrics.width > maxWidth && n > 0) {
+        lines.push(line);
+        line = words[n] + ' ';
       } else {
         line = testLine;
       }
     }
-    if (line) {
-      ctx.fillText(line, this.game.canvas.width / 2, y);
+    lines.push(line);
+    const startY = y - ((lines.length - 1) * lineHeight) / 2;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], x, startY + i * lineHeight);
     }
-
-    ctx.font = '18px Arial';
-    ctx.fillStyle = '#333';
-    ctx.fillText('Press [SPACE] or Click to continue...', this.game.canvas.width / 2, this.game.canvas.height - 50);
   }
 
-  /**
-   * Draw arsenal selection screen.
-   * @private
-   */
   _drawArsenalSelect(ctx) {
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 32px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(`WAVE ${this.game.waveManager.currentWave}: SELECT ARSENAL`, 
-                  this.game.canvas.width / 2, 60);
-
-    ctx.font = '20px Arial';
+    this._drawSunburst(ctx, '#9b59b6', '#8e44ad');
+    this._drawComicText(ctx, `WAVE ${this.game.waveManager.currentWave}: SELECT ARSENAL`, this.game.canvas.width / 2, 80, 54, '#f1c40f');
     ctx.textAlign = 'left';
-
-    const weaponList = [
-      { key: 'mami', num: '1' },
-      { key: 'pares', num: '2' },
-      { key: 'rice', num: '3' }
-    ];
-
-    let y = 150;
+    const weaponList = [{ key: 'mami', num: '1' }, { key: 'pares', num: '2' }, { key: 'rice', num: '3' }];
+    let y = 200;
     for (const w of weaponList) {
       const weapon = this.game.player.arsenal[w.key];
       const isSelected = this.game.player.selectedWeapon === w.key;
-      const status = weapon.unlocked ? 'Unlocked' : 'Locked';
-      const weaponName = w.key.charAt(0).toUpperCase() + w.key.slice(1);
-
-      ctx.fillStyle = isSelected ? CONSTANTS.COLORS.TEXT_GREEN : 
-                     (weapon.unlocked ? '#fff' : '#888');
-      ctx.fillText(`[${w.num}] ${weaponName} (${status}) - Lvl: ${weapon.level} Dmg: ${weapon.damage}`, 50, y);
-      y += 60;
+      const status = weapon.unlocked ? 'UNLOCKED' : 'LOCKED';
+      const weaponName = w.key.toUpperCase();
+      const bgColor = isSelected ? '#2ecc71' : (weapon.unlocked ? '#fff' : '#95a5a6');
+      this._drawComicBox(ctx, this.game.canvas.width / 2 - 300, y - 40, 600, 70, bgColor);
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 24px "Comic Sans MS", "Impact", sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`[${w.num}] ${weaponName} (${status})`, this.game.canvas.width / 2 - 270, y - 5);
+      ctx.textAlign = 'right';
+      ctx.fillText(`LVL: ${weapon.level} | DMG: ${weapon.damage}`, this.game.canvas.width / 2 + 270, y - 5);
+      ctx.textAlign = 'left';
+      y += 100;
     }
-
-    ctx.font = '18px Arial';
+    ctx.textBaseline = 'alphabetic';
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 250, this.game.canvas.height - 80, 500, 50, '#e74c3c');
+    ctx.font = 'bold 22px "Comic Sans MS", "Impact", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillStyle = CONSTANTS.COLORS.TEXT_GOLD;
-    ctx.fillText('Press [ENTER] to START PLAYING', this.game.canvas.width / 2, this.game.canvas.height - 40);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('PRESS [ENTER] TO START MAYHEM!', this.game.canvas.width / 2, this.game.canvas.height - 47);
   }
 
-  /**
-   * Draw in-game playing HUD.
-   * @private
-   */
   _drawPlayingHUD(ctx) {
-    // Top-left stats
+    this._drawComicBox(ctx, 10, 10, 220, 120, '#fff', '#000');
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 18px "Comic Sans MS", "Impact", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`JO HP: ${this.game.player.hp}/${this.game.player.maxHp}`, 10, 25);
-    ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, 10, 50);
-    ctx.fillText(`WAVE: ${this.game.waveManager.currentWave}`, 10, 75);
-    ctx.fillText(`KILLS: ${this.game.waveManager.killCount}/${CONSTANTS.WAVE_1_REQUIRED_KILLS}`, 10, 100);
-
-    // Top-center location
+    ctx.textBaseline = 'top';
+    ctx.fillText(`JO HP: ${Math.floor(this.game.player.hp)}/${this.game.player.maxHp}`, 20, 20);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(20, 40, 180 * (Math.max(0, this.game.player.hp) / this.game.player.maxHp), 10);
+    ctx.strokeRect(20, 40, 180, 10);
+    ctx.fillStyle = '#000';
+    ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, 20, 60);
+    ctx.fillText(`WAVE: ${this.game.waveManager.currentWave}`, 20, 80);
+    ctx.fillText(`KILLS: ${this.game.waveManager.killCount}/${CONSTANTS.WAVE_1_REQUIRED_KILLS}`, 20, 100);
+    const levelData = this.game.levelManager.getLevelData();
+    const locText = levelData.label.toUpperCase();
+    ctx.font = 'bold 28px "Comic Sans MS", "Impact", sans-serif';
+    const textWidth = ctx.measureText(locText).width;
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - textWidth / 2 - 20, 10, textWidth + 40, 50, '#f1c40f', '#000');
     ctx.textAlign = 'center';
-    ctx.font = 'bold 24px Arial';
-    ctx.fillText('CALOOCAN - MONUMENTO', this.game.canvas.width / 2, 30);
-
-    // Bottom center weapon status bar
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(0, this.game.canvas.height - 50, this.game.canvas.width, 50);
-
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000';
+    ctx.fillText(locText, this.game.canvas.width / 2, 35);
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 250, this.game.canvas.height - 60, 500, 50, '#34495e');
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px Arial';
+    ctx.font = 'bold 20px "Comic Sans MS", "Impact", sans-serif';
     ctx.textAlign = 'center';
     const weapon = this.game.player.arsenal[this.game.player.selectedWeapon];
     const cooldownPercent = this.game.player.getWeaponCooldownPercent(this.game.player.selectedWeapon);
-    const weaponStatus = cooldownPercent >= 100 ? 'READY TO FIRE' : `COOLDOWN: ${Math.ceil((100 - cooldownPercent))}%`;
+    const weaponStatus = cooldownPercent >= 100 ? 'READY TO FIRE!' : `RELOADING: ${Math.ceil((100 - cooldownPercent))}%`;
     const weaponName = this.game.player.selectedWeapon.toUpperCase();
-
-    ctx.fillText(`[EQUIPPED: ${weaponName}] | [STATUS: ${weaponStatus}]`, 
-                  this.game.canvas.width / 2, this.game.canvas.height - 20);
-
-    // Draw weapon tray at bottom
+    ctx.fillText(`EQUIPPED: ${weaponName} | ${weaponStatus}`, this.game.canvas.width / 2, this.game.canvas.height - 35);
     this._drawWeaponTray(ctx);
+    ctx.textBaseline = 'alphabetic';
   }
 
-  /**
-   * Draw weapon tray showing available weapons.
-   * @private
-   */
   _drawWeaponTray(ctx) {
     const weapons = ['mami', 'pares', 'rice'];
-    const trayY = this.game.canvas.height - 150;
+    const trayY = this.game.canvas.height - 160;
     const slotSize = 80;
-    const gap = 10;
+    const gap = 20;
     const totalWidth = weapons.length * (slotSize + gap) - gap;
     const startX = (this.game.canvas.width - totalWidth) / 2;
-
     weapons.forEach((weapon, i) => {
       const x = startX + i * (slotSize + gap);
       const isSelected = this.game.player.selectedWeapon === weapon;
       const weaponData = this.game.player.arsenal[weapon];
-
-      // Slot background
-      ctx.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.3)' : 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(x, trayY, slotSize, slotSize);
-
-      ctx.strokeStyle = isSelected ? CONSTANTS.COLORS.TEXT_GOLD : '#888888';
-      ctx.lineWidth = isSelected ? 3 : 1;
-      ctx.strokeRect(x, trayY, slotSize, slotSize);
-
-      // Weapon label
-      ctx.fillStyle = weaponData.unlocked ? '#fff' : '#666';
-      ctx.font = 'bold 12px monospace';
+      const bgColor = isSelected ? '#f1c40f' : '#ecf0f1';
+      this._drawComicBox(ctx, x, trayY, slotSize, slotSize, bgColor);
+      ctx.fillStyle = weaponData.unlocked ? '#000' : '#7f8c8d';
+      ctx.font = '900 16px "Comic Sans MS", "Impact", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(weapon.toUpperCase(), x + slotSize / 2, trayY + 20);
-
-      ctx.font = '11px monospace';
-      ctx.fillText(`LVL ${weaponData.level}`, x + slotSize / 2, trayY + 40);
-      ctx.fillText(`${weaponData.damage}DMG`, x + slotSize / 2, trayY + slotSize - 8);
-      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(weapon.toUpperCase(), x + slotSize / 2, trayY + 25);
+      if (weaponData.unlocked) {
+        ctx.font = 'bold 12px "Comic Sans MS", "Impact", sans-serif';
+        ctx.fillText(`LVL ${weaponData.level}`, x + slotSize / 2, trayY + 45);
+        ctx.fillText(`${weaponData.damage} DMG`, x + slotSize / 2, trayY + 65);
+      } else {
+        ctx.font = 'bold 14px "Comic Sans MS", "Impact", sans-serif';
+        ctx.fillText('LOCKED', x + slotSize / 2, trayY + 50);
+      }
     });
   }
 
-  /**
-   * Draw victory screen.
-   * @private
-   */
   _drawVictory(ctx) {
-    ctx.fillStyle = CONSTANTS.COLORS.BACKGROUND;
-    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
-
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 48px Arial';
+    this._drawSunburst(ctx, '#2ecc71', '#27ae60');
+    this._drawComicText(ctx, "WAVE CLEARED!", this.game.canvas.width / 2, 200, 80, '#f1c40f');
+    ctx.font = 'bold 36px "Comic Sans MS", "Impact", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('WAVE CLEARED!', this.game.canvas.width / 2, 150);
-
-    ctx.font = '28px Arial';
-    ctx.fillText(`KITA EARNED: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, 
-                  this.game.canvas.width / 2, 250);
-    ctx.fillText('Press [ENTER] to visit the Shop', this.game.canvas.width / 2, 350);
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 200, 300, 400, 80, '#fff');
+    ctx.fillStyle = '#000';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`KITA EARNED: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, this.game.canvas.width / 2, 340);
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 250, 450, 500, 60, '#e74c3c');
+    ctx.fillStyle = '#fff';
+    ctx.fillText('PRESS [ENTER] TO VISIT SHOP', this.game.canvas.width / 2, 480);
+    ctx.textBaseline = 'alphabetic';
   }
 
-  /**
-   * Draw shop screen.
-   * @private
-   */
-  _drawShop(ctx) {
-    this.game.shopManager.draw(ctx);
-  }
+  _drawShop(ctx) { this.game.shopManager.draw(ctx); }
 
-  /**
-   * Draw game over screen.
-   * @private
-   */
   _drawGameOver(ctx) {
-    ctx.fillStyle = CONSTANTS.COLORS.BACKGROUND;
-    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
-
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 48px Arial';
+    this._drawSunburst(ctx, '#e74c3c', '#c0392b');
+    this._drawComicText(ctx, "GAME OVER!", this.game.canvas.width / 2, 200, 100, '#000', '#fff');
+    ctx.font = 'bold 36px "Comic Sans MS", "Impact", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', this.game.canvas.width / 2, 150);
-
-    ctx.font = '24px Arial';
-    ctx.fillText(`Final Kita: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, 
-                 this.game.canvas.width / 2, 250);
-    ctx.fillText('Press [R] to Restart', this.game.canvas.width / 2, 350);
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 200, 350, 400, 80, '#fff');
+    ctx.fillStyle = '#000';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`FINAL KITA: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, this.game.canvas.width / 2, 390);
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 150, 500, 300, 60, '#f1c40f');
+    ctx.fillStyle = '#000';
+    ctx.fillText('PRESS [R] TO RESTART', this.game.canvas.width / 2, 530);
+    ctx.textBaseline = 'alphabetic';
   }
 }
-

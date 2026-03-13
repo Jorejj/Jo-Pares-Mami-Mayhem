@@ -8,9 +8,9 @@ class ShopManager {
 
     // Button layout for weapon upgrade display
     this.buttons = [
-      { name: 'mami',  x: 100, y: 150, width: 600, height: 70 },
-      { name: 'pares', x: 100, y: 250, width: 600, height: 70 },
-      { name: 'rice',  x: 100, y: 350, width: 600, height: 70 }
+      { name: 'mami',  x: this.game.canvas.width / 2 - 350, y: 200, width: 700, height: 90 },
+      { name: 'pares', x: this.game.canvas.width / 2 - 350, y: 320, width: 700, height: 90 },
+      { name: 'rice',  x: this.game.canvas.width / 2 - 350, y: 440, width: 700, height: 90 }
     ];
   }
 
@@ -94,35 +94,40 @@ class ShopManager {
     if (!this.isOpen) return;
 
     // Handle keyboard input (1, 2, 3) via Player.js input binding
-    // This method is placeholder for additional shop logic if needed
   }
 
   /**
-   * Draw shop UI on canvas.
+   * Draw shop UI on canvas in a comic book style.
    * @param {CanvasRenderingContext2D} ctx
-   * @param {Player} player
    */
   draw(ctx) {
     if (!this.isOpen || !this.game.player) return;
 
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+    // Use UIManager's sunburst effect
+    if (this.game.uiManager) {
+      this.game.uiManager._drawSunburst(ctx, '#e67e22', '#d35400');
+    } else {
+      ctx.fillStyle = '#e67e22';
+      ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+    }
 
-    // Title
-    ctx.fillStyle = CONSTANTS.COLORS.TEXT;
-    ctx.font = 'bold 32px Arial';
+    // Title (Comic text)
+    if (this.game.uiManager) {
+      this.game.uiManager._drawComicText(ctx, '⚒️ LADLE UPGRADE SHOP ⚒️', this.game.canvas.width / 2, 70, 48, '#f1c40f');
+    }
+
+    // Kita Banner
+    if (this.game.uiManager) {
+      this.game.uiManager._drawComicBox(ctx, this.game.canvas.width / 2 - 150, 110, 300, 40, '#fff');
+    }
+    ctx.font = 'bold 20px "Comic Sans MS", "Impact", sans-serif';
+    ctx.fillStyle = '#000';
     ctx.textAlign = 'center';
-    ctx.fillText('⚒️ LADLE UPGRADE SHOP ⚒️', this.game.canvas.width / 2, 50);
-
-    // Kita display
-    ctx.font = '20px Arial';
-    ctx.fillStyle = CONSTANTS.COLORS.TEXT_GOLD;
-    ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, 
-                  this.game.canvas.width / 2, 90);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, this.game.canvas.width / 2, 130);
 
     // Draw each weapon button
-    for (const btn of this.buttons) {
+    this.buttons.forEach((btn, index) => {
       const weapon = this.game.player.arsenal[btn.name];
       const unlockCost = weapon.baseCost;
       const upgradeCost = this.getUpgradeCost(btn.name);
@@ -132,49 +137,55 @@ class ShopManager {
       const isUnlocked = weapon.unlocked;
       const isMaxLevel = weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL;
 
-      // Button background
-      ctx.fillStyle = isUnlocked ? '#333333' : '#555555';
-      ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
+      // Button background logic
+      let bgColor = '#ecf0f1'; // default unlocked
+      if (!isUnlocked) bgColor = '#bdc3c7'; // locked
+      if (canAfford && !isMaxLevel) bgColor = '#2ecc71'; // affordable
 
-      // Button border
-      ctx.strokeStyle = (canAfford && !isMaxLevel) ? CONSTANTS.COLORS.TEXT_GREEN : '#888888';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(btn.x, btn.y, btn.width, btn.height);
+      if (this.game.uiManager) {
+        this.game.uiManager._drawComicBox(ctx, btn.x, btn.y, btn.width, btn.height, bgColor);
+      }
 
-      // Weapon name
-      ctx.fillStyle = CONSTANTS.COLORS.TEXT;
-      ctx.font = 'bold 18px Arial';
+      // Weapon name and key
+      ctx.fillStyle = '#000';
+      ctx.font = '900 28px "Comic Sans MS", "Impact", sans-serif';
       ctx.textAlign = 'left';
-      const weaponDisplayName = btn.name.charAt(0).toUpperCase() + btn.name.slice(1);
-      ctx.fillText(weaponDisplayName, btn.x + 20, btn.y + 25);
+      const weaponDisplayName = `[${index + 1}] ` + btn.name.toUpperCase();
+      ctx.fillText(weaponDisplayName, btn.x + 20, btn.y + 30);
 
       // Weapon status and damage
-      ctx.font = '14px Arial';
+      ctx.font = 'bold 20px "Comic Sans MS", "Impact", sans-serif';
       if (isUnlocked) {
-        ctx.fillStyle = '#90EE90';
-        ctx.fillText(`Level: ${weapon.level} | Damage: ${weapon.damage}`, btn.x + 20, btn.y + 50);
+        ctx.fillStyle = '#27ae60';
+        ctx.fillText(`LVL: ${weapon.level} | DMG: ${weapon.damage}`, btn.x + 20, btn.y + 65);
 
+        ctx.textAlign = 'right';
         if (isMaxLevel) {
-          ctx.fillStyle = '#FFD700';
-          ctx.fillText('MAX LEVEL', btn.x + 400, btn.y + 50);
+          ctx.fillStyle = '#f39c12';
+          ctx.fillText('MAX LEVEL!', btn.x + btn.width - 20, btn.y + 45);
         } else {
-          ctx.fillStyle = canAfford ? CONSTANTS.COLORS.TEXT_GREEN : CONSTANTS.COLORS.TEXT_RED;
-          ctx.fillText(`Upgrade: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}`, btn.x + 400, btn.y + 50);
+          ctx.fillStyle = canAfford ? '#27ae60' : '#c0392b';
+          ctx.fillText(`UPGRADE: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}`, btn.x + btn.width - 20, btn.y + 45);
         }
       } else {
-        ctx.fillStyle = '#FFD700';
-        ctx.fillText(`Base Damage: ${weapon.damage}`, btn.x + 20, btn.y + 50);
-        ctx.fillStyle = canAfford ? CONSTANTS.COLORS.TEXT_GREEN : CONSTANTS.COLORS.TEXT_RED;
-        ctx.fillText(`Unlock: ${CONSTANTS.CURRENCY_SYMBOL}${unlockCost}`, btn.x + 400, btn.y + 50);
+        ctx.fillStyle = '#f39c12';
+        ctx.fillText(`BASE DMG: ${weapon.damage}`, btn.x + 20, btn.y + 65);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = canAfford ? '#27ae60' : '#c0392b';
+        ctx.fillText(`UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${unlockCost}`, btn.x + btn.width - 20, btn.y + 45);
       }
-    }
+    });
 
     // Instructions
-    ctx.fillStyle = CONSTANTS.COLORS.TEXT;
-    ctx.font = '14px Arial';
+    if (this.game.uiManager) {
+      this.game.uiManager._drawComicBox(ctx, this.game.canvas.width / 2 - 250, this.game.canvas.height - 70, 500, 45, '#fff');
+    }
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 18px "Comic Sans MS", "Impact", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('[1] Mami | [2] Pares | [3] Rice  |  Press [ENTER] to Continue', 
-                  this.game.canvas.width / 2, this.game.canvas.height - 30);
+    ctx.fillText('PRESS [1], [2], OR [3] TO BUY | PRESS [ENTER] TO CONTINUE', 
+                  this.game.canvas.width / 2, this.game.canvas.height - 48);
+                  
+    ctx.textBaseline = 'alphabetic'; // Reset
   }
 }
-

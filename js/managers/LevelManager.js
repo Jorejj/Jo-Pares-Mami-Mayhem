@@ -10,21 +10,21 @@ class LevelManager {
 
     // Level definitions: act, background key, label
     this.levels = [
-      { act: 1, bg: 'bg_caloocan', label: 'Caloocan Comeback' },       // Level 1
-      { act: 1, bg: 'bg_caloocan', label: 'Caloocan Comeback' },       // Level 2
-      { act: 1, bg: 'bg_caloocan', label: 'Caloocan Comeback' },       // Level 3
-      { act: 1, bg: 'bg_caloocan', label: 'Caloocan Comeback' },       // Level 4
-      { act: 1, bg: 'bg_caloocan', label: 'Boss: Inspector Kap Nino' }, // Level 5
+      { act: 1, bg: 'bg_monumento', label: 'Monumento Rumble' },       // Level 1
+      { act: 1, bg: 'bg_bagong_barrio', label: 'Bagong Barrio Brawl' }, // Level 2
+      { act: 1, bg: 'bg_c3', label: 'C3 Chaos' },                     // Level 3
+      { act: 1, bg: 'bg_sangandaan', label: 'Sangandaan Slap' },       // Level 4
+      { act: 1, bg: 'bg_monumento', label: 'Boss: Inspector Kap Nino' }, // Level 5
       { act: 2, bg: 'bg_intramuros', label: 'Manila Takeover' },       // Level 6
       { act: 2, bg: 'bg_intramuros', label: 'Manila Takeover' },       // Level 7
-      { act: 2, bg: 'bg_quiapo', label: 'Quiapo Run' },                // Level 8
-      { act: 2, bg: 'bg_binondo', label: 'Binondo Brawl' },            // Level 9
-      { act: 2, bg: 'bg_binondo', label: 'Boss: Vlogger Diwata' },     // Level 10
-      { act: 3, bg: 'bg_makati', label: 'Makati Campaign' },           // Level 11
-      { act: 3, bg: 'bg_makati', label: 'Makati Campaign' },           // Level 12
-      { act: 3, bg: 'bg_makati', label: 'Makati Campaign' },           // Level 13
-      { act: 3, bg: 'bg_makati', label: 'Makati Campaign' },           // Level 14
-      { act: 3, bg: 'bg_makati', label: 'Boss: The Mastermind' },      // Level 15
+      { act: 2, bg: 'bg_intramuros', label: 'Intramuros Impact' },     // Level 8
+      { act: 2, bg: 'bg_intramuros', label: 'Binondo Brawl' },            // Level 9
+      { act: 2, bg: 'bg_intramuros', label: 'Boss: Vlogger Diwata' },     // Level 10
+      { act: 3, bg: 'bg_guadalupe', label: 'Guadalupe Gridlock' },      // Level 11
+      { act: 3, bg: 'bg_guadalupe', label: 'Guadalupe Gridlock' },      // Level 12
+      { act: 3, bg: 'bg_legazpi', label: 'Legazpi Village Loot' },    // Level 13
+      { act: 3, bg: 'bg_legazpi', label: 'Makati Campaign' },           // Level 14
+      { act: 3, bg: 'bg_legazpi', label: 'Boss: The Mastermind' },      // Level 15
     ];
   }
 
