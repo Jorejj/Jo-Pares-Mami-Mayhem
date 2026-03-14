@@ -1,6 +1,9 @@
 // Enemy.js – Represents an enemy unit.
 // Handles movement, combat, status effects (slow/burn), and rendering.
 
+// Enemy.js – Represents an enemy unit.
+// Handles movement, combat, status effects (slow/burn), and rendering.
+
 const ENEMY_TYPES = {
   gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, spriteKey: 'enemy_gangster' },
   cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, spriteKey: 'enemy_cockroach' },
@@ -23,11 +26,18 @@ class Enemy {
 
     const config = ENEMY_TYPES[type] || ENEMY_TYPES.gangster;
     
-    // ===== POSITION & SIZE =====
-    this.x = game.canvas.width - 50;
-    this.y = Math.random() * (game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - CONSTANTS.ENEMY_HEIGHT) + CONSTANTS.GAME_BOTTOM_HALF;
-    this.width = CONSTANTS.ENEMY_WIDTH;
-    this.height = CONSTANTS.ENEMY_HEIGHT;
+    // ===== POSITION & TRUE HITBOX SIZE =====
+    // We expanded the hitboxes so they match the actual visual height/width!
+    this.width = type === 'cockroach' ? 40 : 60;
+    this.height = type === 'cockroach' ? 70 : 110;
+    
+    this.x = game.canvas.width + 50; 
+    // Randomize Y slightly, but keep their feet strictly planted in the gameplay area
+    this.y = Math.random() * (game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - this.height) + CONSTANTS.GAME_BOTTOM_HALF;
+    
+    // We separate drawing coords from physical coords so dead bodies don't block shots
+    this.drawX = this.x;
+    this.drawY = this.y;
 
     // ===== HEALTH =====
     const difficulty = this.game.levelManager?.currentDifficulty || CONSTANTS.DIFFICULTY.medium;
@@ -42,7 +52,6 @@ class Enemy {
     this.spriteKey = config.spriteKey;
 
     this.lastAttackTime = 0;
-    this.spawnTime = Date.now();
 
     // ===== STATUS EFFECTS =====
     this.slowActive = false;
@@ -53,13 +62,13 @@ class Enemy {
     this.burnDuration = 0;
     this.burnDamagePerTick = 0;
     this.lastBurnTick = 0;
+
+    // ===== ANIMATION STATE MACHINE =====
+    this.state = 'walk'; // States: 'walk', 'attack', 'hurt', 'dead'
+    this.currentFrame = 0;
+    this.animationTimer = 0;
   }
 
-  /**
-   * Apply slow status effect to this enemy.
-   * @param {number} duration - Duration in ms
-   * @param {number} factor - Speed multiplier (0.5 = 50% speed)
-   */
   applySlowStatus(duration, factor) {
     this.slowActive = true;
     this.slowDuration = duration;
@@ -67,12 +76,6 @@ class Enemy {
     this.updateSpeed();
   }
 
-  /**
-   * Apply burn status effect to this enemy.
-   * Deals damage every tick.
-   * @param {number} duration - Duration in ms
-   * @param {number} damagePerTick - Damage amount per tick
-   */
   applyBurnStatus(duration, damagePerTick) {
     this.burnActive = true;
     this.burnDuration = duration;
@@ -80,10 +83,6 @@ class Enemy {
     this.lastBurnTick = Date.now();
   }
 
-  /**
-   * Update speed based on status effects.
-   * @private
-   */
   updateSpeed() {
     let speedMultiplier = 1;
     if (this.slowActive && this.slowFactor) {
@@ -92,90 +91,56 @@ class Enemy {
     this.speed = this.baseSpeed * speedMultiplier;
   }
 
-  /**
-   * Check if enemy is in attack range of player.
-   * @returns {boolean}
-   */
   isNearPlayer() {
+    if (this.state === 'dead') return false;
     return this.x <= CONSTANTS.PLAYER_X + CONSTANTS.PLAYER_WIDTH + CONSTANTS.PLAYER_ATTACK_RANGE;
   }
 
-  /**
-   * Check if enemy can attack player.
-   * @returns {boolean}
-   */
   canAttack() {
     const now = Date.now();
     return (now - this.lastAttackTime) >= CONSTANTS.ENEMY_ATTACK_COOLDOWN;
   }
 
-  /**
-   * Record that this enemy just attacked.
-   */
   recordAttack() {
     this.lastAttackTime = Date.now();
   }
 
-  /**
-   * Get collision rect for projectile detection.
-   * @returns {Object}
-   */
   getCollisionRect() {
-    return {
-      x: this.x,
-      y: this.y,
-      width: this.width,
-      height: this.height
-    };
+    return { x: this.x, y: this.y, width: this.width, height: this.height };
   }
 
-  /**
-   * Apply damage to this enemy.
-   * @param {number} damage
-   */
   takeDamage(damage) {
+    if (this.state === 'dead') return; // Dead bodies don't take more damage
+
     this.hp -= damage;
+    
     if (this.hp <= 0) {
       this.hp = 0;
-      this.alive = false;
-      this.isAlive = false;
+      this.state = 'dead';
+      this.currentFrame = 0;
+      
+      // Move the physical collision box far off-screen so Rice/Pares pass OVER the corpse!
+      this.drawX = this.x;
+      this.drawY = this.y;
+      this.x = -9999; 
+      this.y = -9999;
+    } else {
+      // Show flinch animation when hit
+      this.state = 'hurt';
+      this.currentFrame = 0;
     }
   }
 
-  /**
-   * Check if enemy has reached player position.
-   * @returns {boolean}
-   */
-  hasReachedPlayer() {
-    return this.x <= CONSTANTS.PLAYER_X + CONSTANTS.PLAYER_WIDTH;
-  }
-
-  /**
-   * Get distance to player.
-   * @returns {number}
-   */
-  getDistanceToPlayer() {
-    const playerX = CONSTANTS.PLAYER_X + CONSTANTS.PLAYER_WIDTH / 2;
-    const playerY = this.game.player.y + this.game.player.height / 2;
-    const enemyCenterX = this.x + this.width / 2;
-    const enemyCenterY = this.y + this.height / 2;
-
-    return Physics.getDistance(enemyCenterX, enemyCenterY, playerX, playerY);
-  }
-
-  /**
-   * Update enemy state each frame.
-   * - Apply status effects
-   * - Move towards player
-   * - Deal damage if in range
-   * @param {number} delta - Time delta in ms
-   */
   update(delta) {
     if (!this.isAlive) return;
 
-    // ===== STATUS EFFECTS =====
+    // Keep visual coordinates tied to physical coordinates (unless dead)
+    if (this.state !== 'dead') {
+      this.drawX = this.x;
+      this.drawY = this.y;
+    }
 
-    // Update slow
+    // ===== STATUS EFFECTS =====
     if (this.slowActive) {
       this.slowDuration -= delta;
       if (this.slowDuration <= 0) {
@@ -185,97 +150,195 @@ class Enemy {
       }
     }
 
-    // Update burn
-    if (this.burnActive) {
+    if (this.burnActive && this.state !== 'dead') {
       this.burnDuration -= delta;
-
-      // Tick damage
       const now = Date.now();
-      if (now - this.lastBurnTick >= 100) { // Burn ticks every 100ms
+      if (now - this.lastBurnTick >= 100) { 
         this.takeDamage(this.burnDamagePerTick);
         this.lastBurnTick = now;
       }
-
       if (this.burnDuration <= 0) {
         this.burnActive = false;
       }
     }
 
-    // ===== MOVEMENT =====
-    if (!this.isNearPlayer()) {
-      this.x -= this.speed;
-    }
-
-    // ===== COMBAT =====
-    if (this.isNearPlayer() && this.canAttack()) {
-      this.game.player.takeDamage(CONSTANTS.PLAYER_DAMAGE_ON_HIT);
-      this.recordAttack();
-      if (this.game.player.isDead()) {
-        this.game.currentState = CONSTANTS.STATES.GAMEOVER;
+    // ===== COMBAT & MOVEMENT STATE MACHINE =====
+    if (this.state !== 'dead' && this.state !== 'hurt') {
+      if (this.isNearPlayer()) {
+        this.state = 'attack';
+        if (this.canAttack()) {
+          this.game.player.takeDamage(CONSTANTS.PLAYER_DAMAGE_ON_HIT);
+          this.recordAttack();
+        }
+      } else {
+        this.state = 'walk';
+        this.x -= this.speed;
       }
     }
 
-    // Stop at bounds
+    // Stop moving if they reach the far left bounds
     if (this.x < -this.width) {
-      this.alive = false;
       this.isAlive = false;
+    }
+
+    // ===== ANIMATION TIMER & FRAME CONFIG =====
+    let maxFrames = 7;
+    let frameSpeed = 100;
+
+    if (this.state === 'dead') { 
+      maxFrames = 5; 
+      frameSpeed = 150; // Slower dramatic death
+    } else if (this.state === 'hurt') { 
+      maxFrames = 1; 
+      frameSpeed = 250; // Flash the hurt frame for 250ms
+    } else if (this.state === 'attack') { 
+      maxFrames = 3; 
+      frameSpeed = 150; // Attack animation speed
+    }
+
+    this.animationTimer += delta;
+    if (this.animationTimer >= frameSpeed) {
+      this.animationTimer = 0;
+      this.currentFrame++;
+      
+      // Handle animation endings
+      if (this.state === 'dead') {
+        if (this.currentFrame >= maxFrames) {
+          this.isAlive = false; // Despawn completely and grant Kita
+        }
+      } else if (this.state === 'hurt') {
+        if (this.currentFrame >= maxFrames) {
+          this.state = 'walk'; // Go back to walking after flinching
+          this.currentFrame = 0;
+        }
+      } else {
+        this.currentFrame = this.currentFrame % maxFrames;
+      }
     }
   }
 
-  /**
-   * Draw enemy on canvas.
-   * @param {CanvasRenderingContext2D} ctx
-   */
-  draw(ctx) {
+draw(ctx) {
     if (!this.isAlive) return;
+
+    // Force Canvas to draw crisp pixel art without blurry edges
+    ctx.imageSmoothingEnabled = false;
 
     const sprite = this.game.assetLoader?.images?.[this.spriteKey];
     
-    // Draw enemy body (use sprite if available, else colored rect)
     if (sprite && sprite.complete) {
-      ctx.drawImage(sprite, this.x, this.y, this.width, this.height);
+      // 7 columns by 3 rows
+      const cols = 7;
+      const rows = 3;
+      
+      const exactSw = sprite.width / cols;
+      const exactSh = sprite.height / rows;
+
+      // ===== MAP SPRITE GRID TO ANIMATION STATE =====
+      let row = 0;
+      let startCol = 0;
+      
+      if (this.state === 'dead') { 
+        row = 2; // Bottom row
+        startCol = 0; 
+      } else if (this.state === 'hurt') { 
+        row = 1; // Middle row
+        startCol = 1; // Col 1 is the 'flinch' frame
+      } else if (this.state === 'attack') { 
+        row = 1; // Middle row
+        startCol = 2; // Cols 2, 3, 4 are the stabbing frames
+      } else { 
+        row = 0; // Top row is walking
+        startCol = 0; 
+      }
+
+      // Calculate exact start AND end pixels to absolutely prevent drift
+     // Calculate exact start AND end pixels to absolutely prevent drift
+      const sx = Math.floor((startCol + this.currentFrame) * exactSw);
+      const nextSx = Math.floor((startCol + this.currentFrame + 1) * exactSw);
+      const sw = nextSx - sx; 
+
+      const sy = Math.floor(row * exactSh);
+      const nextSy = Math.floor((row + 1) * exactSh);
+      const sh = nextSy - sy;
+
+      // --- ADAPTIVE ANTI-BLEED FIX ---
+      // We change the padding based on what the enemy is currently doing!
+      let padX = 0;
+      let padY = 0;
+
+      if (this.state === 'walk' || this.state === 'hurt') {
+        padX = 6; // Aggressive crop to prevent bleeding while walking
+        padY = 4;
+      } else if (this.state === 'attack') {
+        padX = 1; // Barely any crop so the extended knife arm isn't chopped off!
+        padY = 2;
+      } else if (this.state === 'dead') {
+        padX = 0; // No crop so the lying down animation fits perfectly
+        padY = 0;
+      }
+
+      const cropX = sx + padX;
+      const cropY = sy + padY;
+      const cropW = sw - (padX * 2);
+      const cropH = sh - (padY * 2);
+
+      const targetHeight = this.type === 'cockroach' ? 70 : 110; 
+      const scale = targetHeight / cropH;
+      const drawW = cropW * scale;
+      const drawH = targetHeight;
+      
+      ctx.save();
+      // Use drawX/drawY so corpses stay exactly where they died
+      ctx.translate(this.drawX + this.width / 2, this.drawY + this.height);
+      
+      ctx.scale(-1, 1); // Flip horizontally!
+
+      // Draw using the aggressively cropped coordinates
+      ctx.drawImage(sprite, cropX, cropY, cropW, cropH, -drawW / 2, -drawH, drawW, drawH);
+      
+      // Draw Burn/Slow Tint
+      if (this.burnActive) {
+        ctx.fillStyle = 'rgba(255, 100, 0, 0.4)';
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
+        ctx.globalCompositeOperation = 'source-over';
+      } else if (this.slowActive) {
+        ctx.fillStyle = 'rgba(0, 150, 255, 0.4)';
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+
+      ctx.restore();
     } else {
       ctx.fillStyle = CONSTANTS.COLORS.ENEMY;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
+      ctx.fillRect(this.drawX, this.drawY, this.width, this.height);
     }
 
-    // Draw burn effect (orange overlay)
-    if (this.burnActive) {
-      ctx.fillStyle = 'rgba(255, 100, 0, 0.3)';
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
+    // Only draw HP bars and icons on LIVING enemies
+    if (this.state !== 'dead') {
+      ctx.fillStyle = '#00FF00';
+      const barWidth = this.width * (this.hp / this.maxHp);
+      ctx.fillRect(this.drawX, this.drawY - 12, barWidth, 5);
 
-    // Draw slow effect (blue tint)
-    if (this.slowActive) {
-      ctx.fillStyle = 'rgba(0, 150, 255, 0.2)';
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(this.drawX, this.drawY - 12, this.width, 5);
 
-    // Draw HP bar above enemy
-    ctx.fillStyle = '#00FF00';
-    const barWidth = this.width * (this.hp / this.maxHp);
-    ctx.fillRect(this.x, this.y - 8, barWidth, 5);
-
-    // Draw HP bar outline
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(this.x, this.y - 8, this.width, 5);
-
-    // Draw status icons if applicable
-    let iconX = this.x + this.width / 2 - 8;
-    if (this.slowActive) {
-      ctx.fillStyle = '#0096FF';
-      ctx.font = 'bold 8px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('S', iconX + 4, this.y - 12);
-      iconX += 8;
-    }
-    if (this.burnActive) {
-      ctx.fillStyle = '#FF6400';
-      ctx.font = 'bold 8px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('B', iconX + 4, this.y - 12);
+      let iconX = this.drawX + this.width / 2 - 8;
+      if (this.slowActive) {
+        ctx.fillStyle = '#0096FF';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('S', iconX + 4, this.drawY - 16);
+        iconX += 10;
+      }
+      if (this.burnActive) {
+        ctx.fillStyle = '#FF6400';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('B', iconX + 4, this.drawY - 16);
+      }
     }
   }
 }
-

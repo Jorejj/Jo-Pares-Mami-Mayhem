@@ -39,7 +39,7 @@ class Player {
     this.spriteClipW = 600;
     this.spriteClipH = 440;
     
-    this.frameSpeed = 80;   // Slightly faster for smoother motion
+    this.frameSpeed = 150;   // Slightly faster for smoother motion
 
     // ===== PROJECTILES =====
     this.projectiles = [];
@@ -183,7 +183,7 @@ class Player {
     if (mouse.isDown && !this.isDragging) {
       this.isDragging = true;
       this.dragStart = { x: mouse.x, y: mouse.y };
-      this.currentFrame = 0;
+      this.currentFrame = 0; // Reset animation when drag starts
     }
 
     if (this.isDragging) {
@@ -200,22 +200,13 @@ class Player {
       this.currentFrame = 0;
     }
 
-    // Update animations
+    // --- UPDATED ANIMATION LOGIC ---
     this.animationTimer += delta;
     if (this.animationTimer >= this.frameSpeed) {
       this.animationTimer = 0;
-      
-      const sprite = this.isDragging 
-        ? this.game.assetLoader.images.player_hold 
-        : this.game.assetLoader.images.player_idle;
-      
-      if (sprite && sprite.complete) {
-        const cols = Math.floor(sprite.width / this.spriteClipW) || 1;
-        const rows = Math.floor(sprite.height / this.spriteClipH) || 1;
-        const totalFrames = cols * rows;
-        this.currentFrame = (this.currentFrame + 1) % totalFrames;
-      }
+      this.currentFrame++; // Continuously increment, we will constrain it in draw()
     }
+    // -------------------------------
 
     for (const weaponKey in this.arsenal) {
       const weapon = this.arsenal[weaponKey];
@@ -255,31 +246,66 @@ class Player {
   /**
    * Draw Jo using specific 600x440 clipping.
    */
-  draw(ctx) {
+draw(ctx) {
     const sprite = this.isDragging 
       ? this.game.assetLoader?.images?.player_hold 
       : this.game.assetLoader?.images?.player_idle;
 
     if (sprite && sprite.complete) {
-      const cols = Math.floor(sprite.width / this.spriteClipW) || 1;
-      const sw = this.spriteClipW;
-      const sh = this.spriteClipH;
-      const sx = (this.currentFrame % cols) * sw;
-      const sy = Math.floor(this.currentFrame / cols) * sh;
+      let sx, sy, sw, sh, cropW, cropH;
+      let targetHeight; 
 
-      ctx.save();
-      ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-      
-      const scaleX = (this.aimAngle > -Math.PI/2 && this.aimAngle < Math.PI/2) ? 1 : -1;
-      ctx.scale(scaleX, 1);
-      
       if (this.isDragging) {
-        const visualAngle = Math.max(-0.4, Math.min(0.4, this.aimAngle));
-        ctx.rotate(visualAngle);
+        // 'Jo Catapult.png' (Transparent)
+        const cols = 4;
+        const rows = 2;
+        
+        sw = sprite.width / cols;
+        sh = sprite.height / rows;
+        
+        const frameIndex = this.currentFrame % (cols * rows);
+        sx = (frameIndex % cols) * sw;
+        sy = Math.floor(frameIndex / cols) * sh;
+
+        // --- ANTI-BLEED FIX ---
+        // Shave 2 pixels off the bottom to hide the top of the next row
+        cropW = sw;
+        cropH = sh - 2; 
+
+        targetHeight = 180; 
+
+      } else {
+        // 'jo.png' (Idle) 
+        const headerOffsetY = 130; 
+        const cols = 5; 
+        const rows = 3;
+        
+        sw = sprite.width / cols;
+        sh = (sprite.height - headerOffsetY) / rows;
+        
+        sx = 0;
+        sy = headerOffsetY;
+
+        cropW = sw;
+        cropH = sh - 1;
+
+        targetHeight = 140; 
       }
 
-      ctx.drawImage(sprite, sx, sy, sw, sh, -this.width / 2, -this.height / 2, this.width, this.height);
+      ctx.save();
+      
+      // Calculate scale using the new cleanly cropped height
+      const scale = targetHeight / cropH; 
+      const drawW = cropW * scale; 
+      const drawH = targetHeight;
+      
+      ctx.translate(this.x + this.width / 2, this.y + this.height);
+      
+      // Pass cropW and cropH into the drawImage function
+      ctx.drawImage(sprite, sx, sy, cropW, cropH, -drawW / 2, -drawH, drawW, drawH);
+      
       ctx.restore();
+      
     } else {
       ctx.fillStyle = CONSTANTS.COLORS.PLAYER;
       ctx.fillRect(this.x, this.y, this.width, this.height);
@@ -287,11 +313,13 @@ class Player {
 
     this.projectiles.forEach(p => p.draw(ctx));
 
+    // Trajectory prediction line
     if (this.isDragging && this.game.inputHandler.isDragging) {
       const { vx, vy } = this.game.inputHandler.getDragVector();
       const startX = this.x + this.width * 0.7;
       const startY = this.y + this.height * 0.4;
       const points = Physics.getTrajectoryPoints(startX, startY, vx, vy);
+      
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 5]);

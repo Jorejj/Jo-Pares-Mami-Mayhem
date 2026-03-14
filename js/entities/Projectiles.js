@@ -126,6 +126,33 @@ class Projectile {
       return;
     }
 
+   // --- NEW: SUPER HOT RICE AURA ---
+    // If this is rice, apply a burn effect to any enemy inside the circle!
+    if (this.type === 'rice' && this.splashRadius > 0) {
+      const enemies = (this.game.waveManager && this.game.waveManager.enemies) || [];
+      
+      // Determine burn tick damage based on weapon level
+      // Level 1: 2 dmg, Level 2: 4 dmg, Level 3: 8 dmg, Level 4: 12 dmg, Level 5: 16 dmg
+      const burnDamageScaling = [2, 4, 8, 12, 16];
+      // Arrays are 0-indexed, so Level 1 uses index 0. Fallback to 2 if level is undefined.
+      const tickDamage = burnDamageScaling[this.level - 1] || 2;
+
+      enemies.forEach(enemy => {
+        if (!enemy.isAlive) return;
+
+        // Get the distance between the rice and the enemy
+        const enemyCenterX = enemy.x + enemy.width / 2;
+        const enemyCenterY = enemy.y + enemy.height / 2;
+        const dist = Physics.getDistance(this.x, this.y, enemyCenterX, enemyCenterY);
+
+        // If the enemy is touched by the hot steam circle, set them on fire!
+        if (dist <= this.splashRadius && !enemy.burnActive) {
+          // Applies a .5-second burn that deals scaling damage per tick (100ms)
+          enemy.applyBurnStatus(1000, tickDamage); 
+        }
+      });
+    }
+
     // ===== BOUNDS CHECK =====
     const canvas = this.game.canvas;
     if (this.x > canvas.width + 50 || this.x < -50 || this.y > canvas.height + 50) {
