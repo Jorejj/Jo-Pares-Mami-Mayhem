@@ -3,19 +3,19 @@
 // Special behaviors: Mami (standard), Pares (splits at apex), Rice (splash radius on impact)
 
 const PROJECTILE_CONFIG = {
-  mami:  { baseDamage: 25, radius: 5,  color: '#FFD700', spriteKey: 'proj_mami' },
-  pares: { baseDamage: 40, radius: 7,  color: '#FF6B35', spriteKey: 'proj_pares' },
-  rice:  { baseDamage: 15, radius: 4,  color: '#90EE90', spriteKey: 'proj_rice', splashRadius: 80 },
+  mami:  { baseDamage: 25, radius: 5,  color: '#FFD700' },
+  pares: { baseDamage: 40, radius: 7,  color: '#FF6B35' },
+  cola:  { baseDamage: 20, radius: 5,  color: '#8B4513' }, // Added Cola just in case!
+  rice:  { baseDamage: 15, radius: 4,  color: '#90EE90', splashRadius: 80 },
 };
 
 class Projectile {
-  constructor(game, x, y, velX, velY, type, damage, level) {
+  constructor(game, x, y, velX, velY, type, damage, level = 1) {
     this.game = game;
     this.type = type;
     this.level = level;
 
     const config = PROJECTILE_CONFIG[type] || PROJECTILE_CONFIG.mami;
-    this.spriteKey = config.spriteKey;
     this.radius = config.radius;
     this.color = config.color;
     this.damage = damage;
@@ -32,6 +32,19 @@ class Projectile {
     this.isActive = true;
     this.hasHit = false;
     this.apexReached = false;
+
+    // ===== NEW: SPRITE SHEET CONFIGURATION =====
+    // Change these if your grid cells in projectiles.png are not 64x64
+    this.frameWidth = 64;  
+    this.frameHeight = 64; 
+
+    // Maps the weapon type to the specific row on your image
+    this.typeToRowMap = {
+      'mami': 0,  // Top row
+      'pares': 1, // 2nd row
+      'cola': 2,  // 3rd row
+      'rice': 3   // 4th row
+    };
   }
 
   /**
@@ -126,28 +139,21 @@ class Projectile {
       return;
     }
 
-   // --- NEW: SUPER HOT RICE AURA ---
-    // If this is rice, apply a burn effect to any enemy inside the circle!
+   // --- RICE AURA ---
     if (this.type === 'rice' && this.splashRadius > 0) {
       const enemies = (this.game.waveManager && this.game.waveManager.enemies) || [];
       
-      // Determine burn tick damage based on weapon level
-      // Level 1: 2 dmg, Level 2: 4 dmg, Level 3: 8 dmg, Level 4: 12 dmg, Level 5: 16 dmg
       const burnDamageScaling = [2, 4, 8, 12, 16];
-      // Arrays are 0-indexed, so Level 1 uses index 0. Fallback to 2 if level is undefined.
       const tickDamage = burnDamageScaling[this.level - 1] || 2;
 
       enemies.forEach(enemy => {
         if (!enemy.isAlive) return;
 
-        // Get the distance between the rice and the enemy
         const enemyCenterX = enemy.x + enemy.width / 2;
         const enemyCenterY = enemy.y + enemy.height / 2;
         const dist = Physics.getDistance(this.x, this.y, enemyCenterX, enemyCenterY);
 
-        // If the enemy is touched by the hot steam circle, set them on fire!
         if (dist <= this.splashRadius && !enemy.burnActive) {
-          // Applies a .5-second burn that deals scaling damage per tick (100ms)
           enemy.applyBurnStatus(1000, tickDamage); 
         }
       });
@@ -160,25 +166,72 @@ class Projectile {
     }
   }
 
-  /**
-   * Draw projectile on canvas.
+/**
+   * Draw projectile on canvas using dynamic Sprite Sheet Math.
    * @param {CanvasRenderingContext2D} ctx
    */
   draw(ctx) {
     if (!this.isActive) return;
 
-    const sprite = this.game.assetLoader?.images?.[this.spriteKey];
+    // Fetch the single master sprite sheet
+    const sheet = this.game.assetLoader?.images?.projectilesSheet;
     
-    if (sprite && sprite.complete) {
-      ctx.drawImage(sprite, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+    if (sheet && sheet.complete && sheet.width > 0) {
+      // 1. DYNAMICALLY CALCULATE FRAME SIZE
+      // Your image has 5 columns (levels) and 3 rows (Mami, Pares, Rice)
+      const cols = 5;
+      const rows = 3;
+      
+      const frameW = sheet.width / cols;
+      const frameH = sheet.height / rows;
+
+      // 2. MAP WEAPON TYPE TO THE CORRECT ROW
+      const typeToRowMap = {
+        'mami': 0,  // Top row
+        'pares': 1, // Middle row
+        'cola': 1,  // Fallback to pares if you don't have a cola sprite yet
+        'rice': 2   // Bottom row
+      };
+
+      let row = typeToRowMap[this.type];
+      if (row === undefined) row = 0; 
+
+      // 3. MAP WEAPON LEVEL TO THE CORRECT COLUMN (Max level 5)
+      const col = Math.min(Math.max(0, this.level - 1), 4);
+
+      // Calculate Source X and Source Y for cutting the image
+      const sx = col * frameW;
+      const sy = row * frameH;
+
+      // 4. PROPORTIONAL SCALING (The Anti-Distortion Fix!)
+      // Set the target visual height based on the projectile level
+      const targetHeight = (this.radius * 4) + (this.level * 10); 
+      
+      // Scale the width proportionally so the bowl stays the exact same shape
+      const scale = targetHeight / frameH;
+      const drawW = frameW * scale;
+      const drawH = targetHeight;
+
+      ctx.save();
+      
+      // Draw the perfectly proportioned slice!
+      ctx.drawImage(
+        sheet, 
+        sx, sy, 
+        frameW, frameH, 
+        this.x - drawW / 2, this.y - drawH / 2, 
+        drawW, drawH
+      );
+
+      ctx.restore();
+
     } else {
-      // Draw as colored circle
+      // Fallback: Draw as colored circle if image isn't loaded yet
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, this.radius + (this.level * 2), 0, Math.PI * 2);
       ctx.fillStyle = this.color;
       ctx.fill();
 
-      // Draw outline
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 1;
       ctx.stroke();
@@ -189,30 +242,8 @@ class Projectile {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.splashRadius, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, this.splashRadius + (this.level * 10), 0, Math.PI * 2);
       ctx.stroke();
     }
   }
 }
-
-// ===== LEGACY ALIASES FOR COMPATIBILITY =====
-// If Case Study code references Mami, Pares, Rice classes directly
-
-class Mami extends Projectile {
-  constructor(game, x, y, vx, vy, damage, level = 1) {
-    super(game, x, y, vx, vy, 'mami', damage, level);
-  }
-}
-
-class Pares extends Projectile {
-  constructor(game, x, y, vx, vy, damage, level = 1) {
-    super(game, x, y, vx, vy, 'pares', damage, level);
-  }
-}
-
-class Rice extends Projectile {
-  constructor(game, x, y, vx, vy, damage, level = 1) {
-    super(game, x, y, vx, vy, 'rice', damage, level);
-  }
-}
-

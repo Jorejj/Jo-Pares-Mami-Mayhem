@@ -7,9 +7,8 @@ class Player {
 
     // ===== POSITION & DISPLAY =====
     this.x = CONSTANTS.PLAYER_X;
-    this.y = game.canvas.height - 300;
-    this.width = 160;   // Increased display width to maintain aspect ratio with 600x440 source
-    this.height = 117;  // 160 * (440/600) approx 117
+    this.width = 160; 
+    this.height = 160; 
 
     // Adjust Y to stay on ground
     this.y = game.canvas.height - this.height - 100;
@@ -27,6 +26,7 @@ class Player {
 
     // ===== CATAPULT DRAG STATE =====
     this.isDragging = false;
+    this.isFiring = false; // NEW: Tracks the release animation!
     this.dragStart = { x: 0, y: 0 };
     this.dragCurrent = { x: 0, y: 0 };
     this.aimAngle = 0;
@@ -34,25 +34,16 @@ class Player {
     // ===== ANIMATION STATE =====
     this.animationTimer = 0;
     this.currentFrame = 0;
-    
-    // Fixed Clip Size provided by user
-    this.spriteClipW = 600;
-    this.spriteClipH = 440;
-    
-    this.frameSpeed = 150;   // Slightly faster for smoother motion
+    this.frameSpeed = 250;  // CHANGED: Increased from 150 to 250 to slow down the idle stirring
+    this._lastKnownState = null; 
 
     // ===== PROJECTILES =====
     this.projectiles = [];
-
-    // ===== SPECIAL ABILITIES =====
     this.specials = this._initSpecials();
 
     this._bindInput();
   }
 
-  /**
-   * Initialize arsenal with all three weapon types.
-   */
   _initArsenal() {
     const arsenal = {};
     for (const [weaponKey, stats] of Object.entries(CONSTANTS.WEAPON_STATS)) {
@@ -68,9 +59,6 @@ class Player {
     return arsenal;
   }
 
-  /**
-   * Initialize special abilities.
-   */
   _initSpecials() {
     const specials = {};
     for (const [specialKey, stats] of Object.entries(CONSTANTS.SPECIALS)) {
@@ -178,12 +166,18 @@ class Player {
   }
 
   update(delta) {
+    // RESET animation frame when transitioning between Game States
+    if (this.game && this.game.currentState !== this._lastKnownState) {
+      this.currentFrame = 0;
+      this._lastKnownState = this.game.currentState;
+    }
+
     const { mouse } = this.game.inputHandler;
 
-    if (mouse.isDown && !this.isDragging) {
+    if (mouse.isDown && !this.isDragging && !this.isFiring) {
       this.isDragging = true;
       this.dragStart = { x: mouse.x, y: mouse.y };
-      this.currentFrame = 0; // Reset animation when drag starts
+      this.currentFrame = 0; 
     }
 
     if (this.isDragging) {
@@ -194,19 +188,38 @@ class Player {
       }
     }
 
+    // ON MOUSE RELEASE
     if (!mouse.isDown && this.isDragging) {
       this.isDragging = false;
       this._fire();
-      this.currentFrame = 0;
+      
+      // TRIGGER THE FOLLOW-THROUGH ANIMATION
+      this.isFiring = true;
+      this.currentFrame = 3; // Jump directly to frame 3 (the swing)
+      this.animationTimer = 0;
     }
 
     // --- UPDATED ANIMATION LOGIC ---
     this.animationTimer += delta;
-    if (this.animationTimer >= this.frameSpeed) {
-      this.animationTimer = 0;
-      this.currentFrame++; // Continuously increment, we will constrain it in draw()
+
+    if (this.isFiring) {
+      // Play the firing animation super fast (100ms per frame)
+      if (this.animationTimer >= 100) {
+        this.animationTimer = 0;
+        this.currentFrame++;
+        if (this.currentFrame > 4) {
+          // Finish firing, return to idle
+          this.isFiring = false;
+          this.currentFrame = 0;
+        }
+      }
+    } else {
+      // Normal animation speed for idle, win, and lose
+      if (this.animationTimer >= this.frameSpeed) {
+        this.animationTimer = 0;
+        this.currentFrame++; 
+      }
     }
-    // -------------------------------
 
     for (const weaponKey in this.arsenal) {
       const weapon = this.arsenal[weaponKey];
@@ -240,72 +253,62 @@ class Player {
     const weaponData = this.arsenal[this.selectedWeapon];
     const startX = this.x + this.width * 0.7;
     const startY = this.y + this.height * 0.4;
+    
     this.projectiles.push(new Projectile(this.game, startX, startY, vx, vy, this.selectedWeapon, weaponData.damage, weaponData.level));
   }
 
-  /**
-   * Draw Jo using specific 600x440 clipping.
-   */
-draw(ctx) {
-    const sprite = this.isDragging 
-      ? this.game.assetLoader?.images?.player_hold 
-      : this.game.assetLoader?.images?.player_idle;
+  draw(ctx) {
+    const sprite = this.game.assetLoader?.images?.player; 
 
     if (sprite && sprite.complete) {
-      let sx, sy, sw, sh, cropW, cropH;
-      let targetHeight; 
+      const cols = 5;
+      const rows = 3;
+      
+      const sw = sprite.width / cols;
+      const sh = sprite.height / rows;
 
-      if (this.isDragging) {
-        // 'Jo Catapult.png' (Transparent)
-        const cols = 4;
-        const rows = 2;
-        
-        sw = sprite.width / cols;
-        sh = sprite.height / rows;
-        
-        const frameIndex = this.currentFrame % (cols * rows);
-        sx = (frameIndex % cols) * sw;
-        sy = Math.floor(frameIndex / cols) * sh;
+      let row = 0;
+      let frame = 0;
 
-        // --- ANTI-BLEED FIX ---
-        // Shave 2 pixels off the bottom to hide the top of the next row
-        cropW = sw;
-        cropH = sh - 2; 
+      const state = this.game.currentState;
 
-        targetHeight = 180; 
-
-      } else {
-        // 'jo.png' (Idle) 
-        const headerOffsetY = 130; 
-        const cols = 5; 
-        const rows = 3;
-        
-        sw = sprite.width / cols;
-        sh = (sprite.height - headerOffsetY) / rows;
-        
-        sx = 0;
-        sy = headerOffsetY;
-
-        cropW = sw;
-        cropH = sh - 1;
-
-        targetHeight = 140; 
+      // 1. WINNING / SHOP MENU STATE
+      if (state === CONSTANTS.STATES.VICTORY || state === CONSTANTS.STATES.SHOP) {
+        row = 0; 
+        frame = 3 + (this.currentFrame % 2); 
+      } 
+      // 2. GAME OVER STATE
+      else if (state === CONSTANTS.STATES.GAMEOVER) {
+        row = 2; 
+        frame = Math.min(4, this.currentFrame); 
+      }
+      // 3. FIRING STATE (He just let go of the mouse)
+      else if (this.isFiring) {
+        row = 1;
+        frame = this.currentFrame; // Plays frames 3 and 4 smoothly
+      }
+      // 4. DRAGGING STATE (Aiming)
+      else if (this.isDragging) {
+        row = 1; 
+        const dragDist = Physics.getDistance(this.dragStart.x, this.dragStart.y, this.dragCurrent.x, this.dragCurrent.y);
+        // FIX: Cap the frame at 2! He will only pull back, not swing, while dragging
+        frame = Math.min(2, Math.floor(dragDist / 40)); 
+      } 
+      // 5. IDLE STATE
+      else {
+        row = 0; 
+        frame = this.currentFrame % 3; // Only loops frames 0, 1, 2
       }
 
+      const sx = frame * sw;
+      const sy = row * sh;
+      
       ctx.save();
-      
-      // Calculate scale using the new cleanly cropped height
-      const scale = targetHeight / cropH; 
-      const drawW = cropW * scale; 
-      const drawH = targetHeight;
-      
       ctx.translate(this.x + this.width / 2, this.y + this.height);
       
-      // Pass cropW and cropH into the drawImage function
-      ctx.drawImage(sprite, sx, sy, cropW, cropH, -drawW / 2, -drawH, drawW, drawH);
+      ctx.drawImage(sprite, sx, sy, sw, sh, -this.width / 2, -this.height, this.width, this.height);
       
       ctx.restore();
-      
     } else {
       ctx.fillStyle = CONSTANTS.COLORS.PLAYER;
       ctx.fillRect(this.x, this.y, this.width, this.height);

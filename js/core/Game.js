@@ -171,21 +171,27 @@ class Game {
    * @private
    * @returns {Array} Array of enemy types to spawn
    */
-  _getWaveEnemies() {
-    // Simple wave progression: spawn 5-10 enemies per wave of basic type
+_getWaveEnemies() {
     const waveNum = this.waveManager.currentWave;
+    // Gradually increase total number of enemies per wave (starts at 5, maxes at 15)
     const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
     const enemies = [];
 
-    for (let i = 0; i < enemyCount; i++) {
-      enemies.push('gangster');
-    }
+    // The full pool of all your custom enemies
+    const enemyPool = [
+      'gangster', 
+      'cockroach', 
+      'dog', 
+      'jbhotdog', 
+      'bikejor', 
+      'kitboard', 
+      'rex'
+    ];
 
-    // Add some variation in later waves
-    if (waveNum > 3) {
-      for (let i = 0; i < Math.floor(waveNum / 3); i++) {
-        enemies[Math.floor(Math.random() * enemies.length)] = 'cockroach';
-      }
+    for (let i = 0; i < enemyCount; i++) {
+      // Pick a completely random enemy from the pool for every single spawn
+      const randomEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+      enemies.push(randomEnemy);
     }
 
     return enemies;
