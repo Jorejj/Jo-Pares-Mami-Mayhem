@@ -1,20 +1,21 @@
 // Enemy.js – Represents an enemy unit.
 // Handles movement, combat, status effects (slow/burn), and rendering.
 
-// Enemy.js – Represents an enemy unit.
-// Handles movement, combat, status effects (slow/burn), and rendering.
-
 const ENEMY_TYPES = {
-  gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, spriteKey: 'enemy_gangster' },
-  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, spriteKey: 'enemy_cockroach' },
-  rat:        { hp: 20,  speed: 2.0, damage: 5,  kitaReward: 10, spriteKey: 'enemy_rat' },
-  dog:        { hp: 35,  speed: 1.8, damage: 15, kitaReward: 15, spriteKey: 'enemy_dog' },
-  student:    { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, spriteKey: 'enemy_student' },
-  worker:     { hp: 50,  speed: 1.0, damage: 12, kitaReward: 20, spriteKey: 'enemy_worker' },
-  elite:      { hp: 80,  speed: 0.8, damage: 20, kitaReward: 30, spriteKey: 'enemy_elite' },
-  boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, spriteKey: 'boss_inspector' },
-  boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, spriteKey: 'boss_vlogger' },
-  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, spriteKey: 'boss_mastermind' },
+  gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_gangster' },
+  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach' },
+  jbhotdog:   { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 55, baseHeight: 160, spriteKey: 'enemy_jbhotdog' },
+  bikejor:    { hp: 25,  speed: 2.2, damage: 10, kitaReward: 15, baseWidth: 70, baseHeight: 190, spriteKey: 'enemy_bikejor' },
+  kitboard:   { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard' },
+  rex:        { hp: 50,  speed: 1.0, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 185, spriteKey: 'enemy_rex' },
+  rat:        { hp: 20,  speed: 2.0, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 50,  spriteKey: 'enemy_rat' },
+  dog:        { hp: 35,  speed: 1.8, damage: 15, kitaReward: 15, baseWidth: 60, baseHeight: 80,  spriteKey: 'enemy_dog' },
+  student:    { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_student' },
+  worker:     { hp: 50,  speed: 1.0, damage: 12, kitaReward: 20, baseWidth: 55, baseHeight: 110, spriteKey: 'enemy_worker' },
+  elite:      { hp: 80,  speed: 0.8, damage: 20, kitaReward: 30, baseWidth: 60, baseHeight: 120, spriteKey: 'enemy_elite' },
+  boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 80, baseHeight: 160, spriteKey: 'boss_inspector' },
+  boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 80, baseHeight: 160, spriteKey: 'boss_vlogger' },
+  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 90, baseHeight: 180, spriteKey: 'boss_mastermind' },
 };
 
 class Enemy {
@@ -27,15 +28,13 @@ class Enemy {
     const config = ENEMY_TYPES[type] || ENEMY_TYPES.gangster;
     
     // ===== POSITION & TRUE HITBOX SIZE =====
-    // We expanded the hitboxes so they match the actual visual height/width!
-    this.width = type === 'cockroach' ? 40 : 60;
-    this.height = type === 'cockroach' ? 70 : 110;
+    // This now reads dynamically from the ENEMY_TYPES config above!
+    this.width = config.baseWidth || 60;
+    this.height = config.baseHeight || 110;
     
     this.x = game.canvas.width + 50; 
-    // Randomize Y slightly, but keep their feet strictly planted in the gameplay area
     this.y = Math.random() * (game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - this.height) + CONSTANTS.GAME_BOTTOM_HALF;
     
-    // We separate drawing coords from physical coords so dead bodies don't block shots
     this.drawX = this.x;
     this.drawY = this.y;
 
@@ -61,10 +60,10 @@ class Enemy {
     this.burnActive = false;
     this.burnDuration = 0;
     this.burnDamagePerTick = 0;
-    this.lastBurnTick = 0;
+    this.lastBurnTick = Date.now();
 
     // ===== ANIMATION STATE MACHINE =====
-    this.state = 'walk'; // States: 'walk', 'attack', 'hurt', 'dead'
+    this.state = 'walk'; 
     this.currentFrame = 0;
     this.animationTimer = 0;
   }
@@ -110,7 +109,7 @@ class Enemy {
   }
 
   takeDamage(damage) {
-    if (this.state === 'dead') return; // Dead bodies don't take more damage
+    if (this.state === 'dead') return; 
 
     this.hp -= damage;
     
@@ -119,13 +118,11 @@ class Enemy {
       this.state = 'dead';
       this.currentFrame = 0;
       
-      // Move the physical collision box far off-screen so Rice/Pares pass OVER the corpse!
       this.drawX = this.x;
       this.drawY = this.y;
       this.x = -9999; 
       this.y = -9999;
     } else {
-      // Show flinch animation when hit
       this.state = 'hurt';
       this.currentFrame = 0;
     }
@@ -134,7 +131,6 @@ class Enemy {
   update(delta) {
     if (!this.isAlive) return;
 
-    // Keep visual coordinates tied to physical coordinates (unless dead)
     if (this.state !== 'dead') {
       this.drawX = this.x;
       this.drawY = this.y;
@@ -176,24 +172,21 @@ class Enemy {
       }
     }
 
-    // Stop moving if they reach the far left bounds
     if (this.x < -this.width) {
       this.isAlive = false;
     }
 
     // ===== ANIMATION TIMER & FRAME CONFIG =====
-    let maxFrames = 7;
+    let maxFrames = 5; 
     let frameSpeed = 100;
 
     if (this.state === 'dead') { 
-      maxFrames = 5; 
-      frameSpeed = 150; // Slower dramatic death
+      frameSpeed = 150; 
     } else if (this.state === 'hurt') { 
       maxFrames = 1; 
-      frameSpeed = 250; // Flash the hurt frame for 250ms
+      frameSpeed = 250; 
     } else if (this.state === 'attack') { 
-      maxFrames = 3; 
-      frameSpeed = 150; // Attack animation speed
+      frameSpeed = 120; 
     }
 
     this.animationTimer += delta;
@@ -201,102 +194,65 @@ class Enemy {
       this.animationTimer = 0;
       this.currentFrame++;
       
-      // Handle animation endings
       if (this.state === 'dead') {
+        // Stop on the last frame of the death animation
         if (this.currentFrame >= maxFrames) {
-          this.isAlive = false; // Despawn completely and grant Kita
-        }
-      } else if (this.state === 'hurt') {
-        if (this.currentFrame >= maxFrames) {
-          this.state = 'walk'; // Go back to walking after flinching
-          this.currentFrame = 0;
+          this.currentFrame = maxFrames - 1;
         }
       } else {
+        // Loop normally
         this.currentFrame = this.currentFrame % maxFrames;
+        
+        // Return to walk after flinching
+        if (this.state === 'hurt') {
+            this.state = 'walk';
+        }
       }
     }
   }
 
-draw(ctx) {
+  draw(ctx) {
     if (!this.isAlive) return;
-
-    // Force Canvas to draw crisp pixel art without blurry edges
     ctx.imageSmoothingEnabled = false;
 
     const sprite = this.game.assetLoader?.images?.[this.spriteKey];
     
     if (sprite && sprite.complete) {
-      // 7 columns by 3 rows
-      const cols = 7;
+      const cols = 5;
       const rows = 3;
       
-      const exactSw = sprite.width / cols;
-      const exactSh = sprite.height / rows;
+      const sw = sprite.width / cols;
+      const sh = sprite.height / rows;
 
-      // ===== MAP SPRITE GRID TO ANIMATION STATE =====
       let row = 0;
-      let startCol = 0;
-      
       if (this.state === 'dead') { 
-        row = 2; // Bottom row
-        startCol = 0; 
+        row = 2; 
       } else if (this.state === 'hurt') { 
-        row = 1; // Middle row
-        startCol = 1; // Col 1 is the 'flinch' frame
+        row = 2; 
       } else if (this.state === 'attack') { 
-        row = 1; // Middle row
-        startCol = 2; // Cols 2, 3, 4 are the stabbing frames
+        row = 1; 
       } else { 
-        row = 0; // Top row is walking
-        startCol = 0; 
+        row = 0; 
       }
 
-      // Calculate exact start AND end pixels to absolutely prevent drift
-     // Calculate exact start AND end pixels to absolutely prevent drift
-      const sx = Math.floor((startCol + this.currentFrame) * exactSw);
-      const nextSx = Math.floor((startCol + this.currentFrame + 1) * exactSw);
-      const sw = nextSx - sx; 
+      const sx = this.currentFrame * sw;
+      const sy = row * sh;
 
-      const sy = Math.floor(row * exactSh);
-      const nextSy = Math.floor((row + 1) * exactSh);
-      const sh = nextSy - sy;
-
-      // --- ADAPTIVE ANTI-BLEED FIX ---
-      // We change the padding based on what the enemy is currently doing!
-      let padX = 0;
-      let padY = 0;
-
-      if (this.state === 'walk' || this.state === 'hurt') {
-        padX = 6; // Aggressive crop to prevent bleeding while walking
-        padY = 4;
-      } else if (this.state === 'attack') {
-        padX = 1; // Barely any crop so the extended knife arm isn't chopped off!
-        padY = 2;
-      } else if (this.state === 'dead') {
-        padX = 0; // No crop so the lying down animation fits perfectly
-        padY = 0;
-      }
-
-      const cropX = sx + padX;
-      const cropY = sy + padY;
-      const cropW = sw - (padX * 2);
-      const cropH = sh - (padY * 2);
-
-      const targetHeight = this.type === 'cockroach' ? 70 : 110; 
-      const scale = targetHeight / cropH;
-      const drawW = cropW * scale;
-      const drawH = targetHeight;
+      // --- NEW ASPECT RATIO FIX ---
+      // Scale the width proportionally to the target height so they don't look slim!
+      const scale = this.height / sh;
+      const drawW = sw * scale;
+      const drawH = this.height;
       
       ctx.save();
-      // Use drawX/drawY so corpses stay exactly where they died
+      // Translate to bottom-center of the collision box
       ctx.translate(this.drawX + this.width / 2, this.drawY + this.height);
-      
-      ctx.scale(-1, 1); // Flip horizontally!
+      ctx.scale(-1, 1); // Flip horizontally
 
-      // Draw using the aggressively cropped coordinates
-      ctx.drawImage(sprite, cropX, cropY, cropW, cropH, -drawW / 2, -drawH, drawW, drawH);
+      // Draw using the new proportional drawW
+      ctx.drawImage(sprite, sx, sy, sw, sh, -drawW / 2, -drawH, drawW, drawH);
       
-      // Draw Burn/Slow Tint
+      // Status Tints
       if (this.burnActive) {
         ctx.fillStyle = 'rgba(255, 100, 0, 0.4)';
         ctx.globalCompositeOperation = 'source-atop';
@@ -315,30 +271,14 @@ draw(ctx) {
       ctx.fillRect(this.drawX, this.drawY, this.width, this.height);
     }
 
-    // Only draw HP bars and icons on LIVING enemies
+    // Draw HP bars
     if (this.state !== 'dead') {
       ctx.fillStyle = '#00FF00';
       const barWidth = this.width * (this.hp / this.maxHp);
       ctx.fillRect(this.drawX, this.drawY - 12, barWidth, 5);
-
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 1;
       ctx.strokeRect(this.drawX, this.drawY - 12, this.width, 5);
-
-      let iconX = this.drawX + this.width / 2 - 8;
-      if (this.slowActive) {
-        ctx.fillStyle = '#0096FF';
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('S', iconX + 4, this.drawY - 16);
-        iconX += 10;
-      }
-      if (this.burnActive) {
-        ctx.fillStyle = '#FF6400';
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('B', iconX + 4, this.drawY - 16);
-      }
     }
   }
 }

@@ -24,14 +24,19 @@ class AssetLoader {
       bg_legazpi: 'assets/backgrounds/legazpiVillage.jpg',
 
       // Sprites
-      player_idle: 'assets/animations/jo.png',
-      player_hold: 'assets/animations/jo/Jo Catapult.png',
+      player: 'assets/animations/jo1.png', // <-- Updated to PNG with transparency
+      //player_hold: 'assets/animations/jo/Jo Catapult.png',
       jo_portrait: 'assets/sprites/cartniJO.jpg',
       catapult: 'assets/sprites/catapult.png',
-      enemy_gangster: 'assets/animations/enemy/gangster2.png',
-      enemy_cockroach: 'assets/animations/enemy/ipis1.png',
+      enemy_gangster: 'assets/animations/gangster.png',
+      enemy_cockroach: 'assets/animations/ipis.png',
+      enemy_dog: 'assets/animations/dog.png',
+      enemy_jbhotdog: 'assets/animations/jbhotdog.png',
+      enemy_bikejor: 'assets/animations/bikejor.png',
+      enemy_kitboard: 'assets/animations/kitboard.png',
+      enemy_rex: 'assets/animations/rex.png',
       enemy_rat: 'assets/animations/enemy/rat.png',
-      enemy_dog: 'assets/animations/enemy/dog.png',
+      enemy_student: 'assets/animations/jbhotdog.png',
       boss_inspector: 'assets/sprites/boss_inspector.png',
       boss_vlogger: 'assets/sprites/boss_vlogger.png',
 
@@ -41,6 +46,7 @@ class AssetLoader {
       story_jo_sad: 'assets/sprites/cartniJO.jpg',
 
       // Projectiles
+      projectilesSheet: 'assets/projectiles.png',
       proj_mami: 'assets/sprites/proj_mami.png',
       proj_pares: 'assets/sprites/proj_pares.png',
       proj_cola: 'assets/sprites/proj_cola.png',
