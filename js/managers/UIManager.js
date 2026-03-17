@@ -133,65 +133,62 @@ class UIManager {
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
 
     const lines = CONSTANTS.PROLOGUE_LINES;
-    const maxIndex = Math.min(this.prologueIndex, lines.length);
+    const maxIndex = Math.min(this.prologueIndex, lines.length - 1);
     
-    const cols = 4;
+    const cols = 2;
     const rows = 2;
-    const panelWidth = 280;
-    const panelHeight = 260;
+    const panelsPerPage = cols * rows;
+    const currentPage = Math.floor(maxIndex / panelsPerPage);
+    const startIdx = currentPage * panelsPerPage;
+    
+    const panelWidth = 600;
+    const panelHeight = 300;
     const gapX = (this.game.canvas.width - (cols * panelWidth)) / (cols + 1);
-    const gapY = (this.game.canvas.height - 120 - (rows * panelHeight)) / (rows + 1);
+    const gapY = (this.game.canvas.height - 110 - (rows * panelHeight)) / (rows + 1);
     
     this._drawComicText(ctx, "THE STORY OF JO", this.game.canvas.width / 2, 45, 48, '#f1c40f');
 
     ctx.textBaseline = 'middle';
 
-    for (let i = 0; i <= maxIndex; i++) {
+    for (let i = startIdx; i <= maxIndex; i++) {
       if (i >= lines.length) break;
 
-      const col = i % cols;
-      const row = Math.floor(i / cols);
+      const localIdx = i - startIdx;
+      const col = localIdx % cols;
+      const row = Math.floor(localIdx / cols);
       const x = gapX + col * (panelWidth + gapX);
-      const y = 70 + gapY + row * (panelHeight + gapY);
+      const y = 65 + gapY + row * (panelHeight + gapY);
       
       this._drawComicBox(ctx, x, y, panelWidth, panelHeight, '#fff');
       
       // Determine which image to show based on story point
-      let storyImage = null;
-      let label = "NARRATOR:";
-      
-      if (i < 2) {
-        storyImage = this.game.assetLoader.images.story_caloocan;
-      } else if (i < 5) {
-        storyImage = this.game.assetLoader.images.story_villains;
-        label = "VILLAIN:";
-      } else {
-        storyImage = this.game.assetLoader.images.story_jo_sad;
-        label = "JO:";
-      }
+      const storyImage = this.game.assetLoader.images[`story${i + 1}`];
 
       if (storyImage && storyImage.complete) {
         ctx.save();
         ctx.beginPath();
-        ctx.rect(x + 5, y + 5, panelWidth - 10, panelHeight / 2 - 10);
+        const imgAreaH = panelHeight * 0.75;
+        ctx.rect(x + 5, y + 5, panelWidth - 10, imgAreaH - 10);
         ctx.clip();
         
-        // Fill logic for various aspect ratios
-        const scale = Math.max(panelWidth / storyImage.width, (panelHeight / 2) / storyImage.height);
+        // Fit logic: maximize width while keeping faces visible
+        const scale = Math.min((panelWidth - 10) / storyImage.width, (imgAreaH - 10) / storyImage.height);
         const drawW = storyImage.width * scale;
         const drawH = storyImage.height * scale;
-        ctx.drawImage(storyImage, x + (panelWidth - drawW) / 2, y + (panelHeight / 2 - drawH) / 2, drawW, drawH);
+        
+        // Center the image in the panel
+        ctx.drawImage(storyImage, x + 5 + (panelWidth - 10 - drawW) / 2, y + 5 + (imgAreaH - 10 - drawH) / 2, drawW, drawH);
         
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
-        ctx.strokeRect(x + 5, y + 5, panelWidth - 10, panelHeight / 2 - 10);
+        ctx.strokeRect(x + 5, y + 5, panelWidth - 10, imgAreaH - 10);
         ctx.restore();
       }
       
       // Dialogue/Caption bubble
       ctx.fillStyle = '#fffae6';
-      const bubbleY = y + panelHeight / 2 + 10;
-      const bubbleH = panelHeight / 2 - 20;
+      const bubbleY = y + panelHeight * 0.75 + 5;
+      const bubbleH = panelHeight * 0.25 - 10;
       ctx.fillRect(x + 10, bubbleY, panelWidth - 20, bubbleH);
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 1;
@@ -202,7 +199,6 @@ class UIManager {
       ctx.font = 'bold 15px "Comic Sans MS", "Impact", sans-serif';
       ctx.textAlign = 'center';
       const text = lines[i].toUpperCase();
-      // Centering Y: Start of bubble + half bubble height
       this._wrapText(ctx, text, x + panelWidth / 2, bubbleY + bubbleH / 2, panelWidth - 50, 20);
     }
     

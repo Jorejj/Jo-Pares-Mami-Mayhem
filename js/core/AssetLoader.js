@@ -39,8 +39,18 @@ class AssetLoader {
       enemy_student: 'assets/animations/jbhotdog.png',
       boss_inspector: 'assets/sprites/boss_inspector.png',
       boss_vlogger: 'assets/sprites/boss_vlogger.png',
+      newDaga1: 'assets/animations/newDaga1.png',
+      ian: 'assets/animations/ian.png',
 
       // Story/Prologue Assets
+      story1: 'assets/story/story1.png',
+      story2: 'assets/story/story2.png',
+      story3: 'assets/story/story3.png',
+      story4: 'assets/story/story4.png',
+      story5: 'assets/story/story5.png',
+      story6: 'assets/story/story6.png',
+      story7: 'assets/story/story7.png',
+      story8: 'assets/story/story8.png',
       story_caloocan: 'assets/animations/enemy/Gemini_Generated_Image_vjuv9gvjuv9gvjuv.png',
       story_villains: 'assets/animations/enemy/Gemini_Generated_Image_z5q5nez5q5nez5q5 (1).png',
       story_jo_sad: 'assets/sprites/cartniJO.jpg',

@@ -137,14 +137,14 @@ const CONSTANTS = {
 
   // ===== PROLOGUE STORY =====
   PROLOGUE_LINES: [
-    "Jo and his father ran the most legendary paresan in Caloocan...",
-    "Famous for 'sabaw' so good it could cure a heartbreak.",
-    "But a jealous inspector and a clout-chasing vlogger...",
-    "Filmed a fake video claiming the secret ingredient was 'magic'.",
-    "The viral video caused an outcry. The government shut them down.",
-    "Jo's father hung up his apron. Heartbroken.",
-    "But Jo grabbed his heavy-duty ladle...",
-    "And swore to cook his way back to the top."
+    "Jo and his father ran the legendary paresan in Caloocan, famous for sabaw that could cure heartbreak.",
+    "But a jealous inspector and a clout-chasing vlogger filmed a fake video claiming the secret was 'magic'.",
+    "The viral outcry shut them down. Jo's father hung up his apron, truly heartbroken.",
+    "But Jo grabbed his heavy-duty ladle and swore to cook his way back to the top!",
+    "He trained day and night, mastering the art of the perfect broth and the crispiest garlic.",
+    "Armed with his trusty cart and a stash of secret ingredients, he set out to clear his family name.",
+    "From the streets of Monumento to the heart of Intramuros, no one will stand in his way!",
+    "It's time to show the city that Jo's Pares is the real deal. Let the mayhem begin!"
   ],
 
   // ===== PHYSICS =====

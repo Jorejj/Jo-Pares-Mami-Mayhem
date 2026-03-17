@@ -179,13 +179,15 @@ _getWaveEnemies() {
 
     // The full pool of all your custom enemies
     const enemyPool = [
-      'gangster', 
-      'cockroach', 
-      'dog', 
-      'jbhotdog', 
-      'bikejor', 
-      'kitboard', 
-      'rex'
+      // 'gangster', 
+      // 'cockroach', 
+      // 'dog', 
+      // 'jbhotdog', 
+      // 'bikejor', 
+      // 'kitboard', 
+      // 'rex',
+      // 'newDaga1',
+      'ian',
     ];
 
     for (let i = 0; i < enemyCount; i++) {
