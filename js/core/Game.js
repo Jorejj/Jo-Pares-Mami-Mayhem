@@ -4,7 +4,7 @@
 class Game {
   constructor(canvas) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas.getContext("2d");
 
     // ===== MANAGERS & LOADERS =====
     this.assetLoader = new AssetLoader();
@@ -34,16 +34,16 @@ class Game {
 
     // ===== CATAPULT LISTENER (PLACEHOLDER) =====
     // TODO: Integrate with Player._fire() method when drag release detected
-    window.addEventListener('fireProjectile', (e) => {
+    window.addEventListener("fireProjectile", (e) => {
       // Placeholder: Actual firing logic is in Player._fire()
-      console.log('[Game] fireProjectile event received (placeholder)');
+      console.log("[Game] fireProjectile event received (placeholder)");
     });
 
     // ===== PARES SPLIT LISTENER (PLACEHOLDER) =====
     // TODO: Handle Pares apex splitting via Physics.isApexReached()
-    window.addEventListener('spawnParesSplit', (e) => {
+    window.addEventListener("spawnParesSplit", (e) => {
       // Placeholder: Actual split logic is in Projectile._splitAtApex()
-      console.log('[Game] spawnParesSplit event received (placeholder)');
+      console.log("[Game] spawnParesSplit event received (placeholder)");
     });
   }
 
@@ -53,7 +53,7 @@ class Game {
    * @private
    */
   _bindFSMInput() {
-    window.addEventListener('keydown', (e) => {
+    window.addEventListener("keydown", (e) => {
       const key = e.key.toLowerCase();
 
       // Debounce key repeats
@@ -62,25 +62,25 @@ class Game {
 
       // ===== MAIN_MENU =====
       if (this.currentState === CONSTANTS.STATES.MAIN_MENU) {
-        if (key === '1') {
+        if (key === "1") {
           this.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
-        } else if (key === '2') {
-          alert('Load Game not yet implemented.');
-        } else if (key === '3') {
-          alert('Thanks for playing!');
+        } else if (key === "2") {
+          alert("Load Game not yet implemented.");
+        } else if (key === "3") {
+          alert("Thanks for playing!");
           location.reload();
         }
       }
 
       // ===== DIFFICULTY_SELECT =====
       else if (this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
-        if (key === 'e') {
+        if (key === "e") {
           this.currentDifficulty = CONSTANTS.DIFFICULTY.easy;
           this.currentState = CONSTANTS.STATES.PROLOGUE;
-        } else if (key === 'm') {
+        } else if (key === "m") {
           this.currentDifficulty = CONSTANTS.DIFFICULTY.medium;
           this.currentState = CONSTANTS.STATES.PROLOGUE;
-        } else if (key === 'h') {
+        } else if (key === "h") {
           this.currentDifficulty = CONSTANTS.DIFFICULTY.hard;
           this.currentState = CONSTANTS.STATES.PROLOGUE;
         }
@@ -88,7 +88,7 @@ class Game {
 
       // ===== PROLOGUE =====
       else if (this.currentState === CONSTANTS.STATES.PROLOGUE) {
-        if (key === ' ' || key === 'enter') {
+        if (key === " " || key === "enter") {
           this.uiManager.prologueIndex++;
           if (this.uiManager.prologueIndex >= CONSTANTS.PROLOGUE_LINES.length) {
             this.currentState = CONSTANTS.STATES.ARSENAL_SELECT;
@@ -100,35 +100,35 @@ class Game {
 
       // ===== ARSENAL_SELECT =====
       else if (this.currentState === CONSTANTS.STATES.ARSENAL_SELECT) {
-        if (key === '1') {
-          this.player.selectWeapon('mami');
-        } else if (key === '2' && this.player.arsenal['pares'].unlocked) {
-          this.player.selectWeapon('pares');
-        } else if (key === '3' && this.player.arsenal['rice'].unlocked) {
-          this.player.selectWeapon('rice');
+        if (key === "1") {
+          this.player.selectWeapon("mami");
+        } else if (key === "2" && this.player.arsenal["pares"].unlocked) {
+          this.player.selectWeapon("pares");
+        } else if (key === "3" && this.player.arsenal["rice"].unlocked) {
+          this.player.selectWeapon("rice");
         }
 
-        if (key === 'enter') {
+        if (key === "enter") {
           this.currentState = CONSTANTS.STATES.PLAYING;
         }
       }
 
       // ===== PLAYING =====
       else if (this.currentState === CONSTANTS.STATES.PLAYING) {
-        if (key === '4' && this.player.arsenal['CHILI_SAUCE'].isUnlocked) {
-           // Assuming WaveManager holds your active enemies
-           this.waveManager.enemies.forEach(e => e.applyBurn(300));
-           this.player.triggerCooldown("CHILI_SAUCE");
+        if (key === "4" && this.player.arsenal["CHILI_SAUCE"].isUnlocked) {
+          // Assuming WaveManager holds your active enemies
+          this.waveManager.enemies.forEach((e) => e.applyBurn(300));
+          this.player.triggerCooldown("CHILI_SAUCE");
         }
-        if (key === '5' && this.player.arsenal['CALAMANSI'].isUnlocked) {
-           this.waveManager.enemies.forEach(e => e.applySlow(300, 0.4));
-           this.player.triggerCooldown("CALAMANSI");
+        if (key === "5" && this.player.arsenal["CALAMANSI"].isUnlocked) {
+          this.waveManager.enemies.forEach((e) => e.applySlow(300, 0.4));
+          this.player.triggerCooldown("CALAMANSI");
         }
       }
 
       // ===== VICTORY =====
       else if (this.currentState === CONSTANTS.STATES.VICTORY) {
-        if (key === 'enter') {
+        if (key === "enter") {
           this.currentState = CONSTANTS.STATES.SHOP;
           this.shopManager.open();
         }
@@ -136,15 +136,15 @@ class Game {
 
       // ===== SHOP =====
       else if (this.currentState === CONSTANTS.STATES.SHOP) {
-        if (key === '1') {
+        if (key === "1") {
           this.shopManager.handleWeaponSelection(1);
-        } else if (key === '2') {
+        } else if (key === "2") {
           this.shopManager.handleWeaponSelection(2);
-        } else if (key === '3') {
+        } else if (key === "3") {
           this.shopManager.handleWeaponSelection(3);
         }
 
-        if (key === 'enter') {
+        if (key === "enter") {
           this.shopManager.close();
           this.currentState = CONSTANTS.STATES.ARSENAL_SELECT;
           this.waveManager.currentWave++;
@@ -154,14 +154,14 @@ class Game {
 
       // ===== GAMEOVER =====
       else if (this.currentState === CONSTANTS.STATES.GAMEOVER) {
-        if (key === 'r') {
+        if (key === "r") {
           location.reload();
         }
       }
     });
 
     // Reset debounce on key up
-    window.addEventListener('keyup', (e) => {
+    window.addEventListener("keyup", (e) => {
       this.lastKeyPressState[e.key.toLowerCase()] = false;
     });
   }
@@ -171,7 +171,7 @@ class Game {
    * @private
    * @returns {Array} Array of enemy types to spawn
    */
-_getWaveEnemies() {
+  _getWaveEnemies() {
     const waveNum = this.waveManager.currentWave;
     // Gradually increase total number of enemies per wave (starts at 5, maxes at 15)
     const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
@@ -179,20 +179,21 @@ _getWaveEnemies() {
 
     // The full pool of all your custom enemies
     const enemyPool = [
-      // 'gangster', 
-      // 'cockroach', 
-      // 'dog', 
-      // 'jbhotdog', 
-      // 'bikejor', 
-      // 'kitboard', 
-      // 'rex',
-      // 'newDaga1',
-      'ian',
+      "gangster",
+      "cockroach",
+      "dog",
+      "jbhotdog",
+      "bikejor",
+      "kitboard",
+      "rex",
+      "newDaga1",
+      "ian",
     ];
 
     for (let i = 0; i < enemyCount; i++) {
       // Pick a completely random enemy from the pool for every single spawn
-      const randomEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+      const randomEnemy =
+        enemyPool[Math.floor(Math.random() * enemyPool.length)];
       enemies.push(randomEnemy);
     }
 
@@ -219,7 +220,10 @@ _getWaveEnemies() {
     if (!this.isRunning) return;
 
     // Cap delta to 100ms to avoid large jumps on first frame or after tab focus
-    const delta = this.lastTimestamp === 0 ? 16 : Math.min(timestamp - this.lastTimestamp, 100);
+    const delta =
+      this.lastTimestamp === 0
+        ? 16
+        : Math.min(timestamp - this.lastTimestamp, 100);
     this.lastTimestamp = timestamp;
 
     this.update(delta);
@@ -267,7 +271,7 @@ _getWaveEnemies() {
     // Update projectiles managed by Player.js
     // (This is now handled by Player.update() which manages this.projectiles)
     // The collision detection is handled in Player.update() against waveManager.enemies
-    
+
     // Check if wave is complete
     if (this.waveManager.isWaveComplete()) {
       this.currentState = CONSTANTS.STATES.VICTORY;
@@ -295,4 +299,3 @@ _getWaveEnemies() {
     if (this.uiManager) this.uiManager.draw(this.ctx);
   }
 }
-
