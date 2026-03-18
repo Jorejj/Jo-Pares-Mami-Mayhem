@@ -16,7 +16,7 @@ const ENEMY_TYPES = {
   boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 80, baseHeight: 160, spriteKey: 'boss_inspector' },
   boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 80, baseHeight: 160, spriteKey: 'boss_vlogger' },
   boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 90, baseHeight: 180, spriteKey: 'boss_mastermind' },
-  newDaga1: { hp: 150, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 90, baseHeight: 180, spriteKey: 'newDaga1' },
+  newDaga1: { hp: 150, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 60, baseHeight: 150, spriteKey: 'newDaga1' },
   ian: { hp: 150, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 90, baseHeight: 180, spriteKey: 'ian' },
 };
 
