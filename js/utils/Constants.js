@@ -13,13 +13,12 @@ const CONSTANTS = {
     MAIN_MENU: 'MAIN_MENU',
     DIFFICULTY_SELECT: 'DIFFICULTY_SELECT',
     PROLOGUE: 'PROLOGUE',
-    ARSENAL_SELECT: 'ARSENAL_SELECT',
+    TUTORIAL: 'TUTORIAL',
     PLAYING: 'PLAYING',
     VICTORY: 'VICTORY',
     SHOP: 'SHOP',
     GAMEOVER: 'GAMEOVER'
   },
-
   // ===== DIFFICULTY SETTINGS =====
   DIFFICULTY: {
     easy:   { hpMult: 0.75, speedMult: 0.8,  label: 'EASY' },
@@ -145,6 +144,30 @@ const CONSTANTS = {
     "Armed with his trusty cart and a stash of secret ingredients, he set out to clear his family name.",
     "From the streets of Monumento to the heart of Intramuros, no one will stand in his way!",
     "It's time to show the city that Jo's Pares is the real deal. Let the mayhem begin!"
+  ],
+
+  // ===== TUTORIAL STEPS =====
+  TUTORIAL_STEPS: [
+    {
+      title: "HOW TO PLAY",
+      text: "DRAG AND RELEASE your mouse or touch on Jo's catapult to aim and fire your delicious projectiles!",
+      image: "jo1"
+    },
+    {
+      title: "SWITCH WEAPONS",
+      text: "Press [1], [2], or [3] to switch between MAMI, PARES, and RICE. Each has different damage and speed!",
+      image: "jo1_5"
+    },
+    {
+      title: "SPECIAL ITEMS",
+      text: "Press [4] for CALAMANSI (Slow) or [5] for CHILI (Burn) once you unlock them in the shop!",
+      image: "jo"
+    },
+    {
+      title: "YOUR MISSION",
+      text: "Defend your Pares Cart from hungry gangsters and pests. Don't let them touch you!",
+      image: "cartniJO"
+    }
   ],
 
   // ===== PHYSICS =====

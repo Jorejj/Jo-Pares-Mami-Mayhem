@@ -24,7 +24,7 @@ class AssetLoader {
       bg_legazpi: 'assets/backgrounds/legazpiVillage.jpg',
 
       // Sprites
-      player: 'assets/animations/jo1.png', // <-- Updated to PNG with transparency
+      player: 'assets/animations/jo2.png', // <-- Updated to PNG with transparency
       //player_hold: 'assets/animations/jo/Jo Catapult.png',
       jo_portrait: 'assets/sprites/cartniJO.jpg',
       catapult: 'assets/sprites/catapult.png',

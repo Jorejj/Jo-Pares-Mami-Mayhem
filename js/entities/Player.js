@@ -256,7 +256,7 @@ class Player {
     
     this.projectiles.push(new Projectile(this.game, startX, startY, vx, vy, this.selectedWeapon, weaponData.damage, weaponData.level));
   }
-
+  
   draw(ctx) {
     const sprite = this.game.assetLoader?.images?.player; 
 
