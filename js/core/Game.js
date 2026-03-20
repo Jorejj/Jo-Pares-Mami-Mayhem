@@ -129,13 +129,8 @@ class Game {
       else if (this.currentState === CONSTANTS.STATES.PLAYING) {
         if (this.uiManager.showInGameTutorial) return; // Prevent playing while tutorial is on
 
-        if (key === '4' && this.player.arsenal['CHILI_SAUCE'].isUnlocked) {
-           this.waveManager.enemies.forEach(e => e.applyBurn(300));
-           this.player.triggerCooldown("CHILI_SAUCE");
-        }
-        if (key === "5" && this.player.arsenal["CALAMANSI"].isUnlocked) {
-          this.waveManager.enemies.forEach((e) => e.applySlow(300, 0.4));
-          this.player.triggerCooldown("CALAMANSI");
+        if (key === 'p') {
+          this.uiManager._togglePause();
         }
       }
 
@@ -149,18 +144,13 @@ class Game {
 
       // ===== SHOP =====
       else if (this.currentState === CONSTANTS.STATES.SHOP) {
-        if (key === "1") {
-          this.shopManager.handleWeaponSelection(1);
-        } else if (key === "2") {
-          this.shopManager.handleWeaponSelection(2);
-        } else if (key === "3") {
-          this.shopManager.handleWeaponSelection(3);
+        if (key >= "1" && key <= "5") {
+          this.shopManager.handleSelection(parseInt(key));
         }
 
         if (key === "enter") {
           this.shopManager.close();
           this.currentState = CONSTANTS.STATES.ARSENAL_SELECT;
-          this.waveManager.currentWave++;
           this.waveManager.startWave(this._getWaveEnemies());
         }
       }
@@ -232,9 +222,17 @@ class Game {
     // Sync Wave
     this.waveManager.currentWave = state.currentLevel || 1;
     
-    // Jump to Shop or Arsenal (Playing)
-    this.currentState = CONSTANTS.STATES.SHOP;
-    this.shopManager.open();
+    // Restore exact state
+    const savedState = state.currentGameState || CONSTANTS.STATES.SHOP;
+    this.currentState = savedState;
+
+    if (savedState === CONSTANTS.STATES.SHOP) {
+      this.shopManager.open();
+    } else if (savedState === CONSTANTS.STATES.PLAYING) {
+      this.waveManager.startWave(this._getWaveEnemies());
+    } else if (savedState === CONSTANTS.STATES.VICTORY) {
+      // Stay on victory screen, but ensure HUD shows
+    }
   }
 
   /**
@@ -263,8 +261,8 @@ class Game {
     // Update managers (UI always updates for prologue timer)
     if (this.uiManager) this.uiManager.update(delta);
 
-    // PAUSE GAMEPLAY during In-Game Tutorial
-    if (this.uiManager.showInGameTutorial && this.currentState === CONSTANTS.STATES.PLAYING) {
+    // PAUSE GAMEPLAY during In-Game Tutorial or Manual Pause
+    if ((this.uiManager.showInGameTutorial || this.uiManager.isPaused) && this.currentState === CONSTANTS.STATES.PLAYING) {
       return; 
     }
 
@@ -295,6 +293,7 @@ class Game {
     // Check if wave is complete
     if (this.waveManager.isWaveComplete()) {
       this.currentState = CONSTANTS.STATES.VICTORY;
+      this.waveManager.currentWave++; // Increment here so Save knows we are on the NEXT wave
     }
   }
 

@@ -154,7 +154,7 @@ class Projectile {
         const dist = Physics.getDistance(this.x, this.y, enemyCenterX, enemyCenterY);
 
         if (dist <= this.splashRadius && !enemy.burnActive) {
-          enemy.applyBurnStatus(1000, tickDamage); 
+          enemy.applyBurnStatus(3000, tickDamage); 
         }
       });
     }
@@ -239,11 +239,40 @@ class Projectile {
 
     // Draw splash radius indicator for Rice projectiles
     if (this.type === 'rice' && this.splashRadius > 0) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.lineWidth = 1;
+      const currentRadius = this.splashRadius + (this.level * 10);
+      
+      // 1. OUTER GLOW AURA (Heat effect)
+      const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, currentRadius);
+      gradient.addColorStop(0, 'rgba(255, 100, 0, 0.3)');
+      gradient.addColorStop(0.5, 'rgba(255, 200, 0, 0.1)');
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      
+      ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.splashRadius + (this.level * 10), 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. DASHED BORDER (Range indicator)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.setLineDash([]); // Reset dash
+
+      // 3. STEAM PARTICLES (Floating up)
+      if (this.game.gameFrame % 5 === 0) {
+        // We can just draw small white circles that look like steam
+        for (let i = 0; i < 3; i++) {
+          const offsetX = (Math.random() - 0.5) * (currentRadius * 0.8);
+          const offsetY = (Math.random() - 0.5) * (currentRadius * 0.8);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.beginPath();
+          ctx.arc(this.x + offsetX, this.y + offsetY - (this.game.gameFrame % 20), 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     }
   }
 }

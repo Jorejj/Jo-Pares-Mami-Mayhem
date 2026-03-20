@@ -53,21 +53,21 @@ const CONSTANTS = {
     mami: {
       unlocked: true,
       baseDamage: 25,
-      cooldown: 0,
+      cooldown: 1200,
       unlockCost: 0,
       projectileSpeed: 8
     },
     pares: {
       unlocked: false,
       baseDamage: 40,
-      cooldown: 1000,
+      cooldown: 2000,
       unlockCost: 150,
       projectileSpeed: 6
     },
     rice: {
       unlocked: false,
       baseDamage: 15,
-      cooldown: 500,
+      cooldown: 2500,
       unlockCost: 100,
       projectileSpeed: 10
     },

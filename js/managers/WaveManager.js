@@ -4,7 +4,7 @@
 class WaveManager {
   constructor(game) {
     this.game = game;
-    this.currentWave = 0;
+    this.currentWave = 1;
     this.enemies = [];
     this.waveEnemies = [];
     this.spawnTimer = 0;

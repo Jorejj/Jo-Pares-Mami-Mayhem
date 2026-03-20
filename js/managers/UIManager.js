@@ -8,12 +8,17 @@ class UIManager {
     this.tutorialIndex = 0;
     this.showInGameTutorial = false;
     this.isSettingsOpen = false;
+    this.isPaused = false;
     this._setupHtmlButtons();
   }
 
   _setupHtmlButtons() {
     const actions = {
-      'btn-new-game': () => { this.game.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT; },
+      'btn-new-game': () => { 
+        this.game.saveManager.reset(); // Reset to fresh state
+        this.game.waveManager.currentWave = 1; // RESET TO WAVE 1
+        this.game.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT; 
+      },
       'btn-load-game': () => { this.game.loadSavedGame(); },
       'btn-quit': () => location.reload(),
       'btn-diff-easy': () => this._startNewGame('easy'),
@@ -24,28 +29,40 @@ class UIManager {
       'btn-rice': () => this.game.player.selectWeapon('rice'),
       'btn-tut-next': () => this._advanceTutorial(),
       'btn-visit-shop': () => { this.game.currentState = CONSTANTS.STATES.SHOP; this.game.shopManager.open(); },
-      'btn-shop-mami': () => { this.game.shopManager.handleWeaponSelection(1); this._updateShopUI(); },
-      'btn-shop-pares': () => { this.game.shopManager.handleWeaponSelection(2); this._updateShopUI(); },
-      'btn-shop-rice': () => { this.game.shopManager.handleWeaponSelection(3); this._updateShopUI(); },
+      'btn-shop-mami': () => { this.game.shopManager.handleSelection(1); this._updateShopUI(); },
+      'btn-shop-pares': () => { this.game.shopManager.handleSelection(2); this._updateShopUI(); },
+      'btn-shop-rice': () => { this.game.shopManager.handleSelection(3); this._updateShopUI(); },
+      'btn-shop-calamansi': () => { this.game.shopManager.handleSelection(4); this._updateShopUI(); },
+      'btn-shop-chili': () => { this.game.shopManager.handleSelection(5); this._updateShopUI(); },
       'btn-shop-done': () => this._finishShopping(),
       'btn-restart': () => location.reload(),
       
+      // Pause Controls
+      'btn-pause-toggle': () => { this._togglePause(); },
+      'btn-resume': () => { this._togglePause(); },
+      'btn-pause-home': () => { this.isPaused = false; this.game.currentState = CONSTANTS.STATES.MAIN_MENU; },
+
       // Settings Controls
       'btn-settings-open': () => { this.isSettingsOpen = true; },
       'btn-settings-close': () => { this.isSettingsOpen = false; },
       'btn-settings-x': () => { this.isSettingsOpen = false; },
       'btn-back-home': () => { 
-        if(confirm("Return to Main Menu? Unsaved progress will be lost.")) {
-          this.isSettingsOpen = false;
-          this.game.currentState = CONSTANTS.STATES.MAIN_MENU;
-        }
+        this.isSettingsOpen = false;
+        this.game.currentState = CONSTANTS.STATES.MAIN_MENU;
       },
       'btn-save-game': () => { 
         this.game.saveManager.state.kita = this.game.player.kita;
         this.game.saveManager.state.currentLevel = this.game.waveManager.currentWave;
+        this.game.saveManager.state.currentGameState = this.game.currentState;
+        this.game.saveManager.state.hasSeenTutorial = this.game.saveManager.state.hasSeenTutorial;
         // Save weapon levels
         for(const [key, data] of Object.entries(this.game.player.arsenal)) {
           this.game.saveManager.state.weaponLevels[key] = data.level;
+        }
+        // Save specials
+        this.game.saveManager.state.specialUnlocks = {};
+        for(const [key, data] of Object.entries(this.game.player.specials)) {
+          this.game.saveManager.state.specialUnlocks[key] = data.unlocked;
         }
         this.game.saveManager.save(); 
         alert("Game Saved!"); 
@@ -103,7 +120,6 @@ class UIManager {
 
   _finishShopping() {
     this.game.shopManager.close();
-    this.game.waveManager.currentWave++;
     this._startPlaying();
   }
 
@@ -126,6 +142,36 @@ class UIManager {
     this._showScreen('screen-shop', state === CONSTANTS.STATES.SHOP && !this.isSettingsOpen);
     this._showScreen('screen-gameover', state === CONSTANTS.STATES.GAMEOVER && !this.isSettingsOpen);
     this._showScreen('screen-settings', this.isSettingsOpen);
+    this._showScreen('screen-pause', this.isPaused && !this.isSettingsOpen);
+
+    // Update Load Game button state
+    if (state === CONSTANTS.STATES.MAIN_MENU) {
+      const loadBtn = document.getElementById('btn-load-game');
+      if (loadBtn) {
+        const hasSave = localStorage.getItem(this.game.saveManager._key);
+        loadBtn.disabled = !hasSave;
+        loadBtn.style.opacity = hasSave ? "1" : "0.5";
+        loadBtn.style.cursor = hasSave ? "pointer" : "not-allowed";
+      }
+    }
+
+    // Show/Hide Pause/Settings buttons based on state
+    const settingsContainer = document.getElementById('settings-btn-container');
+    if (settingsContainer) {
+      // Hide during menu, difficulty select, and story
+      const showContainer = (
+        state !== CONSTANTS.STATES.MAIN_MENU && 
+        state !== CONSTANTS.STATES.DIFFICULTY_SELECT &&
+        state !== CONSTANTS.STATES.PROLOGUE
+      );
+      settingsContainer.style.display = showContainer ? 'flex' : 'none';
+
+      // Within the container, only show PAUSE button during actual PLAYING state
+      const pauseBtn = document.getElementById('btn-pause-toggle');
+      if (pauseBtn) {
+        pauseBtn.style.display = (state === CONSTANTS.STATES.PLAYING) ? 'flex' : 'none';
+      }
+    }
 
     if (state === CONSTANTS.STATES.PLAYING) this._updateHUDButtons();
     if (state === CONSTANTS.STATES.SHOP) this._updateShopUI();
@@ -170,23 +216,47 @@ class UIManager {
     const player = this.game.player;
     const shop = this.game.shopManager;
     const shopKitaEl = document.getElementById('shop-kita');
-    if (shopKitaEl) shopKitaEl.innerText = `KITA: ${CONSTANTS.CURRENCY_SYMBOL}${player.kita}`;
-    ['mami', 'pares', 'rice'].forEach(w => {
+    if (shopKitaEl) shopKitaEl.innerText = `${CONSTANTS.CURRENCY_SYMBOL}${player.kita}`;
+
+    // Update Weapons
+    ['mami', 'pares', 'rice'].forEach((w, index) => {
       const btn = document.getElementById(`btn-shop-${w}`);
       if (!btn) return;
       const weapon = player.arsenal[w];
       const upgradeCost = shop.getUpgradeCost(w);
       const isMax = weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL;
+
+      let content = `<span class="item-name">[${index + 1}] ${w.toUpperCase()}</span>`;
       if (!weapon.unlocked) {
-        btn.innerHTML = `${w.toUpperCase()} - UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}`;
+        content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}</span>`;
         btn.disabled = player.kita < weapon.baseCost;
       } else if (isMax) {
-        btn.innerHTML = `${w.toUpperCase()} - LVL: ${weapon.level} (MAX)`;
+        content += `<span class="item-price">LVL: ${weapon.level} (MAX)</span>`;
         btn.disabled = true;
       } else {
-        btn.innerHTML = `${w.toUpperCase()} - LVL: ${weapon.level} -> ${weapon.level+1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}`;
+        content += `<span class="item-price">LVL: ${weapon.level} ➔ ${weapon.level + 1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
         btn.disabled = player.kita < upgradeCost;
       }
+      btn.innerHTML = content;
+    });
+
+    // Update Specials
+    ['calamansi', 'chili'].forEach((s, index) => {
+      const btn = document.getElementById(`btn-shop-${s}`);
+      if (!btn) return;
+      const special = player.specials[s];
+      const cost = special.baseCost;
+      const key = index === 0 ? '4' : '5';
+
+      let content = `<span class="item-name">[${key}] ${s.toUpperCase()}</span>`;
+      if (!special.unlocked) {
+        content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
+        btn.disabled = player.kita < cost;
+      } else {
+        content += `<span class="item-price" style="color:#f39c12">UNLOCKED!</span>`;
+        btn.disabled = true;
+      }
+      btn.innerHTML = content;
     });
   }
 
@@ -224,30 +294,52 @@ class UIManager {
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
     const lines = CONSTANTS.PROLOGUE_LINES;
     const maxIndex = Math.min(this.prologueIndex, lines.length - 1);
-    this._drawComicText(ctx, "THE STORY OF JO", this.game.canvas.width / 2, 60, 54, '#f1c40f');
-    const panelW = 800; const panelH = 400;
-    const x = this.game.canvas.width/2 - panelW/2;
-    const y = this.game.canvas.height/2 - panelH/2 - 20;
+    
+    // Draw Title
+    this._drawComicText(ctx, "THE STORY OF JO", this.game.canvas.width / 2, 70, 64, '#f1c40f');
+    
+    // Larger Panel for better visibility (1000x550)
+    const panelW = 1000; 
+    const panelH = 550;
+    const x = this.game.canvas.width / 2 - panelW / 2;
+    const y = this.game.canvas.height / 2 - panelH / 2 + 20;
+    
     this._drawComicBox(ctx, x, y, panelW, panelH, '#fff');
+    
     const storyImage = this.game.assetLoader.images[`story${maxIndex + 1}`];
     if (storyImage && storyImage.complete) {
-      ctx.save(); ctx.beginPath(); ctx.rect(x + 10, y + 10, panelW - 20, panelH * 0.75 - 10); ctx.clip();
-      const scale = Math.max((panelW - 20) / storyImage.width, (panelH * 0.75 - 10) / storyImage.height);
-      const drawW = storyImage.width * scale; const drawH = storyImage.height * scale;
-      ctx.drawImage(storyImage, x + 10 + (panelW - 20 - drawW) / 2, y + 10 + (panelH * 0.75 - 10 - drawH) / 2, drawW, drawH);
-      ctx.restore();
+      // Image area inside the box
+      const imgAreaW = panelW - 40;
+      const imgAreaH = panelH * 0.7 - 20;
+      const imgX = x + 20;
+      const imgY = y + 20;
+      
+      // Use Math.min to ensure the WHOLE image is visible (contain)
+      const scale = Math.min(imgAreaW / storyImage.width, imgAreaH / storyImage.height);
+      const drawW = storyImage.width * scale; 
+      const drawH = storyImage.height * scale;
+      
+      ctx.drawImage(storyImage, imgX + (imgAreaW - drawW) / 2, imgY + (imgAreaH - drawH) / 2, drawW, drawH);
     }
+    
+    // Text background box
+    const textAreaY = y + panelH * 0.7 + 10;
+    const textAreaH = panelH * 0.3 - 30;
     ctx.fillStyle = '#fffae6';
-    ctx.fillRect(x + 10, y + panelH * 0.75 + 5, panelW - 20, panelH * 0.25 - 15);
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-    ctx.strokeRect(x + 10, y + panelH * 0.75 + 5, panelW - 20, panelH * 0.25 - 15);
+    ctx.fillRect(x + 20, textAreaY, panelW - 40, textAreaH);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+    ctx.strokeRect(x + 20, textAreaY, panelW - 40, textAreaH);
+    
+    // Story Text
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 20px "Comic Sans MS", sans-serif';
+    ctx.font = 'bold 24px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'center';
-    this._wrapText(ctx, lines[maxIndex].toUpperCase(), this.game.canvas.width / 2, y + panelH * 0.87, panelW - 60, 28);
-    this._drawComicBox(ctx, this.game.canvas.width / 2 - 200, this.game.canvas.height - 70, 400, 45, '#e74c3c');
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px "Comic Sans MS", sans-serif';
-    ctx.fillText('CLICK ANYWHERE TO CONTINUE', this.game.canvas.width / 2, this.game.canvas.height - 40);
+    this._wrapText(ctx, lines[maxIndex].toUpperCase(), this.game.canvas.width / 2, textAreaY + textAreaH / 2, panelW - 100, 32);
+    
+    // Interaction prompt
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 250, this.game.canvas.height - 65, 500, 50, '#e74c3c');
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 22px "Comic Sans MS", sans-serif';
+    ctx.fillText('CLICK ANYWHERE TO CONTINUE', this.game.canvas.width / 2, this.game.canvas.height - 32);
   }
 
   _drawPlayingHUD(ctx) {
@@ -259,7 +351,7 @@ class UIManager {
     ctx.fillRect(20, 40, 180 * (Math.max(0, this.game.player.hp) / this.game.player.maxHp), 10);
     ctx.strokeRect(20, 40, 180, 10);
     ctx.fillStyle = '#000';
-    ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`, 20, 60);
+    ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${Math.floor(this.game.player.kita)}`, 20, 60);
     ctx.fillText(`WAVE: ${this.game.waveManager.currentWave}`, 20, 80);
     const requiredKills = (this.game.waveManager.currentWave === 1) ? CONSTANTS.WAVE_1_REQUIRED_KILLS : 10;
     ctx.fillText(`KILLS: ${this.game.waveManager.killCount}/${requiredKills}`, 20, 100);
@@ -298,6 +390,13 @@ class UIManager {
     }
     lines.push(line); const startY = y - ((lines.length - 1) * lineHeight) / 2;
     for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], x, startY + i * lineHeight);
+  }
+
+  _togglePause() {
+    if (this.game.currentState !== CONSTANTS.STATES.PLAYING) return;
+    this.isPaused = !this.isPaused;
+    const btn = document.getElementById('btn-pause-toggle');
+    if (btn) btn.innerText = this.isPaused ? '▶️' : '⏸️';
   }
 
   _drawShop(ctx) { /* Handled by HTML overlay */ }

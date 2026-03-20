@@ -78,18 +78,146 @@
 
     #settings-btn-container {
       position: absolute; top: 10px; right: 10px; pointer-events: auto;
+      display: flex; gap: 10px;
     }
-    .settings-btn {
+    .settings-btn, .pause-btn {
       width: 60px; height: 60px; border: 4px solid #000; background: #ecf0f1;
       cursor: pointer; font-size: 30px; display: flex; align-items: center; justify-content: center;
       box-shadow: 4px 4px 0px #000;
     }
+    .pause-btn { background: #f1c40f; }
 
     .volume-container {
       width: 100%; text-align: left; margin-bottom: 20px;
       padding: 10px; border: 2px dashed #000;
     }
     input[type=range] { width: 100%; cursor: pointer; }
+
+    /* PARES MENU BOARD (SHOP) */
+    .pares-menu-board {
+      background: #fdf5e6;
+      border: 8px solid #8b4513;
+      padding: 20px;
+      width: 900px;
+      min-height: 600px;
+      box-shadow: 15px 15px 0px rgba(0,0,0,0.6), inset 0 0 50px rgba(139, 69, 19, 0.1);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .pares-menu-board::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(0deg, rgba(139, 69, 19, 0.03) 0px, rgba(139, 69, 19, 0.03) 1px, transparent 1px, transparent 2px);
+      pointer-events: none;
+    }
+    .menu-header {
+      text-align: center;
+      border-bottom: 4px double #8b4513;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+    }
+    .menu-title {
+      font-size: 58px;
+      color: #d35400;
+      -webkit-text-stroke: 1px #000;
+      text-shadow: 3px 3px 0px #f1c40f;
+      font-weight: 900;
+      margin-bottom: -10px;
+    }
+    .menu-subtitle {
+      font-size: 20px;
+      color: #2c3e50;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    .kita-display {
+      background: #2ecc71;
+      border: 4px solid #000;
+      padding: 10px 20px;
+      align-self: center;
+      display: flex;
+      gap: 15px;
+      box-shadow: 5px 5px 0px #000;
+      margin-bottom: 30px;
+      transform: rotate(-1deg);
+    }
+    .kita-label { font-size: 24px; font-weight: 900; color: #fff; }
+    .kita-amount { font-size: 24px; font-weight: 900; color: #fff; }
+
+    .menu-sections {
+      display: flex;
+      gap: 30px;
+      flex-grow: 1;
+    }
+    .menu-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .section-title {
+      font-size: 28px;
+      color: #c0392b;
+      border-bottom: 3px solid #c0392b;
+      margin-bottom: 15px;
+      font-weight: 900;
+    }
+    .item-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .menu-item-btn {
+      background: #fff;
+      border: 3px solid #000;
+      padding: 15px;
+      text-align: left;
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 4px 4px 0px #000;
+      transition: 0.1s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .menu-item-btn:hover:not(:disabled) {
+      background: #f1c40f;
+      transform: scale(1.02);
+    }
+    .menu-item-btn:disabled {
+      background: #ecf0f1;
+      color: #95a5a6;
+      border-color: #bdc3c7;
+      cursor: not-allowed;
+      box-shadow: 2px 2px 0px #bdc3c7;
+    }
+    .menu-item-btn .item-price {
+      color: #27ae60;
+    }
+    .menu-footer {
+      margin-top: 30px;
+      text-align: center;
+      border-top: 4px double #8b4513;
+      padding-top: 20px;
+    }
+    .footer-hint {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #7f8c8d;
+    }
+
+    .cart {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      pointer-events: none;
+      animation: bobbing 3s ease-in-out infinite;
+    }
   </style>
 </head>
 <body>
@@ -98,6 +226,7 @@
     
     <div id="ui-layer">
       <div id="settings-btn-container">
+        <button id="btn-pause-toggle" class="pause-btn">⏸️</button>
         <button id="btn-settings-open" class="settings-btn">⚙️</button>
       </div>
 
@@ -129,6 +258,14 @@
         </div>
       </div>
 
+      <div id="screen-pause" class="ui-screen">
+        <div class="comic-box">
+          <h1 class="comic-title" style="color:#f1c40f;">GAME PAUSED</h1>
+          <button id="btn-resume" class="menu-btn green">RESUME GAME</button>
+          <button id="btn-pause-home" class="menu-btn red">QUIT TO HOME</button>
+        </div>
+      </div>
+
       <div id="screen-victory" class="ui-screen">
         <div class="comic-box">
           <h1 class="comic-title" style="color:#2ecc71;">WAVE CLEARED!</h1>
@@ -138,15 +275,40 @@
       </div>
 
       <div id="screen-shop" class="ui-screen">
-        <div class="comic-box" style="min-width: 600px;">
-          <h1 class="comic-title" style="font-size:48px; color:#f1c40f;">⚒️ UPGRADE SHOP ⚒️</h1>
-          <p id="shop-kita" style="font-size:24px; margin-bottom:20px; font-weight:900;"></p>
-          <div id="shop-items" style="display:flex; flex-direction:column; gap:10px; margin-bottom:30px;">
-            <button id="btn-shop-mami" class="menu-btn" style="width:100%; text-align:left;"></button>
-            <button id="btn-shop-pares" class="menu-btn" style="width:100%; text-align:left;"></button>
-            <button id="btn-shop-rice" class="menu-btn" style="width:100%; text-align:left;"></button>
+        <div class="pares-menu-board">
+          <div class="menu-header">
+            <h1 class="menu-title">JO'S PARES & MAMI</h1>
+            <p class="menu-subtitle">MENU NG UPGRADE - "THE REAL DEAL"</p>
           </div>
-          <button id="btn-shop-done" class="menu-btn green" style="width:100%;">START NEXT WAVE</button>
+          
+          <div class="kita-display">
+            <span class="kita-label">KITA:</span>
+            <span id="shop-kita" class="kita-amount">₱0</span>
+          </div>
+
+          <div class="menu-sections">
+            <div class="menu-section">
+              <h2 class="section-title">🍜 MGA ULAM (WEAPONS)</h2>
+              <div id="shop-items-weapons" class="item-grid">
+                <button id="btn-shop-mami" class="menu-item-btn"></button>
+                <button id="btn-shop-pares" class="menu-item-btn"></button>
+                <button id="btn-shop-rice" class="menu-item-btn"></button>
+              </div>
+            </div>
+
+            <div class="menu-section">
+              <h2 class="section-title">🌶️ SAWSAWAN (SPECIALS)</h2>
+              <div id="shop-items-specials" class="item-grid">
+                <button id="btn-shop-calamansi" class="menu-item-btn">CALAMANSI (SLOW) - ₱150</button>
+                <button id="btn-shop-chili" class="menu-item-btn">CHILI (BURN) - ₱200</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-footer">
+            <button id="btn-shop-done" class="menu-btn green">LUTO NA! (START NEXT WAVE)</button>
+            <p class="footer-hint">PRESS [1-5] TO UPGRADE | [ENTER] TO CONTINUE</p>
+          </div>
         </div>
       </div>
 

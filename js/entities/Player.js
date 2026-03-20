@@ -74,6 +74,8 @@ class Player {
 
   _bindInput() {
     window.addEventListener('keydown', (e) => {
+      if (this.game.currentState !== CONSTANTS.STATES.PLAYING) return;
+      
       const key = e.key.toLowerCase();
       if (key === '1') this.selectWeapon('mami');
       else if (key === '2' && this.arsenal['pares'].unlocked) this.selectWeapon('pares');
@@ -139,6 +141,17 @@ class Player {
     return true;
   }
 
+  unlockSpecial(specialName) {
+    const special = this.specials[specialName];
+    if (!special || special.unlocked) return false;
+    const cost = special.baseCost;
+    if (this.kita < cost) return false;
+    this.kita -= cost;
+    special.unlocked = true;
+    this.game.saveManager.save();
+    return true;
+  }
+
   upgradeWeapon(weaponName) {
     const weapon = this.arsenal[weaponName];
     if (!weapon || !weapon.unlocked || weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL) return false;
@@ -152,9 +165,36 @@ class Player {
     return true;
   }
 
-  addKita(amount) { this.kita += amount; }
+  addKita(amount) { 
+    this.kita += amount; 
+    console.log(`[Player] Kita added: ${amount}. Total Kita: ${this.kita}`);
+  }
   takeDamage(amount) { this.hp = Math.max(0, this.hp - amount); }
   isDead() { return this.hp <= 0; }
+
+  syncWithSave(state) {
+    if (!state) return;
+    this.kita = state.kita || 0;
+    if (state.weaponLevels) {
+      for (const [weaponKey, level] of Object.entries(state.weaponLevels)) {
+        if (this.arsenal[weaponKey]) {
+          this.arsenal[weaponKey].level = level;
+          this.arsenal[weaponKey].unlocked = true; 
+          const baseStats = CONSTANTS.WEAPON_STATS[weaponKey];
+          if (baseStats) {
+            this.arsenal[weaponKey].damage = baseStats.baseDamage + (level - 1) * 5;
+          }
+        }
+      }
+    }
+    if (state.specialUnlocks) {
+      for (const [specialKey, unlocked] of Object.entries(state.specialUnlocks)) {
+        if (this.specials[specialKey]) {
+          this.specials[specialKey].unlocked = unlocked;
+        }
+      }
+    }
+  }
 
   getCollisionRect() {
     return {
@@ -240,6 +280,7 @@ class Player {
       enemies.forEach(enemy => {
         if (enemy.isAlive && Physics.checkCollision(proj, enemy)) {
           enemy.takeDamage(this.arsenal[proj.type].damage);
+          
           proj.onHit(enemy);
           proj.isActive = false;
         }
@@ -302,14 +343,54 @@ class Player {
 
       const sx = frame * sw;
       const sy = row * sh;
-      
+
       ctx.save();
       ctx.translate(this.x + this.width / 2, this.y + this.height);
-      
+
+      // --- DRAW CART BEHIND PLAYER ---
+      const cartImg = this.game.assetLoader?.images?.jo_cart;
+
+      if (cartImg && cartImg.complete) {
+        const cartW = 550; // Adjust size as needed
+        const cartH = 300;
+        // Position it slightly behind and to the left of Jo
+        ctx.drawImage(cartImg, -this.width * 2.2, -cartH -15, cartW, cartH);
+      }
+
       ctx.drawImage(sprite, sx, sy, sw, sh, -this.width / 2, -this.height, this.width, this.height);
-      
+
+      // --- DRAW TABLE AND CHAIR IN FRONT (BELOW) JO ---
+      const tableImg = this.game.assetLoader?.images?.table;
+      const chairImg = this.game.assetLoader?.images?.chair;
+
+      if (tableImg && tableImg.complete) {
+        const tableW = 100;
+        const tableH = 90;
+        // Positioned slightly in front and below Jo
+        ctx.drawImage(tableImg, 76, -tableH + 60, tableW, tableH);
+      }
+
+      if (chairImg && chairImg.complete) {
+        const chairW = 60;
+        const chairH = 50;
+        // Positioned near the table
+        ctx.drawImage(chairImg, 150, -chairH + 55, chairW, chairH);
+        ctx.drawImage(chairImg, 56, -chairH + 60, chairW, chairH); // Another chair
+      }
+
       ctx.restore();
-    } else {
+
+      // --- DRAW SACKS IN EXACT BOTTOM LEFT CORNER ---
+      const sackImg = this.game.assetLoader?.images?.sack;
+      // Re-define constants for outside restore block
+      const sackWCorner = 350;
+      const sackHCorner = 140;
+
+      if (sackImg && sackImg.complete) {
+        // Sack 1 at the very corner
+        ctx.drawImage(sackImg, 0, this.game.canvas.height - sackHCorner, sackWCorner, sackHCorner);
+      }
+      } else {
       ctx.fillStyle = CONSTANTS.COLORS.PLAYER;
       ctx.fillRect(this.x, this.y, this.width, this.height);
     }
