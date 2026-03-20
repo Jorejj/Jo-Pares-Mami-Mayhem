@@ -171,18 +171,22 @@ class UIManager {
     // Show/Hide Pause/Settings buttons based on state
     const settingsContainer = document.getElementById('settings-btn-container');
     if (settingsContainer) {
-      // Hide during menu, difficulty select, and story
+      // Show during PLAYING, SHOP, VICTORY, GAMEOVER
       const showContainer = (
-        state !== CONSTANTS.STATES.MAIN_MENU && 
-        state !== CONSTANTS.STATES.DIFFICULTY_SELECT &&
-        state !== CONSTANTS.STATES.PROLOGUE
+        state === CONSTANTS.STATES.PLAYING || 
+        state === CONSTANTS.STATES.SHOP ||
+        state === CONSTANTS.STATES.VICTORY ||
+        state === CONSTANTS.STATES.GAMEOVER
       );
-      settingsContainer.style.display = showContainer ? 'flex' : 'none';
+      
+      if (showContainer) settingsContainer.classList.remove('hidden');
+      else settingsContainer.classList.add('hidden');
 
       // Within the container, only show PAUSE button during actual PLAYING state
       const pauseBtn = document.getElementById('btn-pause-toggle');
       if (pauseBtn) {
-        pauseBtn.style.display = (state === CONSTANTS.STATES.PLAYING) ? 'flex' : 'none';
+        if (state === CONSTANTS.STATES.PLAYING) pauseBtn.classList.remove('hidden');
+        else pauseBtn.classList.add('hidden');
       }
     }
 
