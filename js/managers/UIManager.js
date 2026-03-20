@@ -408,8 +408,7 @@ class UIManager {
     ctx.fillStyle = '#000';
     ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${Math.floor(this.game.player.kita)}`, 20, 60);
     ctx.fillText(`WAVE: ${this.game.waveManager.currentWave}`, 20, 80);
-    const requiredKills = (this.game.waveManager.currentWave === 1) ? CONSTANTS.WAVE_1_REQUIRED_KILLS : 10;
-    ctx.fillText(`KILLS: ${this.game.waveManager.killCount}/${requiredKills}`, 20, 100);
+const requiredKills = (this.game.waveManager.currentWave === 1) ? CONSTANTS.WAVE_1_REQUIRED_KILLS : CONSTANTS.DEFAULT_REQUIRED_KILLS_PER_WAVE;
     const levelData = this.game.levelManager.getLevelData();
     if (levelData) {
       ctx.textAlign = 'center';
