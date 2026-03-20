@@ -58,10 +58,15 @@ class UIManager {
         this.game.saveManager.state.currentLevel = this.game.waveManager.currentWave;
         this.game.saveManager.state.currentGameState = this.game.currentState;
         this.game.saveManager.state.hasSeenTutorial = this.game.saveManager.state.hasSeenTutorial;
-        // Save weapon levels
+        
+        // Save weapon levels AND unlocks
+        this.game.saveManager.state.weaponLevels = {};
+        this.game.saveManager.state.weaponUnlocks = {};
         for(const [key, data] of Object.entries(this.game.player.arsenal)) {
           this.game.saveManager.state.weaponLevels[key] = data.level;
+          this.game.saveManager.state.weaponUnlocks[key] = data.unlocked;
         }
+        
         // Save specials
         this.game.saveManager.state.specialUnlocks = {};
         for(const [key, data] of Object.entries(this.game.player.specials)) {
@@ -398,22 +403,32 @@ class UIManager {
   }
 
   _drawPlayingHUD(ctx) {
-    this._drawComicBox(ctx, 10, 10, 220, 120, '#fff', '#000');
+    this._drawComicBox(ctx, 10, 10, 220, 130, '#fff', '#000');
     ctx.fillStyle = '#000'; ctx.font = 'bold 18px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    
+    // Health Info
     ctx.fillText(`JO HP: ${Math.floor(this.game.player.hp)}/${this.game.player.maxHp}`, 20, 20);
     ctx.fillStyle = '#e74c3c';
     ctx.fillRect(20, 40, 180 * (Math.max(0, this.game.player.hp) / this.game.player.maxHp), 10);
     ctx.strokeRect(20, 40, 180, 10);
+    
+    // Stats Info
     ctx.fillStyle = '#000';
     ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${Math.floor(this.game.player.kita)}`, 20, 60);
     ctx.fillText(`WAVE: ${this.game.waveManager.currentWave}`, 20, 80);
-const requiredKills = (this.game.waveManager.currentWave === 1) ? CONSTANTS.WAVE_1_REQUIRED_KILLS : CONSTANTS.DEFAULT_REQUIRED_KILLS_PER_WAVE;
+    
+    // Kill Count Info
+    const kills = this.game.waveManager.killCount;
+    const total = this.game.waveManager.waveEnemies.length;
+    ctx.fillText(`KILLS: ${kills}/${total}`, 20, 100);
+
     const levelData = this.game.levelManager.getLevelData();
     if (levelData) {
       ctx.textAlign = 'center';
       this._drawComicText(ctx, levelData.label.toUpperCase(), this.game.canvas.width / 2, 35, 28, '#f1c40f');
     }
+    
     ctx.textAlign = 'left'; ctx.font = 'bold 14px "Comic Sans MS", sans-serif';
     const weapon = this.game.player.selectedWeapon.toUpperCase();
     const cd = this.game.player.getWeaponCooldownPercent(this.game.player.selectedWeapon);

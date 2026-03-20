@@ -273,43 +273,18 @@ class Enemy {
       ctx.drawImage(sprite, sx, sy, sw, sh, -drawW / 2, -drawH, drawW, drawH);
       
       // Status Tints & Effects
-      if (this.burnActive) {
-        // Create an off-screen buffer to mask the fire effect to the sprite
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = drawW;
-        tempCanvas.height = drawH;
-        const tCtx = tempCanvas.getContext('2d');
-
-        // 1. Draw the sprite mask onto the temp canvas
-        tCtx.drawImage(sprite, sx, sy, sw, sh, 0, 0, drawW, drawH);
-
-        // 2. Composite the fire gradient OVER the sprite shape
-        tCtx.globalCompositeOperation = 'source-in';
-        const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.5;
-        const fireGrad = tCtx.createLinearGradient(0, drawH, 0, 0);
-        fireGrad.addColorStop(0, `rgba(255, 69, 0, ${flicker})`);    // Red-orange at bottom
-        fireGrad.addColorStop(0.5, `rgba(255, 140, 0, ${flicker * 0.7})`); // Orange middle
-        fireGrad.addColorStop(1, `rgba(255, 255, 0, 0.1)`);         // Yellow top
-        
-        tCtx.fillStyle = fireGrad;
-        tCtx.fillRect(0, 0, drawW, drawH);
-
-        // 3. Add some "hot spots" inside the sprite
-        if (Math.random() > 0.5) {
-            tCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            tCtx.beginPath();
-            tCtx.arc(Math.random() * drawW, Math.random() * drawH, Math.random() * 10, 0, Math.PI * 2);
-            tCtx.fill();
-        }
-
-        // 4. Draw the resulting fire mask back to the main canvas
+    if (this.burnActive) {
+        // 1. SIMPLE ORANGE OVERLAY (Faster than masking)
         ctx.save();
-        ctx.globalAlpha = 0.8; // Make it look like an overlay
-        ctx.drawImage(tempCanvas, -drawW / 2, -drawH);
+        ctx.globalCompositeOperation = 'source-atop';
+        const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.4;
+        ctx.fillStyle = `rgba(255, 100, 0, ${flicker})`;
+        ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
         ctx.restore();
 
-        // 5. EXTERNAL EFFECTS (Embers and Smoke)
-        if (this.game.gameFrame % 3 === 0) {
+        // 2. EXTERNAL EFFECTS (Embers and Smoke) - Optimized frequency
+        if (this.game.gameFrame % 4 === 0) {
+          ctx.save();
           for (let i = 0; i < 2; i++) {
             const px = (Math.random() - 0.5) * drawW;
             const py = -Math.random() * drawH;
@@ -318,13 +293,14 @@ class Enemy {
             ctx.arc(px, py, 2, 0, Math.PI * 2);
             ctx.fill();
           }
-        }
-        
-        if (this.game.gameFrame % 8 === 0) {
-          ctx.fillStyle = 'rgba(70, 70, 70, 0.6)';
-          ctx.beginPath();
-          ctx.arc((Math.random() - 0.5) * drawW, -drawH - (Math.random() * 20), 5, 0, Math.PI * 2);
-          ctx.fill();
+          
+          if (this.game.gameFrame % 12 === 0) {
+            ctx.fillStyle = 'rgba(70, 70, 70, 0.4)';
+            ctx.beginPath();
+            ctx.arc((Math.random() - 0.5) * drawW, -drawH - (Math.random() * 10), 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
         }
       } else if (this.slowActive) {
         ctx.fillStyle = 'rgba(0, 150, 255, 0.4)';
