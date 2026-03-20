@@ -46,14 +46,16 @@ class WaveManager {
     }
 
     // Update active enemies
-    this.enemies.forEach((enemy) => enemy.update(delta));
+    let anyDead = false;
+    for (let i = 0; i < this.enemies.length; i++) {
+      this.enemies[i].update(delta);
+      if (!this.enemies[i].isAlive) anyDead = true;
+    }
 
-    // Filter out dead enemies
-    const previousCount = this.enemies.length;
-    this.enemies = this.enemies.filter((enemy) => enemy.isAlive);
-    
-    // Track kills
-    if (previousCount > this.enemies.length) {
+    // Filter out dead enemies only if needed
+    if (anyDead) {
+      const previousCount = this.enemies.length;
+      this.enemies = this.enemies.filter((enemy) => enemy.isAlive);
       this.killCount += (previousCount - this.enemies.length);
     }
   }

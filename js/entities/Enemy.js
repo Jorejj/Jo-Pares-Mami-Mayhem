@@ -9,15 +9,15 @@ const ENEMY_TYPES = {
   kitboard:   { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard' },
   rex:        { hp: 50,  speed: 1.0, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 165, spriteKey: 'enemy_rex' },
   rat:        { hp: 20,  speed: 2.0, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 50,  spriteKey: 'enemy_rat' },
-  dog:        { hp: 35,  speed: 1.8, damage: 15, kitaReward: 150, baseWidth: 60, baseHeight: 80,  spriteKey: 'enemy_dog' },
-  student:    { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 150, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_student' },
-  worker:     { hp: 50,  speed: 1.0, damage: 12, kitaReward: 2000, baseWidth: 55, baseHeight: 110, spriteKey: 'enemy_worker' },
+  dog:        { hp: 35,  speed: 1.8, damage: 15, kitaReward: 15, baseWidth: 60, baseHeight: 80,  spriteKey: 'enemy_dog' },
+  student:    { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_student' },
+  worker:     { hp: 50,  speed: 1.0, damage: 12, kitaReward: 20, baseWidth: 55, baseHeight: 110, spriteKey: 'enemy_worker' },
   elite:      { hp: 80,  speed: 0.8, damage: 20, kitaReward: 300, baseWidth: 60, baseHeight: 120, spriteKey: 'enemy_elite' },
   boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 80, baseHeight: 160, spriteKey: 'boss_inspector' },
   boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 80, baseHeight: 160, spriteKey: 'boss_vlogger' },
-  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 30, baseWidth: 90, baseHeight: 180, spriteKey: 'boss_mastermind' },
+  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 90, baseHeight: 180, spriteKey: 'boss_mastermind' },
   newDaga1:   { hp: 150, speed: 0.4, damage: 40, kitaReward: 30, baseWidth: 60, baseHeight: 150, spriteKey: 'newDaga1' },
-  ian:        { hp: 150, speed: 0.4, damage: 40, kitaReward: 103, baseWidth: 90, baseHeight: 180, spriteKey: 'ian' },
+  ian:        { hp: 150, speed: 0.4, damage: 40, kitaReward: 100, baseWidth: 90, baseHeight: 180, spriteKey: 'ian' },
 };
 
 class Enemy {

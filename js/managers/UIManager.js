@@ -224,7 +224,10 @@ class UIManager {
 
   _showScreen(id, visible) {
     const el = document.getElementById(id);
-    if (el) el.style.display = visible ? 'flex' : 'none';
+    if (el) {
+      if (visible) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    }
   }
 
   _updateHUDButtons() {
@@ -435,13 +438,51 @@ class UIManager {
   }
 
   _wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(' '); let line = ''; const lines = [];
+    const words = text.split(' ');
+    let line = '';
+    const lines = [];
+
     for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' '; const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && n > 0) { lines.push(line); line = words[n] + ' '; } else { line = testLine; }
+      let word = words[n];
+      let testLine = line + word + ' ';
+      let metrics = ctx.measureText(testLine);
+
+      if (metrics.width > maxWidth && n > 0) {
+        lines.push(line);
+        line = word + ' ';
+      } else {
+        // If a single word is wider than maxWidth, split it character by character
+        let wordMetrics = ctx.measureText(word);
+        if (wordMetrics.width > maxWidth) {
+          // Finish the current line first if there is any
+          if (line.length > 0) {
+            lines.push(line);
+            line = '';
+          }
+          // Split the long word
+          let chars = word.split('');
+          let charLine = '';
+          for (let c = 0; c < chars.length; c++) {
+            let testCharLine = charLine + chars[c];
+            if (ctx.measureText(testCharLine).width > maxWidth) {
+              lines.push(charLine);
+              charLine = chars[c];
+            } else {
+              charLine = testCharLine;
+            }
+          }
+          line = charLine + ' ';
+        } else {
+          line = testLine;
+        }
+      }
     }
-    lines.push(line); const startY = y - ((lines.length - 1) * lineHeight) / 2;
-    for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], x, startY + i * lineHeight);
+    lines.push(line);
+    
+    const startY = y - ((lines.length - 1) * lineHeight) / 2;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i].trim(), x, startY + i * lineHeight);
+    }
   }
 
   _togglePause() {

@@ -70,20 +70,21 @@ class ShopManager {
    * @returns {boolean}
    */
   handleSelection(num) {
-    if (num >= 1 && num <= 3) {
-      const weaponKey = num === 1 ? 'mami' : (num === 2 ? 'pares' : 'rice');
-      const weapon = this.game.player.arsenal[weaponKey];
-
-      if (!weapon.unlocked) {
-        return this.unlockWeapon(weaponKey);
-      } else {
-        return this.upgradeWeapon(weaponKey);
+    switch (num) {
+      case 1:
+      case 2:
+      case 3: {
+        const weaponKey = num === 1 ? 'mami' : (num === 2 ? 'pares' : 'rice');
+        const weapon = this.game.player.arsenal[weaponKey];
+        return !weapon.unlocked ? this.unlockWeapon(weaponKey) : this.upgradeWeapon(weaponKey);
       }
-    } else if (num === 4 || num === 5) {
-      const specialKey = num === 4 ? 'calamansi' : 'chili';
-      return this.unlockSpecial(specialKey);
+      case 4:
+        return this.unlockSpecial('calamansi');
+      case 5:
+        return this.unlockSpecial('chili');
+      default:
+        return false;
     }
-    return false;
   }
 
   /**

@@ -154,7 +154,7 @@ class Projectile {
         const dist = Physics.getDistance(this.x, this.y, enemyCenterX, enemyCenterY);
 
         if (dist <= this.splashRadius && !enemy.burnActive) {
-          enemy.applyBurnStatus(3000, tickDamage); 
+         enemy.applyBurnStatus(CONSTANTS.SPECIALS.chili.burnDuration, tickDamage);
         }
       });
     }

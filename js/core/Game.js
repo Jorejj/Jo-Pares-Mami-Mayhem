@@ -176,7 +176,7 @@ class Game {
    */
   _getWaveEnemies() {
     const waveNum = this.waveManager.currentWave;
-    const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
+    const enemyCount = Math.min(5 + waveNum / 2, 15);
     const enemies = [];
 
     // The full pool of all your custom enemies
@@ -290,8 +290,8 @@ class Game {
 
     // Check if wave is complete
     if (this.waveManager.isWaveComplete()) {
-      this.currentState = CONSTANTS.STATES.VICTORY;
       this.waveManager.currentWave++; // Increment here so Save knows we are on the NEXT wave
+      this.currentState = CONSTANTS.STATES.VICTORY;
     }
   }
 
