@@ -5,6 +5,9 @@ class UIManager {
     this.game = game;
     this.prologueIndex = 0;
     this.prologueTimer = 0;
+    this.prologueCharIndex = 0;
+    this.prologueTypingTimer = 0;
+    this.prologueFade = 1.0;
     this.tutorialIndex = 0;
     this.showInGameTutorial = false;
     this.isSettingsOpen = false;
@@ -104,6 +107,11 @@ class UIManager {
 
   _advancePrologue() {
     this.prologueIndex++;
+    this.prologueTimer = 0;
+    this.prologueCharIndex = 0;
+    this.prologueTypingTimer = 0;
+    this.prologueFade = 0; 
+    
     if (this.prologueIndex >= CONSTANTS.PROLOGUE_LINES.length) {
       this._startPlaying();
     }
@@ -190,7 +198,27 @@ class UIManager {
 
     if (state === CONSTANTS.STATES.PROLOGUE && !this.isSettingsOpen) {
       this.prologueTimer += delta;
-      if (this.prologueTimer > 5000) { this._advancePrologue(); this.prologueTimer = 0; }
+      
+      // --- TYPING EFFECT ---
+      const fullText = CONSTANTS.PROLOGUE_LINES[this.prologueIndex] || "";
+      if (this.prologueCharIndex < fullText.length) {
+        this.prologueTypingTimer += delta;
+        if (this.prologueTypingTimer > 30) {
+          this.prologueCharIndex++;
+          this.prologueTypingTimer = 0;
+        }
+      }
+
+      // --- FADE EFFECT ---
+      if (this.prologueFade < 1.0) {
+        this.prologueFade += delta * 0.002; // Fade in over 500ms
+        if (this.prologueFade > 1.0) this.prologueFade = 1.0;
+      }
+
+      // Auto-advance after 5s ONLY if typing is done
+      if (this.prologueTimer > 5000 && this.prologueCharIndex >= fullText.length) { 
+        this._advancePrologue(); 
+      }
     }
   }
 
@@ -290,11 +318,31 @@ class UIManager {
   }
 
   _drawPrologue(ctx) {
-    ctx.fillStyle = '#f4f4f0';
+    // 1. Comic-Style Background (Radial Gradient + Halftone pattern)
+    const grad = ctx.createRadialGradient(this.game.canvas.width/2, this.game.canvas.height/2, 100, this.game.canvas.width/2, this.game.canvas.height/2, 800);
+    grad.addColorStop(0, '#f4f4f0');
+    grad.addColorStop(1, '#d1d1ca');
+    ctx.fillStyle = grad;
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+
+    // Subtle Halftone Pattern
+    ctx.fillStyle = 'rgba(0,0,0,0.03)';
+    for(let i=0; i<this.game.canvas.width; i+=20) {
+      for(let j=0; j<this.game.canvas.height; j+=20) {
+        ctx.beginPath(); ctx.arc(i, j, 2, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
     const lines = CONSTANTS.PROLOGUE_LINES;
     const maxIndex = Math.min(this.prologueIndex, lines.length - 1);
     
+    // 2. Cinematic Vignette
+    const vignette = ctx.createRadialGradient(this.game.canvas.width/2, this.game.canvas.height/2, 300, this.game.canvas.width/2, this.game.canvas.height/2, 1000);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.4)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+
     // Draw Title
     this._drawComicText(ctx, "THE STORY OF JO", this.game.canvas.width / 2, 70, 64, '#f1c40f');
     
@@ -306,21 +354,23 @@ class UIManager {
     
     this._drawComicBox(ctx, x, y, panelW, panelH, '#fff');
     
+    ctx.save();
+    ctx.globalAlpha = this.prologueFade; // SMOOTH FADE IN
+    
     const storyImage = this.game.assetLoader.images[`story${maxIndex + 1}`];
     if (storyImage && storyImage.complete) {
-      // Image area inside the box
       const imgAreaW = panelW - 40;
       const imgAreaH = panelH * 0.7 - 20;
       const imgX = x + 20;
       const imgY = y + 20;
       
-      // Use Math.min to ensure the WHOLE image is visible (contain)
       const scale = Math.min(imgAreaW / storyImage.width, imgAreaH / storyImage.height);
       const drawW = storyImage.width * scale; 
       const drawH = storyImage.height * scale;
       
       ctx.drawImage(storyImage, imgX + (imgAreaW - drawW) / 2, imgY + (imgAreaH - drawH) / 2, drawW, drawH);
     }
+    ctx.restore();
     
     // Text background box
     const textAreaY = y + panelH * 0.7 + 10;
@@ -330,14 +380,16 @@ class UIManager {
     ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
     ctx.strokeRect(x + 20, textAreaY, panelW - 40, textAreaH);
     
-    // Story Text
+    // Story Text (TYPED OUT)
     ctx.fillStyle = '#000';
     ctx.font = 'bold 24px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'center';
-    this._wrapText(ctx, lines[maxIndex].toUpperCase(), this.game.canvas.width / 2, textAreaY + textAreaH / 2, panelW - 100, 32);
+    const displayedText = lines[maxIndex].toUpperCase().slice(0, this.prologueCharIndex);
+    this._wrapText(ctx, displayedText, this.game.canvas.width / 2, textAreaY + textAreaH / 2, panelW - 100, 32);
     
-    // Interaction prompt
-    this._drawComicBox(ctx, this.game.canvas.width / 2 - 250, this.game.canvas.height - 65, 500, 50, '#e74c3c');
+    // Interaction prompt (Pulsing)
+    const pulse = Math.sin(this.game.gameFrame / 18) * 5;
+    this._drawComicBox(ctx, this.game.canvas.width / 2 - 250 - pulse/2, this.game.canvas.height - 65 - pulse/2, 500 + pulse, 50 + pulse, '#e74c3c');
     ctx.fillStyle = '#fff'; ctx.font = 'bold 22px "Comic Sans MS", sans-serif';
     ctx.fillText('CLICK ANYWHERE TO CONTINUE', this.game.canvas.width / 2, this.game.canvas.height - 32);
   }

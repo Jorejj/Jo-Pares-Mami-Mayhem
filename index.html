@@ -218,6 +218,20 @@
       pointer-events: none;
       animation: bobbing 3s ease-in-out infinite;
     }
+
+    /* MODIFIERS & UTILITIES */
+    .comic-title.yellow { color: #f1c40f; }
+    .comic-title.green { color: #2ecc71; }
+    .comic-title.settings { font-size: 48px; color: #34495e; margin-bottom: 20px; }
+    
+    .comic-box.settings { width: 450px; }
+    .menu-btn.full-width { width: 100%; }
+    .menu-btn.small-text { font-size: 18px; }
+
+    .tut-title { font-size: 32px; color: #f1c40f; margin-bottom: 20px; }
+    .tut-text { font-size: 20px; margin-bottom: 30px; }
+    .victory-stats { font-size: 24px; margin-bottom: 20px; }
+    .volume-label { font-weight: 900; font-size: 18px; }
   </style>
 </head>
 <body>
@@ -238,7 +252,7 @@
       </div>
 
       <div id="screen-difficulty" class="ui-screen">
-        <h1 class="comic-title" style="color:#f1c40f;">SELECT CHALLENGE</h1>
+        <h1 class="comic-title yellow">SELECT CHALLENGE</h1>
         <button id="btn-diff-easy" class="menu-btn green">EASY</button>
         <button id="btn-diff-medium" class="menu-btn yellow">MEDIUM</button>
         <button id="btn-diff-hard" class="menu-btn red">HARD</button>
@@ -252,15 +266,15 @@
 
       <div id="screen-tutorial" class="ui-screen">
         <div class="comic-box">
-          <h2 id="tut-title" style="font-size:32px; color:#f1c40f; margin-bottom:20px;"></h2>
-          <p id="tut-text" style="font-size:20px; margin-bottom:30px;"></p>
+          <h2 id="tut-title" class="tut-title"></h2>
+          <p id="tut-text" class="tut-text"></p>
           <button id="btn-tut-next" class="menu-btn green">CONTINUE</button>
         </div>
       </div>
 
       <div id="screen-pause" class="ui-screen">
         <div class="comic-box">
-          <h1 class="comic-title" style="color:#f1c40f;">GAME PAUSED</h1>
+          <h1 class="comic-title yellow">GAME PAUSED</h1>
           <button id="btn-resume" class="menu-btn green">RESUME GAME</button>
           <button id="btn-pause-home" class="menu-btn red">QUIT TO HOME</button>
         </div>
@@ -268,8 +282,8 @@
 
       <div id="screen-victory" class="ui-screen">
         <div class="comic-box">
-          <h1 class="comic-title" style="color:#2ecc71;">WAVE CLEARED!</h1>
-          <p id="victory-stats" style="font-size:24px; margin-bottom:20px;"></p>
+          <h1 class="comic-title green">WAVE CLEARED!</h1>
+          <p id="victory-stats" class="victory-stats"></p>
           <button id="btn-visit-shop" class="menu-btn green">VISIT SHOP</button>
         </div>
       </div>
@@ -313,19 +327,19 @@
       </div>
 
       <div id="screen-settings" class="ui-screen">
-        <div class="comic-box" style="width: 450px;">
+        <div class="comic-box settings">
           <button id="btn-settings-x" class="close-x">X</button>
-          <h1 class="comic-title" style="font-size:48px; color:#34495e; margin-bottom:20px;">SETTINGS</h1>
+          <h1 class="comic-title settings">SETTINGS</h1>
           
           <div class="volume-container">
-            <label style="font-weight:900; font-size:18px;">SOUND VOLUME</label>
+            <label class="volume-label">SOUND VOLUME</label>
             <input type="range" id="slider-volume" min="0" max="1" step="0.1" value="0.5">
           </div>
           
-          <button id="btn-save-game" class="menu-btn yellow" style="width:100%;">SAVE PROGRESS</button>
-          <button id="btn-back-home" class="menu-btn yellow" style="width:100%;">BACK TO HOME</button>
-          <button id="btn-reset-save" class="menu-btn red" style="width:100%; font-size:18px;">RESET ALL DATA</button>
-          <button id="btn-settings-close" class="menu-btn green" style="width:100%;">BACK TO GAME</button>
+          <button id="btn-save-game" class="menu-btn yellow full-width">SAVE PROGRESS</button>
+          <button id="btn-back-home" class="menu-btn yellow full-width">BACK TO HOME</button>
+          <button id="btn-reset-save" class="menu-btn red full-width small-text">RESET ALL DATA</button>
+          <button id="btn-settings-close" class="menu-btn green full-width">BACK TO GAME</button>
         </div>
       </div>
 

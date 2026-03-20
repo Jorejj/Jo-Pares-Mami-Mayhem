@@ -230,8 +230,6 @@ class Game {
       this.shopManager.open();
     } else if (savedState === CONSTANTS.STATES.PLAYING) {
       this.waveManager.startWave(this._getWaveEnemies());
-    } else if (savedState === CONSTANTS.STATES.VICTORY) {
-      // Stay on victory screen, but ensure HUD shows
     }
   }
 

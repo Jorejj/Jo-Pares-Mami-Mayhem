@@ -285,7 +285,7 @@ class Enemy {
 
         // 2. Composite the fire gradient OVER the sprite shape
         tCtx.globalCompositeOperation = 'source-in';
-        const flicker = Math.sin(Date.now() / 50) * 0.2 + 0.5;
+        const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.5;
         const fireGrad = tCtx.createLinearGradient(0, drawH, 0, 0);
         fireGrad.addColorStop(0, `rgba(255, 69, 0, ${flicker})`);    // Red-orange at bottom
         fireGrad.addColorStop(0.5, `rgba(255, 140, 0, ${flicker * 0.7})`); // Orange middle
