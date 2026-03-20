@@ -221,6 +221,11 @@
       animation: bobbing 3s ease-in-out infinite;
     }
 
+    @keyframes bobbing {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-12px); }
+    }
+
     /* MODIFIERS & UTILITIES */
     .comic-title.yellow { color: #f1c40f; }
     .comic-title.green { color: #2ecc71; }
