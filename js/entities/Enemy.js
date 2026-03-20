@@ -13,9 +13,9 @@ const ENEMY_TYPES = {
   student:    { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_student' },
   worker:     { hp: 50,  speed: 1.0, damage: 12, kitaReward: 20, baseWidth: 55, baseHeight: 110, spriteKey: 'enemy_worker' },
   elite:      { hp: 80,  speed: 0.8, damage: 20, kitaReward: 300, baseWidth: 60, baseHeight: 120, spriteKey: 'enemy_elite' },
-  boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 80, baseHeight: 160, spriteKey: 'boss_inspector' },
-  boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 80, baseHeight: 160, spriteKey: 'boss_vlogger' },
-  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 90, baseHeight: 180, spriteKey: 'boss_mastermind' },
+  boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_kap' }, 
+  boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_vlogger' },
+  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind' },
   newDaga1:   { hp: 150, speed: 0.4, damage: 40, kitaReward: 30, baseWidth: 60, baseHeight: 150, spriteKey: 'newDaga1' },
   ian:        { hp: 150, speed: 0.4, damage: 40, kitaReward: 100, baseWidth: 90, baseHeight: 180, spriteKey: 'ian' },
 };
@@ -29,8 +29,6 @@ class Enemy {
 
     const config = ENEMY_TYPES[type] || ENEMY_TYPES.gangster;
     
-    // ===== POSITION & TRUE HITBOX SIZE =====
-    // This now reads dynamically from the ENEMY_TYPES config above!
     this.width = config.baseWidth || 60;
     this.height = config.baseHeight || 110;
     
@@ -40,12 +38,10 @@ class Enemy {
     this.drawX = this.x;
     this.drawY = this.y;
 
-    // ===== HEALTH =====
     const difficulty = this.game.levelManager?.currentDifficulty || CONSTANTS.DIFFICULTY.medium;
     this.maxHp = config.hp * difficulty.hpMult;
     this.hp = this.maxHp;
 
-    // ===== MOVEMENT & COMBAT =====
     this.baseSpeed = config.speed * difficulty.speedMult;
     this.speed = this.baseSpeed;
     this.damage = config.damage;
@@ -54,7 +50,6 @@ class Enemy {
 
     this.lastAttackTime = 0;
 
-    // ===== STATUS EFFECTS =====
     this.slowActive = false;
     this.slowDuration = 0;
     this.slowFactor = 1;
@@ -64,10 +59,25 @@ class Enemy {
     this.burnDamagePerTick = 0;
     this.lastBurnTick = Date.now();
 
-    // ===== ANIMATION STATE MACHINE =====
     this.state = 'walk'; 
     this.currentFrame = 0;
     this.animationTimer = 0;
+    
+    this.alpha = 1;      
+    this.deathTimer = 0; 
+    this.footstepTimer = 0;
+    this.voiceTimer = 0;
+  }
+
+  // Helper method to bulletproof audio playback
+  _playAudioSafe(audioElement) {
+    if (!audioElement) return;
+    try {
+      const playPromise = audioElement.play();
+      if (playPromise && playPromise.catch) {
+        playPromise.catch(() => { /* Ignore missing audio errors silently */ });
+      }
+    } catch (e) {}
   }
 
   applySlowStatus(duration, factor) {
@@ -98,8 +108,7 @@ class Enemy {
   }
 
   canAttack() {
-    const now = Date.now();
-    return (now - this.lastAttackTime) >= CONSTANTS.ENEMY_ATTACK_COOLDOWN;
+    return (Date.now() - this.lastAttackTime) >= CONSTANTS.ENEMY_ATTACK_COOLDOWN;
   }
 
   recordAttack() {
@@ -120,7 +129,38 @@ class Enemy {
       this.state = 'dead';
       this.currentFrame = 0;
       
-      // Reward player Kita
+      // --- AUDIO LOGIC ---
+      if (this.game.assetLoader) {
+        const moneyAudio = this.game.assetLoader.audio?.sfx_money;
+        if (moneyAudio) {
+          moneyAudio.currentTime = 0;
+          moneyAudio.volume = 0.6;
+          this._playAudioSafe(moneyAudio);
+        }
+
+        const isFemale = ['boss_diwata'].includes(this.type);
+        const isAnimal = ['cockroach', 'rat', 'dog', 'newDaga1'].includes(this.type);
+        
+        let randomSound = null;
+
+        if (isAnimal) {
+          randomSound = 'sfx_animal_death'; 
+        } else if (isFemale) {
+          const femaleSounds = ['sfx_deathsoundfm', 'sfx_deathsoundfm2', 'sfx_deathsoundfm3'];
+          randomSound = femaleSounds[Math.floor(Math.random() * femaleSounds.length)];
+        } else {
+          const maleSounds = ['sfx_deathman1', 'sfx_deathsound', 'sfx_deathsound1', 'sfx_deathsoundmale', 'sfx_deathsoundmale2', 'sfx_mandeath2'];
+          randomSound = maleSounds[Math.floor(Math.random() * maleSounds.length)];
+        }
+        
+        const deathAudio = this.game.assetLoader.audio?.[randomSound];
+        if (deathAudio) {
+          deathAudio.currentTime = 0;
+          deathAudio.volume = 0.8;
+          this._playAudioSafe(deathAudio);
+        }
+      }
+
       if (this.game.player) {
         this.game.player.addKita(this.kitaReward || 20);
       }
@@ -166,13 +206,13 @@ class Enemy {
     }
 
     // ===== COMBAT & MOVEMENT STATE MACHINE =====
+    const isAnimal = ['cockroach', 'rat', 'dog', 'newDaga1'].includes(this.type);
+
     if (this.state !== 'dead' && this.state !== 'hurt') {
       const player = this.game.player;
-      // Target is Jo's center
       const targetX = player.x + player.width / 2;
       const targetY = player.y + player.height / 2;
       
-      // Calculate distance to player center
       const dist = Physics.getDistance(this.x + this.width / 2, this.y + this.height / 2, targetX, targetY);
       const attackRange = CONSTANTS.ENEMY_ATTACK_RANGE + player.width / 2;
 
@@ -181,28 +221,64 @@ class Enemy {
         if (this.canAttack()) {
           player.takeDamage(this.damage || CONSTANTS.PLAYER_DAMAGE_ON_HIT);
           this.recordAttack();
+
+          // Female Attack Audio
+          const isFemale = ['boss_diwata'].includes(this.type);
+          if (isFemale && this.game.assetLoader) {
+            const atkSound = Math.random() > 0.5 ? 'sfx_fmattack' : 'sfx_fmattack1';
+            const audio = this.game.assetLoader.audio[atkSound];
+            if (audio) {
+              audio.currentTime = 0;
+              audio.volume = 0.7;
+              this._playAudioSafe(audio);
+            }
+          }
         }
       } else {
         this.state = 'walk';
-        // Move towards Jo's position using Physics.calcVelocity
         const vel = Physics.calcVelocity(this.x + this.width / 2, this.y + this.height / 2, targetX, targetY, this.speed);
         this.x += vel.velX;
         this.y += vel.velY;
+
+        // Footstep SFX
+        this.footstepTimer += delta;
+        if (this.footstepTimer > 600) { 
+          this.footstepTimer = 0;
+          const stepAudio = this.game.assetLoader?.audio?.sfx_footstep;
+          if (stepAudio) {
+            stepAudio.currentTime = 0;
+            stepAudio.volume = 0.15; 
+            this._playAudioSafe(stepAudio);
+          }
+        }
+      }
+
+      // Enemy Voice Lines
+      this.voiceTimer += delta;
+      if (this.voiceTimer > 6000) { 
+        this.voiceTimer = 0;
+        if (Math.random() > 0.8 && !isAnimal) {
+          const voiceAudio = this.game.assetLoader?.audio?.sfx_enemy_voice;
+          if (voiceAudio) {
+            voiceAudio.currentTime = 0;
+            voiceAudio.volume = 0.5;
+            this._playAudioSafe(voiceAudio);
+          }
+        }
       }
     }
 
-    if (this.x < -this.width) {
+    if (this.x < -this.width && this.drawX < -this.width) {
       this.isAlive = false;
     }
 
     // ===== ANIMATION TIMER & FRAME CONFIG =====
-    let maxFrames = 5; 
+    const maxFrames = 5; 
     let frameSpeed = 100;
 
     if (this.state === 'dead') { 
       frameSpeed = 150; 
     } else if (this.state === 'hurt') { 
-      maxFrames = 1; 
       frameSpeed = 250; 
     } else if (this.state === 'attack') { 
       frameSpeed = 120; 
@@ -211,21 +287,27 @@ class Enemy {
     this.animationTimer += delta;
     if (this.animationTimer >= frameSpeed) {
       this.animationTimer = 0;
-      this.currentFrame++;
       
       if (this.state === 'dead') {
-        // Stop on the last frame of the death animation
-        if (this.currentFrame >= maxFrames) {
-          this.currentFrame = maxFrames - 1;
-          this.isAlive = false; // FINALLY mark as not alive so WaveManager sees the kill
+        if (this.currentFrame < maxFrames - 1) {
+          this.currentFrame++;
         }
+      } else if (this.state === 'hurt') {
+         this.state = 'walk';
+         this.currentFrame = 0;
       } else {
-        // Loop normally
-        this.currentFrame = this.currentFrame % maxFrames;
-        
-        // Return to walk after flinching
-        if (this.state === 'hurt') {
-            this.state = 'walk';
+        this.currentFrame = (this.currentFrame + 1) % maxFrames;
+      }
+    }
+
+    // --- FIXED: FADE OUT LINGERING CORPSES ---
+    // Now updates continuously every frame!
+    if (this.state === 'dead' && this.currentFrame >= maxFrames - 1) {
+      this.deathTimer += delta;
+      if (this.deathTimer >= 3000) { // Linger for 3 seconds
+        this.alpha -= 0.05; // Fade out quickly
+        if (this.alpha <= 0) {
+            this.isAlive = false; 
         }
       }
     }
@@ -235,9 +317,12 @@ class Enemy {
     if (!this.isAlive) return;
     ctx.imageSmoothingEnabled = false;
 
+    ctx.globalAlpha = Math.max(0, this.alpha);
+
     const sprite = this.game.assetLoader?.images?.[this.spriteKey];
     
-    if (sprite && sprite.complete) {
+    // Safety check added here to prevent division by zero crashes
+    if (sprite && sprite.complete && sprite.width > 0 && sprite.height > 0) {
       const cols = 5;
       const rows = 3;
       
@@ -245,36 +330,34 @@ class Enemy {
       const sh = sprite.height / rows;
 
       let row = 0;
+      let frameToDraw = this.currentFrame;
+
       if (this.state === 'dead') { 
         row = 2; 
       } else if (this.state === 'hurt') { 
         row = 2; 
+        frameToDraw = 0; 
       } else if (this.state === 'attack') { 
         row = 1; 
       } else { 
         row = 0; 
       }
 
-      const sx = this.currentFrame * sw;
+      const sx = frameToDraw * sw;
       const sy = row * sh;
 
-      // --- NEW ASPECT RATIO FIX ---
-      // Scale the width proportionally to the target height so they don't look slim!
       const scale = this.height / sh;
       const drawW = sw * scale;
       const drawH = this.height;
       
       ctx.save();
-      // Translate to bottom-center of the collision box
       ctx.translate(this.drawX + this.width / 2, this.drawY + this.height);
-      ctx.scale(-1, 1); // Flip horizontally
+      ctx.scale(-1, 1);
 
-      // Draw using the new proportional drawW
       ctx.drawImage(sprite, sx, sy, sw, sh, -drawW / 2, -drawH, drawW, drawH);
       
-      // Status Tints & Effects
-    if (this.burnActive) {
-        // 1. SIMPLE ORANGE OVERLAY (Faster than masking)
+      // Status Effect Tints
+      if (this.burnActive) {
         ctx.save();
         ctx.globalCompositeOperation = 'source-atop';
         const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.4;
@@ -282,7 +365,6 @@ class Enemy {
         ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
         ctx.restore();
 
-        // 2. EXTERNAL EFFECTS (Embers and Smoke) - Optimized frequency
         if (this.game.gameFrame % 4 === 0) {
           ctx.save();
           for (let i = 0; i < 2; i++) {
@@ -291,13 +373,6 @@ class Enemy {
             ctx.fillStyle = Math.random() > 0.5 ? '#ff4500' : '#ffcc00';
             ctx.beginPath();
             ctx.arc(px, py, 2, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          
-          if (this.game.gameFrame % 12 === 0) {
-            ctx.fillStyle = 'rgba(70, 70, 70, 0.4)';
-            ctx.beginPath();
-            ctx.arc((Math.random() - 0.5) * drawW, -drawH - (Math.random() * 10), 4, 0, Math.PI * 2);
             ctx.fill();
           }
           ctx.restore();
@@ -315,7 +390,8 @@ class Enemy {
       ctx.fillRect(this.drawX, this.drawY, this.width, this.height);
     }
 
-    // Draw HP bars
+    ctx.globalAlpha = 1.0;
+
     if (this.state !== 'dead') {
       ctx.fillStyle = '#00FF00';
       const barWidth = this.width * (this.hp / this.maxHp);

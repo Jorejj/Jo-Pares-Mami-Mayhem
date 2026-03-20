@@ -8,44 +8,34 @@ class LevelManager {
     this.maxLevel = CONSTANTS.TOTAL_LEVELS;
     this.currentDifficulty = null;
 
-    // Level definitions: act, background key, label
+    // Level definitions: act, background key, label, and BGM track
     this.levels = [
-      { act: 1, bg: 'bg_monumento', label: 'Monumento Rumble' },       // Level 1
-      { act: 1, bg: 'bg_bagong_barrio', label: 'Bagong Barrio Brawl' }, // Level 2
-      { act: 1, bg: 'bg_c3', label: 'C3 Chaos' },                     // Level 3
-      { act: 1, bg: 'bg_sangandaan', label: 'Sangandaan Slap' },       // Level 4
-      { act: 1, bg: 'bg_monumento', label: 'Boss: Inspector Kap Nino' }, // Level 5
-      { act: 2, bg: 'bg_intramuros', label: 'Manila Takeover' },       // Level 6
-      { act: 2, bg: 'bg_intramuros', label: 'Manila Takeover' },       // Level 7
-      { act: 2, bg: 'bg_intramuros', label: 'Intramuros Impact' },     // Level 8
-      { act: 2, bg: 'bg_intramuros', label: 'Binondo Brawl' },            // Level 9
-      { act: 2, bg: 'bg_intramuros', label: 'Boss: Vlogger Diwata' },     // Level 10
-      { act: 3, bg: 'bg_guadalupe', label: 'Guadalupe Gridlock' },      // Level 11
-      { act: 3, bg: 'bg_guadalupe', label: 'Guadalupe Gridlock' },      // Level 12
-      { act: 3, bg: 'bg_legazpi', label: 'Legazpi Village Loot' },    // Level 13
-      { act: 3, bg: 'bg_legazpi', label: 'Makati Campaign' },           // Level 14
-      { act: 3, bg: 'bg_legazpi', label: 'Boss: The Mastermind' },      // Level 15
+      { act: 1, bg: 'bg_monumento', label: 'Monumento Rumble', bgm: 'bgm_traffic' },
+      { act: 1, bg: 'bg_bagong_barrio', label: 'Bagong Barrio Brawl', bgm: 'bgm_street' },
+      { act: 1, bg: 'bg_c3', label: 'C3 Chaos', bgm: 'bgm_traffic' },
+      { act: 1, bg: 'bg_sangandaan', label: 'Sangandaan Slap', bgm: 'bgm_vendors' },
+      { act: 1, bg: 'bg_monumento', label: 'Boss: Inspector Kap Nino', bgm: 'bgm_crowd' },
+      { act: 2, bg: 'bg_intramuros', label: 'Manila Takeover', bgm: 'bgm_people' },
+      { act: 2, bg: 'bg_intramuros', label: 'Quiapo Mayhem', bgm: 'bgm_vendors' },
+      { act: 2, bg: 'bg_intramuros', label: 'Intramuros Impact', bgm: 'bgm_street' },
+      { act: 2, bg: 'bg_intramuros', label: 'Binondo Brawl', bgm: 'bgm_people' },
+      { act: 2, bg: 'bg_intramuros', label: 'Boss: Vlogger Diwata', bgm: 'bgm_crowd' },
+      { act: 3, bg: 'bg_guadalupe', label: 'Guadalupe Gridlock', bgm: 'bgm_traffic' },
+      { act: 3, bg: 'bg_guadalupe', label: 'Poblacion Party', bgm: 'bgm_people' },
+      { act: 3, bg: 'bg_legazpi', label: 'Legazpi Village Loot', bgm: 'bgm_makati' },
+      { act: 3, bg: 'bg_legazpi', label: 'Makati Campaign', bgm: 'bgm_makati' },
+      { act: 3, bg: 'bg_legazpi', label: 'Boss: The Mastermind', bgm: 'bgm_crowd' },
     ];
   }
 
-  /**
-   * Initialize level manager after game starts.
-   */
   init() {
     this.currentLevel = this.game.saveManager.state.currentLevel || 1;
   }
 
-  /**
-   * Get current level data.
-   * @returns {Object}
-   */
   getLevelData() {
     return this.levels[this.currentLevel - 1] || this.levels[0];
   }
 
-  /**
-   * Advance to next level.
-   */
   advance() {
     if (this.currentLevel < this.maxLevel) {
       this.currentLevel++;
@@ -54,22 +44,12 @@ class LevelManager {
     }
   }
 
-  /**
-   * Update level state each frame.
-   * Level-specific logic (cutscenes, transitions) can go here.
-   * @param {number} delta
-   */
   update(delta) {
-    // Sync difficulty from Game state
     if (this.game.currentDifficulty) {
       this.currentDifficulty = this.game.currentDifficulty;
     }
   }
 
-  /**
-   * Draw level background on canvas.
-   * @param {CanvasRenderingContext2D} ctx
-   */
   draw(ctx) {
     const levelData = this.getLevelData();
     const bg = this.game.assetLoader?.images?.[levelData.bg];
@@ -77,14 +57,12 @@ class LevelManager {
     if (bg && bg.complete) {
       ctx.drawImage(bg, 0, 0, this.game.canvas.width, this.game.canvas.height);
     } else {
-      // Fallback: draw simple gradient background
       const gradient = ctx.createLinearGradient(0, 0, 0, this.game.canvas.height);
       gradient.addColorStop(0, CONSTANTS.COLORS.BACKGROUND);
       gradient.addColorStop(1, '#4a8fad');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
 
-      // Draw gameplay area divider
       ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
       ctx.fillRect(0, CONSTANTS.GAME_BOTTOM_HALF, this.game.canvas.width, CONSTANTS.GAME_BOTTOM_HALF);
 
@@ -99,4 +77,3 @@ class LevelManager {
     }
   }
 }
-

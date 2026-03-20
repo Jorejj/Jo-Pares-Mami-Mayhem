@@ -1,5 +1,4 @@
 // Game.js – Core game engine managing FSM state, game loop, and entity coordination.
-// Merged from Case Study (gameplay logic) + Jo-Pares-Mami-Mayhem (architecture).
 
 class Game {
   constructor(canvas) {
@@ -32,7 +31,6 @@ class Game {
 
     this._bindFSMInput();
 
-    // ===== CATAPULT LISTENER (PLACEHOLDER) =====
     window.addEventListener("fireProjectile", (e) => {
       console.log("[Game] fireProjectile event received");
     });
@@ -42,10 +40,6 @@ class Game {
     });
   }
 
-  /**
-   * Bind keyboard FSM state transition input.
-   * @private
-   */
   _bindFSMInput() {
     window.addEventListener("keydown", (e) => {
       const key = e.key.toLowerCase();
@@ -97,7 +91,6 @@ class Game {
         if (key === " " || key === "enter") {
           this.uiManager.prologueIndex++;
           if (this.uiManager.prologueIndex >= CONSTANTS.PROLOGUE_LINES.length) {
-            // Jump straight to Arsenal Select (In-Game Tutorial will trigger in Wave 1)
             this.currentState = CONSTANTS.STATES.ARSENAL_SELECT;
             this.waveManager.startWave(this._getWaveEnemies());
           }
@@ -117,7 +110,6 @@ class Game {
         if (key === "enter") {
           this.currentState = CONSTANTS.STATES.PLAYING;
           
-          // Trigger Tutorial if it's the very first wave and player hasn't seen it
           if (this.waveManager.currentWave === 1 && !this.saveManager.state.hasSeenTutorial) {
             this.uiManager.showInGameTutorial = true;
             this.uiManager.tutorialIndex = 0;
@@ -127,7 +119,7 @@ class Game {
 
       // ===== PLAYING =====
       else if (this.currentState === CONSTANTS.STATES.PLAYING) {
-        if (this.uiManager.showInGameTutorial) return; // Prevent playing while tutorial is on
+        if (this.uiManager.showInGameTutorial) return;
 
         if (key === 'p') {
           this.uiManager._togglePause();
@@ -163,7 +155,6 @@ class Game {
       }
     });
 
-    // Reset debounce on key up
     window.addEventListener("keyup", (e) => {
       this.lastKeyPressState[e.key.toLowerCase()] = false;
     });
@@ -172,14 +163,12 @@ class Game {
   /**
    * Get enemy wave configuration based on current wave/level.
    * @private
-   * @returns {Array} Array of enemy types to spawn
    */
   _getWaveEnemies() {
-    const waveNum = this.waveManager.currentWave;
-const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
+    // Read the actual stage level from the LevelManager
+    const level = this.levelManager.currentLevel;
     const enemies = [];
 
-    // The full pool of all your custom enemies
     const enemyPool = [
       "gangster",
       "cockroach",
@@ -192,26 +181,39 @@ const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
       "ian",
     ];
 
+    // --- BOSS STAGE LOGIC ---
+    if (level === 5) {
+      // Spawn 15 normal enemies first
+      for (let i = 0; i < 15; i++) {
+        const randomEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+        enemies.push(randomEnemy);
+      }
+      
+      // Add the Boss Inspector at the end!
+      enemies.push('boss_kap');
+      
+      return enemies;
+    }
+
+    // --- NORMAL STAGE LOGIC ---
+    // Make the waves gradually longer as you level up
+    const enemyCount = Math.min(5 + Math.floor(level * 1.5), 20);
+
     for (let i = 0; i < enemyCount; i++) {
-      const randomEnemy =
-        enemyPool[Math.floor(Math.random() * enemyPool.length)];
+      const randomEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
       enemies.push(randomEnemy);
     }
+    
     return enemies;
   }
 
-  /**
-   * Start the game.
-   */
   start() {
-    // Draw the Home screen background immediately so it doesn't look empty/black while loading
     this.uiManager._drawSunburst(this.ctx, '#ffcc00', '#ffb300');
     
     this.assetLoader.loadAll(() => {
       this.saveManager.load();
       this.levelManager.init();
       
-      // Always start at Main Menu on a fresh browser load/refresh
       this.currentState = CONSTANTS.STATES.MAIN_MENU;
       
       this.isRunning = true;
@@ -223,13 +225,9 @@ const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
     this.saveManager.load();
     const state = this.saveManager.state;
     
-    // Sync Player
     this.player.syncWithSave(state);
-    
-    // Sync Wave
     this.waveManager.currentWave = state.currentLevel || 1;
     
-    // Restore exact state
     const savedState = state.currentGameState || CONSTANTS.STATES.SHOP;
     this.currentState = savedState;
 
@@ -240,9 +238,6 @@ const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
     }
   }
 
-  /**
-   * Main game loop.
-   */
   loop(timestamp) {
     if (!this.isRunning) return;
     const delta =
@@ -257,16 +252,26 @@ const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
     requestAnimationFrame((ts) => this.loop(ts));
   }
 
-  /**
-   * Update game state each frame.
-   */
   update(delta) {
     this.gameFrame++;
 
-    // Update managers (UI always updates for prologue timer)
+    // --- NEW: AMBIENT BACKGROUND NOISE ---
+    const bgm = this.assetLoader?.audio?.bgm_street; // Or use bgm_traffic, bgm_crowd, etc!
+    if (bgm) {
+
+      if (this.currentState === CONSTANTS.STATES.PLAYING || this.currentState === CONSTANTS.STATES.SHOP || this.currentState === CONSTANTS.STATES.ARSENAL_SELECT) {
+        if (bgm.paused) {
+          bgm.loop = true;
+          bgm.volume = 0.3; 
+          bgm.play().catch(e => {});
+        }
+      } else {
+        bgm.pause(); 
+      }
+    }
+
     if (this.uiManager) this.uiManager.update(delta);
 
-    // PAUSE GAMEPLAY during In-Game Tutorial or Manual Pause
     if ((this.uiManager.showInGameTutorial || this.uiManager.isPaused) && this.currentState === CONSTANTS.STATES.PLAYING) {
       return; 
     }
@@ -276,42 +281,34 @@ const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
     if (this.levelManager) this.levelManager.update(delta);
     if (this.shopManager) this.shopManager.update(delta);
 
-    // ===== STATE-SPECIFIC LOGIC =====
     if (this.currentState === CONSTANTS.STATES.PLAYING) {
       this._updatePlaying();
     }
   }
 
-  /**
-   * Update logic specific to PLAYING state.
-   */
   _updatePlaying() {
     if (this.player.isDead()) {
       this.currentState = CONSTANTS.STATES.GAMEOVER;
       return;
     }
 
-    // Update projectiles managed by Player.js
-    // (This is now handled by Player.update() which manages this.projectiles)
-    // The collision detection is handled in Player.update() against waveManager.enemies
-
-    // Check if wave is complete
+    // --- WAVE COMPLETION LOGIC ---
     if (this.waveManager.isWaveComplete()) {
-      this.waveManager.currentWave++; // Increment here so Save knows we are on the NEXT wave
+      this.levelManager.advance(); // This changes the background for the next wave!
+      this.waveManager.currentWave = this.levelManager.currentLevel; // Sync wave counter with stage number
+      
+      // --- NEW: AUTO-SAVE AFTER WAVE ---
+      this.saveManager.save();
+      
       this.currentState = CONSTANTS.STATES.VICTORY;
     }
   }
 
-  /**
-   * Draw current frame.
-   */
   draw() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw background
     this.levelManager.draw(this.ctx);
 
-    // Draw gameplay elements
     if (this.currentState === CONSTANTS.STATES.PLAYING || this.currentState === CONSTANTS.STATES.ARSENAL_SELECT) {
       if (this.player) this.player.draw(this.ctx);
       if (this.currentState === CONSTANTS.STATES.PLAYING && this.waveManager) {
@@ -319,7 +316,6 @@ const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
       }
     }
 
-    // Draw UI overlay
     if (this.uiManager) this.uiManager.draw(this.ctx);
   }
 }
