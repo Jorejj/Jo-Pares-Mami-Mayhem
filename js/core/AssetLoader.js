@@ -24,7 +24,7 @@ class AssetLoader {
       bg_legazpi: 'assets/backgrounds/legazpiVillage.jpg',
 
       // Sprites
-      player: 'assets/animations/jo2.png', // <-- Updated to PNG with transparency
+      player: 'assets/animations/jo1.png', // <-- Updated to PNG with transparency
       jo_cart: 'assets/animations/jo/jo-cart.png',
       //player_hold: 'assets/animations/jo/Jo Catapult.png',
       jo_portrait: 'assets/sprites/cartniJO.jpg',
@@ -38,8 +38,8 @@ class AssetLoader {
       enemy_rex: 'assets/animations/rex.png',
       enemy_rat: 'assets/animations/enemy/rat.png',
       enemy_student: 'assets/animations/jbhotdog.png',
-      boss_inspector: 'assets/sprites/boss_inspector.png',
-      boss_vlogger: 'assets/sprites/boss_vlogger.png',
+      boss_vlogger: 'assets/animations/boss_vlogger.png',
+      boss_kap: 'assets/animations/boss_kap.png',
       newDaga1: 'assets/animations/newDaga1.png',
       ian: 'assets/animations/ian.png',
       chair: 'assets/animations/chair.png',
@@ -73,13 +73,40 @@ class AssetLoader {
       ui_coin: 'assets/ui/coin.png',
     };
 
-    const audioSources = {
-      bgm_act1: 'assets/audio/bgm_act1.mp3',
-      bgm_act2: 'assets/audio/bgm_act2.mp3',
-      bgm_act3: 'assets/audio/bgm_act3.mp3',
-      sfx_launch: 'assets/audio/sfx_launch.mp3',
-      sfx_hit: 'assets/audio/sfx_hit.mp3',
-      sfx_coin: 'assets/audio/sfx_coin.mp3',
+const audioSources = {
+      // Ambiance / Background
+      bgm_traffic: 'assets/audio/trafficnoises.mp3',
+      bgm_street: 'assets/audio/streetnoise.mp3',
+      bgm_crowd: 'assets/audio/talking crowd.mp3',
+      bgm_vendors: 'assets/audio/streetvendors.mp3',
+      bgm_makati: 'assets/audio/makati.mp3',
+      bgm_people: 'assets/audio/peopletalking.mp3',
+
+      // Jo & UI
+      sfx_money: 'assets/audio/moneyget.mp3',
+      sfx_stir: 'assets/audio/potstriing.mp3',
+
+      // Enemy Attacks
+      sfx_fmattack: 'assets/audio/fmattack.mp3',
+      sfx_fmattack1: 'assets/audio/fmattack1.mp3',
+
+      // Male Death Sounds
+      sfx_deathman1: 'assets/audio/deathman1.mp3',
+      sfx_deathsound: 'assets/audio/deathsound.mp3',
+      sfx_deathsound1: 'assets/audio/deathsound1.mp3',
+      sfx_deathsoundmale: 'assets/audio/deathsoundmale.mp3',
+      sfx_deathsoundmale2: 'assets/audio/deathsoundmale2.mp3',
+      sfx_mandeath2: 'assets/audio/mandeath2.mp3',
+
+      // Female Death Sounds
+      sfx_deathsoundfm: 'assets/audio/deathsoundfm.mp3',
+      sfx_deathsoundfm2: 'assets/audio/deathsoundfm2.mp3',
+      sfx_deathsoundfm3: 'assets/audio/deathsoundfm3.mp3',
+
+      // Movement & Voice Placeholders
+      sfx_footstep: 'assets/audio/footsteps.mp3',
+      sfx_animal_death: 'assets/audio/animal_death_placeholder.mp3', // PLACEHOLDER
+      sfx_enemy_voice: 'assets/audio/voice_placeholder.mp3',         // PLACEHOLDER
     };
 
     const imageEntries = Object.entries(imageSources);

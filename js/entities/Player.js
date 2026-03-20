@@ -222,8 +222,22 @@ class Player {
     };
   }
 
-  update(delta) {
-    // RESET animation frame when transitioning between Game States
+update(delta) {
+    // --- NEW: IDLE STIRRING AUDIO LOGIC ---
+    const stirAudio = this.game.assetLoader?.audio?.sfx_stir;
+    if (stirAudio) {
+      // Only play if we are in the PLAYING state, NOT dragging, and NOT dead
+      if (this.game.currentState === CONSTANTS.STATES.PLAYING && !this.isDragging && !this.isFiring && !this.isDead()) {
+        if (stirAudio.paused) {
+          stirAudio.loop = true;
+          stirAudio.volume = 0.5; // Keep it slightly quiet so it doesn't overpower everything
+          // The browser might block auto-play until the user clicks, so we catch the error silently
+          stirAudio.play().catch(e => {}); 
+        }
+      } else {
+        stirAudio.pause(); // Pause stirring if he is shooting or dead!
+      }
+    }
     if (this.game && this.game.currentState !== this._lastKnownState) {
       this.currentFrame = 0;
       this._lastKnownState = this.game.currentState;
