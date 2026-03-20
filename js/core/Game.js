@@ -204,9 +204,16 @@ const enemyCount = Math.min(5 + Math.floor(waveNum / 2), 15);
    * Start the game.
    */
   start() {
+    // Draw the Home screen background immediately so it doesn't look empty/black while loading
+    this.uiManager._drawSunburst(this.ctx, '#ffcc00', '#ffb300');
+    
     this.assetLoader.loadAll(() => {
       this.saveManager.load();
       this.levelManager.init();
+      
+      // Always start at Main Menu on a fresh browser load/refresh
+      this.currentState = CONSTANTS.STATES.MAIN_MENU;
+      
       this.isRunning = true;
       requestAnimationFrame((ts) => this.loop(ts));
     });

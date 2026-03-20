@@ -19,6 +19,15 @@ class SaveManager {
         cola: 1,
         rice: 1,
       },
+      weaponUnlocks: {
+        mami: true,
+        pares: false,
+        rice: false,
+      },
+      specialUnlocks: {
+        calamansi: false,
+        chili: false,
+      }
     };
   }
 

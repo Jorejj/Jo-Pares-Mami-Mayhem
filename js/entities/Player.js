@@ -175,11 +175,12 @@ class Player {
   syncWithSave(state) {
     if (!state) return;
     this.kita = state.kita || 0;
+    
+    // Sync Weapon Levels
     if (state.weaponLevels) {
       for (const [weaponKey, level] of Object.entries(state.weaponLevels)) {
         if (this.arsenal[weaponKey]) {
           this.arsenal[weaponKey].level = level;
-          this.arsenal[weaponKey].unlocked = true; 
           const baseStats = CONSTANTS.WEAPON_STATS[weaponKey];
           if (baseStats) {
             this.arsenal[weaponKey].damage = baseStats.baseDamage + (level - 1) * 5;
@@ -187,6 +188,22 @@ class Player {
         }
       }
     }
+
+    // Sync Weapon Unlocks
+    if (state.weaponUnlocks) {
+      for (const [weaponKey, unlocked] of Object.entries(state.weaponUnlocks)) {
+        if (this.arsenal[weaponKey]) {
+          this.arsenal[weaponKey].unlocked = unlocked;
+        }
+      }
+    } else {
+        // Fallback for older saves: Only Mami is unlocked by default
+        this.arsenal['mami'].unlocked = true;
+        this.arsenal['pares'].unlocked = false;
+        this.arsenal['rice'].unlocked = false;
+    }
+
+    // Sync Specials
     if (state.specialUnlocks) {
       for (const [specialKey, unlocked] of Object.entries(state.specialUnlocks)) {
         if (this.specials[specialKey]) {

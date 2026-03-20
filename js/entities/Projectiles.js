@@ -139,24 +139,27 @@ class Projectile {
       return;
     }
 
-   // --- RICE AURA ---
-    if (this.type === 'rice' && this.splashRadius > 0) {
+   // --- RICE AURA (Optimized: Check every 5 frames) ---
+    if (this.type === 'rice' && this.splashRadius > 0 && this.game.gameFrame % 5 === 0) {
       const enemies = (this.game.waveManager && this.game.waveManager.enemies) || [];
       
       const burnDamageScaling = [2, 4, 8, 12, 16];
       const tickDamage = burnDamageScaling[this.level - 1] || 2;
+      const currentRadius = this.splashRadius + (this.level * 10);
 
-      enemies.forEach(enemy => {
-        if (!enemy.isAlive) return;
+      for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
+        if (!enemy.isAlive || enemy.state === 'dead') continue;
 
-        const enemyCenterX = enemy.x + enemy.width / 2;
-        const enemyCenterY = enemy.y + enemy.height / 2;
-        const dist = Physics.getDistance(this.x, this.y, enemyCenterX, enemyCenterY);
+        const dist = Physics.getDistance(this.x, this.y, enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
 
-        if (dist <= this.splashRadius && !enemy.burnActive) {
-         enemy.applyBurnStatus(CONSTANTS.SPECIALS.chili.burnDuration, tickDamage);
+        if (dist <= currentRadius) {
+          // Only re-apply if burn is missing or almost gone (to save on logic)
+          if (!enemy.burnActive || enemy.burnDuration < 500) {
+            enemy.applyBurnStatus(2000, tickDamage);
+          }
         }
-      });
+      }
     }
 
     // ===== BOUNDS CHECK =====
