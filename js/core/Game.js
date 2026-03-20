@@ -179,7 +179,6 @@ class Game {
       "rex",
       "newDaga1",
       "ian",
-      "boss_kap",
     ];
 
     // --- BOSS STAGE LOGIC ---
