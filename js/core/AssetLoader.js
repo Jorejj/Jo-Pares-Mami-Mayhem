@@ -24,7 +24,8 @@ class AssetLoader {
       bg_legazpi: 'assets/backgrounds/legazpiVillage.jpg',
 
       // Sprites
-      player: 'assets/animations/jo1.png', // <-- Updated to PNG with transparency
+      player: 'assets/animations/jo2.png', // <-- Updated to PNG with transparency
+      jo_cart: 'assets/animations/jo/jo-cart.png',
       //player_hold: 'assets/animations/jo/Jo Catapult.png',
       jo_portrait: 'assets/sprites/cartniJO.jpg',
       catapult: 'assets/sprites/catapult.png',
@@ -41,6 +42,10 @@ class AssetLoader {
       boss_vlogger: 'assets/sprites/boss_vlogger.png',
       newDaga1: 'assets/animations/newDaga1.png',
       ian: 'assets/animations/ian.png',
+      chair: 'assets/animations/chair.png',
+      table: 'assets/animations/table.png',
+      sack: 'assets/animations/sack.png',
+      sack2: 'assets/animations/sack2.png',
 
       // Story/Prologue Assets
       story1: 'assets/story/story1.png',

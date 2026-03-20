@@ -21,14 +21,14 @@ class InputHandler {
       this.lastDragVector = { vx: 0, vy: 0 }; // Reset on new drag
     });
 
-    canvas.addEventListener('mousemove', (e) => {
+    window.addEventListener('mousemove', (e) => {
       this._updateMousePos(e);
       if (this.isDragging) {
         this.dragCurrent = { x: this.mouse.x, y: this.mouse.y };
       }
     });
 
-    canvas.addEventListener('mouseup', () => {
+    window.addEventListener('mouseup', () => {
       this.isDragging = false;
       this.mouse.isDown = false;
     });
@@ -43,14 +43,14 @@ class InputHandler {
       this.lastDragVector = { vx: 0, vy: 0 }; // Reset on new drag
     });
 
-    canvas.addEventListener('touchmove', (e) => {
+    window.addEventListener('touchmove', (e) => {
       this._updateTouchPos(e);
       if (this.isDragging) {
         this.dragCurrent = { x: this.mouse.x, y: this.mouse.y };
       }
-    });
+    }, { passive: false });
 
-    canvas.addEventListener('touchend', () => {
+    window.addEventListener('touchend', () => {
       this.isDragging = false;
       this.mouse.isDown = false;
     });

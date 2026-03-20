@@ -11,6 +11,8 @@ class SaveManager {
     return {
       currentLevel: 1,
       kita: 0,
+      hasSeenTutorial: false,
+      currentGameState: 'MAIN_MENU',
       weaponLevels: {
         mami: 1,
         pares: 1,
