@@ -60,9 +60,12 @@ class Game {
     }
     
     // 3. Save Specials
-    state.specialUnlocks = {};
+    state.specialsData = {};
     for (const [key, data] of Object.entries(this.player.specials)) {
-      state.specialUnlocks[key] = data.unlocked;
+      state.specialsData[key] = {
+        unlocked: data.unlocked,
+        timeSinceLastFire: data.timeSinceLastFire
+      };
     }
 
     // 4. Write to Local Storage
