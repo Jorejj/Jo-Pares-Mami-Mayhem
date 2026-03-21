@@ -150,24 +150,24 @@ const CONSTANTS = {
   // ===== TUTORIAL STEPS =====
   TUTORIAL_STEPS: [
     {
-      title: "HOW TO PLAY",
-      text: "DRAG AND RELEASE your mouse or touch on Jo's catapult to aim and fire your delicious projectiles!",
-      image: "jo1"
+      title: "YOUR ARSENAL",
+      text: "Your Arsenal! Press 1-3 for ammo, 4-6 for special attacks!",
+      image: "tutorial_arsenal"
     },
     {
-      title: "SWITCH WEAPONS",
-      text: "Press [1], [2], or [3] to switch between MAMI, PARES, and RICE. Each has different damage and speed!",
-      image: "jo1_5"
+      title: "YOUR STATUS",
+      text: "Keep an eye on Jo's HP, your Kita, and Wave stats here!",
+      image: "tutorial_hud"
     },
     {
-      title: "SPECIAL ITEMS",
-      text: "Press [4] for CALAMANSI (Slow) or [5] for CHILI (Burn) once you unlock them in the shop!",
-      image: "jo"
+      title: "YOUR CATAPULT",
+      text: "Click, drag back from Jo, and release to sling hot food at enemies!",
+      image: "tutorial_catapult"
     },
     {
-      title: "YOUR MISSION",
-      text: "Defend your Pares Cart from hungry gangsters and pests. Don't let them touch you!",
-      image: "cartniJO"
+      title: "ENEMY WAVES",
+      text: "Enemies will spawn from this side! Don't let them reach your cart!",
+      image: "tutorial_enemy"
     }
   ],
 

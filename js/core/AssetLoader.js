@@ -72,6 +72,12 @@ class AssetLoader {
       ui_hud: 'assets/ui/hud.png',
       ui_shop: 'assets/ui/shop.png',
       ui_coin: 'assets/ui/coin.png',
+
+      // Tutorial
+      tutorial_arsenal: 'assets/ui/Tutorial/Arsenal.png',
+      tutorial_hud: 'assets/ui/Tutorial/HUD.png',
+      tutorial_catapult: 'assets/ui/Tutorial/Catapult.gif',
+      tutorial_enemy: 'assets/ui/Tutorial/Enemy.gif',
     };
 
 const audioSources = {

@@ -20,6 +20,8 @@
         <h1 class="comic-title">JO'S PARES MAMI: MAYHEM</h1>
         <button id="btn-new-game" class="menu-btn green">NEW GAME</button>
         <button id="btn-load-game" class="menu-btn yellow">LOAD GAME</button>
+        <button id="btn-settings-menu" class="menu-btn">SETTINGS</button>
+        <button id="btn-howtoplay-menu" class="menu-btn">HOW TO PLAY</button>
         <button id="btn-quit" class="menu-btn red">QUIT</button>
       </div>
 
@@ -30,14 +32,23 @@
         <button id="btn-diff-hard" class="menu-btn red">HARD</button>
       </div>
 
-      <div id="hud-panel" class="hidden">
-      </div>
-
       <div id="screen-tutorial" class="ui-screen hidden">
         <div class="comic-box">
           <h2 id="tut-title" class="tut-title"></h2>
           <p id="tut-text" class="tut-text"></p>
           <button id="btn-tut-next" class="menu-btn green">CONTINUE</button>
+        </div>
+      </div>
+
+      <div id="screen-static-tutorial" class="ui-screen hidden">
+        <div class="comic-box tutorial-box">
+          <button id="btn-static-tut-close" class="close-x">X</button>
+          <h2 id="static-tut-title" class="tut-title"></h2>
+          <div id="static-tut-image-container" class="tut-image-container">
+            <img id="static-tut-image" class="tut-image" src="" alt="Tutorial">
+          </div>
+          <p id="static-tut-text" class="tut-text"></p>
+          <button id="btn-static-tut-next" class="menu-btn green">NEXT</button>
         </div>
       </div>
 
@@ -101,14 +112,33 @@
           <h1 class="comic-title settings">SETTINGS</h1>
           
           <div class="volume-container">
-            <label class="volume-label">SOUND VOLUME</label>
-            <input type="range" id="slider-volume" min="0" max="1" step="0.1" value="0.5">
+            <label class="volume-label">MASTER VOLUME</label>
+            <input type="range" id="slider-volume-master" min="0" max="1" step="0.01" value="0.5">
           </div>
           
-          <button id="btn-save-game" class="menu-btn yellow full-width">SAVE PROGRESS</button>
-          <button id="btn-back-home" class="menu-btn yellow full-width">BACK TO HOME</button>
-          <button id="btn-reset-save" class="menu-btn red full-width small-text">RESET ALL DATA</button>
-          <button id="btn-settings-close" class="menu-btn green full-width">BACK TO GAME</button>
+          <div class="volume-container">
+            <label class="volume-label">BGM VOLUME</label>
+            <input type="range" id="slider-volume-bgm" min="0" max="1" step="0.01" value="0.5">
+          </div>
+          
+          <div class="volume-container">
+            <label class="volume-label">SFX VOLUME</label>
+            <input type="range" id="slider-volume-sfx" min="0" max="1" step="0.01" value="0.5">
+          </div>
+          
+          <!-- Context-aware button containers -->
+          <div id="settings-home-buttons">
+            <button id="btn-reset-audio-defaults" class="menu-btn full-width">RESET TO DEFAULT</button>
+            <button id="btn-settings-close-home" class="menu-btn green full-width">CLOSE</button>
+          </div>
+          
+          <div id="settings-playing-buttons" class="hidden">
+            <button id="btn-save-game" class="menu-btn yellow full-width">SAVE GAME</button>
+            <button id="btn-clear-save" class="menu-btn red full-width">CLEAR SAVE</button>
+            <button id="btn-howtoplay-settings" class="menu-btn full-width">HOW TO PLAY</button>
+            <button id="btn-settings-quit-home" class="menu-btn red full-width">QUIT TO HOME</button>
+            <button id="btn-settings-close" class="menu-btn green full-width">BACK TO GAME</button>
+          </div>
         </div>
       </div>
 
@@ -116,6 +146,17 @@
         <div class="comic-box">
           <h1 class="comic-title">GAME OVER!</h1>
           <button id="btn-restart" class="menu-btn red">RESTART</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Tutorial Overlay -->
+      <div id="dynamic-tutorial-overlay" class="hidden">
+        <!-- Control Box -->
+        <div class="comic-box" style="position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 500px; text-align: center;">
+          <h2 class="tut-title">INTERACTIVE TUTORIAL</h2>
+          <p id="dynamic-tut-message" class="tut-text">Let's learn the controls!</p>
+          <button id="btn-dynamic-tut-next" class="menu-btn green">NEXT</button>
+          <button id="btn-dynamic-tut-gotit" class="menu-btn green hidden">GOT IT!</button>
         </div>
       </div>
     </div>

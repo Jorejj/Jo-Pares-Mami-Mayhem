@@ -58,12 +58,6 @@ body {
 .menu-btn.green { background: #2ecc71; color: #fff; }
 .menu-btn.yellow { background: #f1c40f; }
 
-#hud-panel {
-  position: absolute; top: 10px; left: 240px; gap: 10px; pointer-events: none; 
-  display: flex;
-}
-#hud-panel .game-btn { pointer-events: auto; }
-
 .game-btn {
   width: 70px; height: 70px; border: 4px solid #000; background: #f1c40f;
   cursor: pointer; font-weight: 900; font-size: 12px;
@@ -232,5 +226,71 @@ input[type=range] { width: 100%; cursor: pointer; }
 
 .tut-title { font-size: 32px; color: #f1c40f; margin-bottom: 20px; }
 .tut-text { font-size: 20px; margin-bottom: 30px; }
+
+/* TUTORIAL SCREENS */
+.tutorial-box { width: 800px; max-width: 90%; }
+.tut-image-container {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20px 0;
+  background: #f9f9f9;
+  border: 3px solid #000;
+}
+.tut-image {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+}
+
+/* Dynamic Tutorial Overlay */
+#dynamic-tutorial-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  pointer-events: auto; /* Catch clicks so they don't hit the game */
+  z-index: 100;
+}
+.tutorial-highlight {
+  position: absolute;
+  border: 4px dashed #f1c40f;
+  box-shadow: 0 0 15px #f1c40f, inset 0 0 10px #f1c40f;
+  animation: pulseHighlight 1.5s infinite alternate;
+  pointer-events: none;
+}
+.tutorial-arrow {
+  position: absolute;
+  font-size: 50px;
+  color: #e74c3c;
+  text-shadow: 2px 2px 0 #000;
+  animation: bounceArrow 1s infinite alternate;
+  pointer-events: none;
+}
+.tutorial-tooltip {
+  position: absolute;
+  background: #fff;
+  border: 4px solid #000;
+  padding: 15px;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  box-shadow: 5px 5px 0 #000;
+  max-width: 300px;
+  text-align: center;
+}
+.tutorial-tooltip.comic {
+  font-family: 'Comic Sans MS', 'Impact', sans-serif; 
+}
+@keyframes pulseHighlight {
+  from { opacity: 0.7; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.05); }
+}
+@keyframes bounceArrow {
+  from { transform: translateY(0); }
+  to { transform: translateY(-15px); }
+}
+
 .victory-stats { font-size: 24px; margin-bottom: 20px; }
 .volume-label { font-weight: 900; font-size: 18px; }

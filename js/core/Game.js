@@ -117,10 +117,7 @@ class Game {
         if (key === "enter") {
           this.currentState = CONSTANTS.STATES.PLAYING;
           this.player.resetAmmo();
-          if (this.waveManager.currentWave === 1 && !this.saveManager.state.hasSeenTutorial) {
-            this.uiManager.showInGameTutorial = true;
-            this.uiManager.tutorialIndex = 0;
-          }
+          // Tutorial removed - only triggers from "HOW TO PLAY" button
         }
       }
       else if (this.currentState === CONSTANTS.STATES.PLAYING) {
@@ -251,7 +248,7 @@ class Game {
     this.gameFrame++;
     this._updateAudio();
     if (this.uiManager) this.uiManager.update(delta);
-    if ((this.uiManager.showInGameTutorial || this.uiManager.isPaused) && this.currentState === CONSTANTS.STATES.PLAYING) return; 
+    if ((this.uiManager.showInGameTutorial || this.uiManager.isPaused || this.uiManager.showDynamicTutorial) && this.currentState === CONSTANTS.STATES.PLAYING) return;
 
     if (this.player) this.player.update(delta);
     if (this.waveManager) this.waveManager.update(delta);
