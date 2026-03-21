@@ -221,7 +221,23 @@ class UIManager {
       }
 
       // Original behavior: advance prologue on canvas click
-      if (this.game.currentState === CONSTANTS.STATES.PROLOGUE) this._advancePrologue();
+      if (this.game.currentState === CONSTANTS.STATES.PROLOGUE) {
+        const rect = this.game.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Check SKIP button first
+        if (this._prologueSkipBtnBounds) {
+          const bounds = this._prologueSkipBtnBounds;
+          if (x >= bounds.x && x < bounds.x + bounds.w && y >= bounds.y && y < bounds.y + bounds.h) {
+            this._skipPrologue();
+            return;
+          }
+        }
+
+        // Default: advance to next prologue step
+        this._advancePrologue();
+      }
     });
   }
 
@@ -311,7 +327,14 @@ class UIManager {
     
     if (titleEl) titleEl.innerText = step.title || '';
     if (textEl) textEl.innerText = (step.text || '').toUpperCase();
-    if (imageEl && step.image) imageEl.src = step.image;
+    
+    // NEW: Use the asset loader to get the actual image
+    if (imageEl && step.image) {
+      const imageSrc = this.game.assetLoader.images[step.image];
+      if (imageSrc) {
+        imageEl.src = imageSrc.src || '';
+      }
+    }
     
     if (nextBtn) {
       const isLastStep = this.staticTutorialIndex >= CONSTANTS.TUTORIAL_STEPS.length - 1;
@@ -319,6 +342,19 @@ class UIManager {
     }
   }
   
+  _openDynamicTutorialFromHome() {
+    // From main menu, always show dynamic tutorial
+    this.dynamicTutorialStep = 0;
+    const overlay = document.getElementById('dynamic-tutorial-overlay');
+    if (overlay) {
+      overlay.querySelectorAll('.tutorial-highlight').forEach(el => el.remove());
+      overlay.querySelectorAll('.tutorial-tooltip').forEach(el => el.remove());
+    }
+    
+    this.showDynamicTutorial = true;
+    this._updateDynamicTutorialContent();
+  }
+
   _openDynamicTutorialFromSettings() {
     if (this.game.currentState === CONSTANTS.STATES.PLAYING) {
       this.isSettingsOpen = false;
@@ -335,7 +371,7 @@ class UIManager {
       this.showDynamicTutorial = true;
       this._updateDynamicTutorialContent();
     } else {
-      this._openStaticTutorial();
+      this._openDynamicTutorialFromHome();
     }
   }
   
@@ -461,6 +497,10 @@ class UIManager {
     }
   }
 
+  _skipPrologue() {
+    this._startPlaying();
+  }
+
   _advanceTutorial() {
     this.tutorialIndex++;
     if (this.tutorialIndex >= CONSTANTS.TUTORIAL_STEPS.length) {
@@ -539,7 +579,7 @@ class UIManager {
     this._showScreen('screen-victory', state === CONSTANTS.STATES.VICTORY && !this.isSettingsOpen);
     this._showScreen('screen-shop', state === CONSTANTS.STATES.SHOP && !this.isSettingsOpen);
     this._showScreen('screen-gameover', state === CONSTANTS.STATES.GAMEOVER && !this.isSettingsOpen);
-    this._showScreen('screen-settings', this.isSettingsOpen);
+    this._showScreen('screen-settings', this.isSettingsOpen && !this.isConfirmingHome);
     this._showScreen('screen-pause', this.isPaused && !this.isSettingsOpen && !this.showDynamicTutorial);
     
     // NEW: Tutorial screens
@@ -990,6 +1030,22 @@ class UIManager {
     this._drawComicBox(ctx, this.game.canvas.width / 2 - 250 - pulse/2, this.game.canvas.height - 65 - pulse/2, 500 + pulse, 50 + pulse, '#e74c3c');
     ctx.fillStyle = '#fff'; ctx.font = 'bold 22px "Comic Sans MS", sans-serif';
     ctx.fillText('CLICK ANYWHERE TO CONTINUE', this.game.canvas.width / 2, this.game.canvas.height - 32);
+
+    // === SKIP BUTTON ===
+    const skipBtnW = 120;
+    const skipBtnH = 45;
+    const skipBtnX = this.game.canvas.width - skipBtnW - 20;
+    const skipBtnY = 20;
+
+    this._drawComicBox(ctx, skipBtnX, skipBtnY, skipBtnW, skipBtnH, '#3498db', '#2980b9');
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px "Comic Sans MS", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SKIP', skipBtnX + skipBtnW / 2, skipBtnY + skipBtnH / 2);
+
+    // Store skip button bounds for click detection
+    this._prologueSkipBtnBounds = { x: skipBtnX, y: skipBtnY, w: skipBtnW, h: skipBtnH };
   }
 
 _drawPlayingHUD(ctx) {
