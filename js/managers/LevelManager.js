@@ -5,26 +5,31 @@ class LevelManager {
   constructor(game) {
     this.game = game;
     this.currentLevel = 1;
-    this.maxLevel = CONSTANTS.TOTAL_LEVELS;
+    this.maxLevel = CONSTANTS.TOTAL_LEVELS; // Make sure this is 15 in Constants!
     this.currentDifficulty = null;
 
-    // Level definitions: act, background key, label, and BGM track
+    // --- NEW: THE GRAND 3-CITY CAMPAIGN ---
     this.levels = [
-      { act: 1, bg: 'bg_monumento', label: 'Monumento Rumble', bgm: 'bgm_traffic' },
-      { act: 1, bg: 'bg_bagong_barrio', label: 'Bagong Barrio Brawl', bgm: 'bgm_street' },
-      { act: 1, bg: 'bg_c3', label: 'C3 Chaos', bgm: 'bgm_traffic' },
-      { act: 1, bg: 'bg_sangandaan', label: 'Sangandaan Slap', bgm: 'bgm_vendors' },
-      { act: 1, bg: 'bg_monumento', label: 'Boss: Inspector Kap Nino', bgm: 'bgm_crowd' },
-      { act: 2, bg: 'bg_intramuros', label: 'Manila Takeover', bgm: 'bgm_people' },
-      { act: 2, bg: 'bg_intramuros', label: 'Quiapo Mayhem', bgm: 'bgm_vendors' },
-      { act: 2, bg: 'bg_intramuros', label: 'Intramuros Impact', bgm: 'bgm_street' },
-      { act: 2, bg: 'bg_intramuros', label: 'Binondo Brawl', bgm: 'bgm_people' },
-      { act: 2, bg: 'bg_intramuros', label: 'Boss: Vlogger Diwata', bgm: 'bgm_crowd' },
-      { act: 3, bg: 'bg_guadalupe', label: 'Guadalupe Gridlock', bgm: 'bgm_traffic' },
-      { act: 3, bg: 'bg_guadalupe', label: 'Poblacion Party', bgm: 'bgm_people' },
-      { act: 3, bg: 'bg_legazpi', label: 'Legazpi Village Loot', bgm: 'bgm_makati' },
-      { act: 3, bg: 'bg_legazpi', label: 'Makati Campaign', bgm: 'bgm_makati' },
-      { act: 3, bg: 'bg_legazpi', label: 'Boss: The Mastermind', bgm: 'bgm_crowd' },
+      // ACT 1: CALOOCAN (The Industrial Start)
+      { act: 1, bg: 'bg_monumento',     label: 'Monumento (Area 1)',        bgm: 'bgm_traffic' },
+      { act: 1, bg: 'bg_sangandaan',    label: 'Sangandaan Market',         bgm: 'bgm_vendors' },
+      { act: 1, bg: 'bg_bagong_barrio', label: 'Bagong Barrio',             bgm: 'bgm_street'  },
+      { act: 1, bg: 'bg_c3',            label: 'C-3 Road',                  bgm: 'bgm_traffic' },
+      { act: 1, bg: 'bg_bagumbong',     label: 'Boss: Kap Nino',            bgm: 'bgm_crowd'   },
+
+      // ACT 2: MANILA (The Historical Core)
+      { act: 2, bg: 'bg_intramuros',    label: 'Intramuros (Area 1)',       bgm: 'bgm_people'  },
+      { act: 2, bg: 'bg_quiapo',        label: 'Quiapo Mayhem',             bgm: 'bgm_vendors' },
+      { act: 2, bg: 'bg_chinatown',     label: 'Binondo Food Trip',         bgm: 'bgm_street'  },
+      { act: 2, bg: 'bg_luneta',        label: 'Rizal Park (Luneta)',       bgm: 'bgm_people'  },
+      { act: 2, bg: 'bg_baywalk',       label: 'Boss: Vlogger Ian',         bgm: 'bgm_crowd'   },
+
+      // ACT 3: MAKATI (The Corporate Jungle)
+      { act: 3, bg: 'bg_ayalaAvenue',   label: 'Ayala Avenue (Area 1)',     bgm: 'bgm_makati'  },
+      { act: 3, bg: 'bg_poblacion',     label: 'Poblacion Party',           bgm: 'bgm_people'  },
+      { act: 3, bg: 'bg_legazpi',       label: 'Legazpi Village',           bgm: 'bgm_makati'  },
+      { act: 3, bg: 'bg_guadalupe',     label: 'Guadalupe Bridge',          bgm: 'bgm_traffic' },
+      { act: 3, bg: 'bg_malacanang',    label: 'Final Boss: The Mastermind',bgm: 'bgm_crowd'   },
     ];
   }
 

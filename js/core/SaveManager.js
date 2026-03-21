@@ -24,9 +24,14 @@ class SaveManager {
         pares: false,
         rice: false,
       },
+      weaponAmmo: { // Track Ammo usage!
+        pares: 5,
+        rice: 3
+      },
       specialUnlocks: {
         calamansi: false,
         chili: false,
+        garlic: false
       }
     };
   }
@@ -36,6 +41,7 @@ class SaveManager {
       const raw = localStorage.getItem(this._key);
       if (raw) {
         this.state = Object.assign(this._defaultState(), JSON.parse(raw));
+        console.log("[SaveManager] Game Loaded Successfully:", this.state);
       }
     } catch (e) {
       console.warn('SaveManager: failed to load save data.', e);
