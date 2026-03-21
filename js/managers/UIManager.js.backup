@@ -12,28 +12,6 @@ class UIManager {
     this.showInGameTutorial = false;
     this.isSettingsOpen = false;
     this.isPaused = false;
-    
-    // NEW: Tutorial system
-    this.wasPausedBeforeSettings = false;
-    this.showStaticTutorial = false;
-    this.staticTutorialIndex = 0;
-    this.showDynamicTutorial = false;
-    this.dynamicTutorialStep = 0;
-    
-    // NEW: Audio settings
-    this.masterVolume = 0.5;
-    this.bgmVolume = 0.5;
-    this.sfxVolume = 0.5;
-
-    // === FEATURE 1: Tutorial Arrow ===
-    this.tutorialArrowX = 0;
-    this.tutorialArrowY = 0;
-    this.tutorialArrowAngle = 0;
-
-    // === FEATURE 2 & 3: Home Button + Confirmation Modal ===
-    this.isConfirmingHome = false;
-    this.confirmHomeSource = null;
-    
     this._setupHtmlButtons();
   }
 
@@ -51,12 +29,13 @@ class UIManager {
       'btn-diff-hard': () => this._startNewGame('hard'),
       'btn-tut-next': () => this._advanceTutorial(),
       'btn-visit-shop': () => { this.game.currentState = CONSTANTS.STATES.SHOP; this.game.shopManager.open(); },
+      // Added Garlic [6] to Shop interactions
       'btn-shop-mami': () => { this.game.shopManager.handleSelection(1); this._updateShopUI(); },
       'btn-shop-pares': () => { this.game.shopManager.handleSelection(2); this._updateShopUI(); },
       'btn-shop-rice': () => { this.game.shopManager.handleSelection(3); this._updateShopUI(); },
       'btn-shop-calamansi': () => { this.game.shopManager.handleSelection(4); this._updateShopUI(); },
       'btn-shop-chili': () => { this.game.shopManager.handleSelection(5); this._updateShopUI(); },
-      'btn-shop-garlic': () => { this.game.shopManager.handleSelection(6); this._updateShopUI(); },
+      'btn-shop-garlic': () => { this.game.shopManager.handleSelection(6); this._updateShopUI(); }, // NEW
       'btn-shop-done': () => this._finishShopping(),
       'btn-restart': () => location.reload(),
       
@@ -64,27 +43,9 @@ class UIManager {
       'btn-resume': () => { this._togglePause(); },
       'btn-pause-home': () => { this.isPaused = false; this.game.currentState = CONSTANTS.STATES.MAIN_MENU; },
 
-      'btn-settings-open': () => { 
-        if (this.game.currentState === CONSTANTS.STATES.PLAYING) {
-          this.wasPausedBeforeSettings = this.isPaused;
-          this.isPaused = true;
-        }
-        this.isSettingsOpen = true; 
-      },
-      'btn-settings-close': () => { 
-        this.isSettingsOpen = false;
-        if (this.game.currentState === CONSTANTS.STATES.PLAYING && !this.wasPausedBeforeSettings) {
-          this.isPaused = false;
-        }
-        this.wasPausedBeforeSettings = false;
-      },
-      'btn-settings-x': () => { 
-        this.isSettingsOpen = false;
-        if (this.game.currentState === CONSTANTS.STATES.PLAYING && !this.wasPausedBeforeSettings) {
-          this.isPaused = false;
-        }
-        this.wasPausedBeforeSettings = false;
-      },
+      'btn-settings-open': () => { this.isSettingsOpen = true; },
+      'btn-settings-close': () => { this.isSettingsOpen = false; },
+      'btn-settings-x': () => { this.isSettingsOpen = false; },
       'btn-back-home': () => { 
         this.isSettingsOpen = false;
         this.game.currentState = CONSTANTS.STATES.MAIN_MENU;
@@ -97,25 +58,7 @@ class UIManager {
         if(confirm("Reset all data? This cannot be undone.")) { 
           this.game.saveManager.reset(); location.reload(); 
         } 
-      },
-      
-      // NEW: Settings and tutorial buttons
-      'btn-settings-menu': () => this._openSettings(),
-      'btn-howtoplay-menu': () => this._openStaticTutorial(),
-      'btn-static-tut-next': () => this._advanceStaticTutorial(),
-      'btn-static-tut-close': () => this._closeStaticTutorial(),
-      'btn-reset-audio-defaults': () => this._resetAudioDefaults(),
-      'btn-settings-close-home': () => this._closeSettings(),
-      'btn-clear-save': () => {
-        if (confirm("Clear all save data? This cannot be undone!")) {
-          this.game.saveManager.reset();
-          alert("Save data cleared!");
-        }
-      },
-      'btn-howtoplay-settings': () => this._openDynamicTutorialFromSettings(),
-      'btn-settings-quit-home': () => { this.isConfirmingHome = true; this.confirmHomeSource = 'settings'; },
-      'btn-dynamic-tut-next': () => this._advanceDynamicTutorial(),
-      'btn-dynamic-tut-gotit': () => this._closeDynamicTutorial()
+      }
     };
 
     for (const [id, action] of Object.entries(actions)) {
@@ -123,7 +66,6 @@ class UIManager {
       if (btn) btn.onclick = (e) => { e.preventDefault(); action(); };
     }
 
-    // OLD: Single global volume slider (keep for compatibility)
     const slider = document.getElementById('slider-volume');
     if (slider) {
       slider.oninput = (e) => {
@@ -131,96 +73,8 @@ class UIManager {
         this._updateGlobalVolume(vol);
       };
     }
-    
-    // NEW: Separate volume sliders
-    const masterSlider = document.getElementById('slider-volume-master');
-    if (masterSlider) {
-      masterSlider.oninput = (e) => {
-        this.masterVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
-    
-    const bgmSlider = document.getElementById('slider-volume-bgm');
-    if (bgmSlider) {
-      bgmSlider.oninput = (e) => {
-        this.bgmVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
-    
-    const sfxSlider = document.getElementById('slider-volume-sfx');
-    if (sfxSlider) {
-      sfxSlider.oninput = (e) => {
-        this.sfxVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
 
-    this.game.canvas.addEventListener('click', (e) => {
-      // FEATURE 3: Handle Confirmation Modal clicks (highest priority)
-      if (this.isConfirmingHome) {
-        const rect = this.game.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // Modal box centered at canvas center
-        const modalW = 400;
-        const modalH = 250;
-        const modalX = (this.game.canvas.width - modalW) / 2;
-        const modalY = (this.game.canvas.height - modalH) / 2;
-
-        // YES button: bottom-left of modal
-        const yesX = modalX + 50;
-        const yesY = modalY + 190;
-        const yesBtnW = 140;
-        const yesBtnH = 40;
-
-        // NO button: bottom-right of modal
-        const noX = modalX + 210;
-        const noY = modalY + 190;
-        const noBtnW = 140;
-        const noBtnH = 40;
-
-        // Click detection with bounding box
-        if (x >= yesX && x < yesX + yesBtnW && y >= yesY && y < yesY + yesBtnH) {
-          // YES clicked - return to home
-          this.isConfirmingHome = false;
-          this.game.saveManager.reset();
-          this.game.currentState = CONSTANTS.STATES.MAIN_MENU;
-          this.isSettingsOpen = false;
-          this.isPaused = false;
-          this.wasPausedBeforeSettings = false;
-          return;
-        }
-
-        if (x >= noX && x < noX + noBtnW && y >= noY && y < noY + noBtnH) {
-          // NO clicked - close modal, stay in settings
-          this.isConfirmingHome = false;
-          return;
-        }
-      }
-
-      // FEATURE 2 & 3: Handle "Back to Home" button in Settings
-      if (this.isSettingsOpen && this.game.currentState !== CONSTANTS.STATES.MAIN_MENU) {
-        const rect = this.game.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // "Back to Home" button in Settings (when in-game)
-        const backHomeX = (this.game.canvas.width - 200) / 2;
-        const backHomeY = 450;
-        const btnW = 200;
-        const btnH = 50;
-
-        if (x >= backHomeX && x < backHomeX + btnW && y >= backHomeY && y < backHomeY + btnH) {
-          this.isConfirmingHome = true;
-          this.confirmHomeSource = 'settings';
-          return;
-        }
-      }
-
-      // Original behavior: advance prologue on canvas click
+    this.game.canvas.addEventListener('click', () => {
       if (this.game.currentState === CONSTANTS.STATES.PROLOGUE) this._advancePrologue();
     });
   }
@@ -230,216 +84,6 @@ class UIManager {
     Object.values(this.game.assetLoader.audio).forEach(audio => {
       if (audio instanceof Audio) audio.volume = vol;
     });
-  }
-  
-  _updateAllVolumes() {
-    if (!this.game.assetLoader || !this.game.assetLoader.audio) return;
-    
-    Object.entries(this.game.assetLoader.audio).forEach(([key, audio]) => {
-      if (audio instanceof Audio) {
-        if (key.startsWith('bgm_')) {
-          audio.volume = this.masterVolume * this.bgmVolume;
-        } else if (key.startsWith('sfx_')) {
-          audio.volume = this.masterVolume * this.sfxVolume;
-        } else {
-          audio.volume = this.masterVolume;
-        }
-      }
-    });
-  }
-  
-  _resetAudioDefaults() {
-    this.masterVolume = 0.5;
-    this.bgmVolume = 0.5;
-    this.sfxVolume = 0.5;
-    
-    const masterSlider = document.getElementById('slider-volume-master');
-    const bgmSlider = document.getElementById('slider-volume-bgm');
-    const sfxSlider = document.getElementById('slider-volume-sfx');
-    
-    if (masterSlider) masterSlider.value = 0.5;
-    if (bgmSlider) bgmSlider.value = 0.5;
-    if (sfxSlider) sfxSlider.value = 0.5;
-    
-    this._updateAllVolumes();
-  }
-  
-  _openSettings() {
-    if (this.game.currentState === CONSTANTS.STATES.PLAYING) {
-      this.wasPausedBeforeSettings = this.isPaused;
-      this.isPaused = true;
-    }
-    this.isSettingsOpen = true;
-  }
-  
-  _closeSettings() {
-    this.isSettingsOpen = false;
-    if (this.game.currentState === CONSTANTS.STATES.PLAYING && !this.wasPausedBeforeSettings) {
-      this.isPaused = false;
-    }
-    this.wasPausedBeforeSettings = false;
-  }
-  
-  _openStaticTutorial() {
-    this.showStaticTutorial = true;
-    this.staticTutorialIndex = 0;
-    this._updateStaticTutorialContent();
-  }
-  
-  _closeStaticTutorial() {
-    this.showStaticTutorial = false;
-    this.staticTutorialIndex = 0;
-  }
-  
-  _advanceStaticTutorial() {
-    this.staticTutorialIndex++;
-    if (this.staticTutorialIndex >= CONSTANTS.TUTORIAL_STEPS.length) {
-      this._closeStaticTutorial();
-    } else {
-      this._updateStaticTutorialContent();
-    }
-  }
-  
-  _updateStaticTutorialContent() {
-    const step = CONSTANTS.TUTORIAL_STEPS[this.staticTutorialIndex];
-    if (!step) return;
-    
-    const titleEl = document.getElementById('static-tut-title');
-    const textEl = document.getElementById('static-tut-text');
-    const imageEl = document.getElementById('static-tut-image');
-    const nextBtn = document.getElementById('btn-static-tut-next');
-    
-    if (titleEl) titleEl.innerText = step.title || '';
-    if (textEl) textEl.innerText = (step.text || '').toUpperCase();
-    if (imageEl && step.image) imageEl.src = step.image;
-    
-    if (nextBtn) {
-      const isLastStep = this.staticTutorialIndex >= CONSTANTS.TUTORIAL_STEPS.length - 1;
-      nextBtn.innerText = isLastStep ? 'CLOSE' : 'NEXT';
-    }
-  }
-  
-  _openDynamicTutorialFromSettings() {
-    if (this.game.currentState === CONSTANTS.STATES.PLAYING) {
-      this.isSettingsOpen = false;
-      this.isPaused = true;
-      
-      // Reset tutorial step to 0 and clear any leftover elements
-      this.dynamicTutorialStep = 0;
-      const overlay = document.getElementById('dynamic-tutorial-overlay');
-      if (overlay) {
-        overlay.querySelectorAll('.tutorial-highlight').forEach(el => el.remove());
-        overlay.querySelectorAll('.tutorial-tooltip').forEach(el => el.remove());
-      }
-      
-      this.showDynamicTutorial = true;
-      this._updateDynamicTutorialContent();
-    } else {
-      this._openStaticTutorial();
-    }
-  }
-  
-  _closeDynamicTutorial() {
-    this.showDynamicTutorial = false;
-    this.dynamicTutorialStep = 0;
-    
-    // Clear ALL highlight and tooltip elements from the overlay
-    const overlay = document.getElementById('dynamic-tutorial-overlay');
-    if (overlay) {
-      overlay.querySelectorAll('.tutorial-highlight').forEach(el => el.remove());
-      overlay.querySelectorAll('.tutorial-tooltip').forEach(el => el.remove());
-    }
-    
-    if (this.game.currentState === CONSTANTS.STATES.PLAYING && !this.wasPausedBeforeSettings) {
-      this.isPaused = false;
-    }
-    this.wasPausedBeforeSettings = false;
-  }
-  
-  _advanceDynamicTutorial() {
-    this.dynamicTutorialStep++;
-    this._updateDynamicTutorialContent();
-  }
-  
-  _updateDynamicTutorialContent() {
-    // Apply exact step-by-step rendering
-    this._renderDynamicTutorialStep(this.dynamicTutorialStep);
-  }
-
-  _renderDynamicTutorialStep(stepIndex) {
-    // Define exact 4-step tutorial sequence with hardcoded coordinates
-    const tutorialSteps = [
-      {
-        // Step 1: Arsenal (3x2 Grid - Weapons + Specials)
-        highlight: { top: '150px', left: '10px', width: '230px', height: '160px' },
-        tooltip: { top: '320px', left: '10px' },
-        text: "Your Arsenal! Press 1-3 for ammo, 4-6 for special attacks!",
-        buttonText: 'NEXT'
-      },
-      {
-        // Step 2: HUD (Health & Kita)
-        highlight: { top: '10px', left: '10px', width: '220px', height: '130px' },
-        tooltip: { top: '150px', left: '250px' },
-        text: "Keep an eye on Jo's HP, your Kita, and Wave stats here!",
-        buttonText: 'NEXT'
-      },
-      {
-        // Step 3: Jo (Catapult)
-        highlight: { top: '400px', left: '20px', width: '250px', height: '300px' },
-        tooltip: { top: '300px', left: '290px' },
-        text: "Click, drag back from Jo, and release to sling hot food at enemies!",
-        buttonText: 'NEXT'
-      },
-      {
-        // Step 4: Enemy Spawn Area
-        highlight: { top: '200px', left: '1100px', width: '150px', height: '450px' },
-        tooltip: { top: '350px', left: '750px' },
-        text: "Enemies will spawn from this side! Don't let them reach your cart!",
-        buttonText: 'GOT IT!'
-      }
-    ];
-
-    // Get overlay elements
-    const overlay = document.getElementById('dynamic-tutorial-overlay');
-    if (!overlay) return;
-
-    // Clear ALL previous highlights and tooltips (not just one)
-    overlay.querySelectorAll('.tutorial-highlight').forEach(el => el.remove());
-    overlay.querySelectorAll('.tutorial-tooltip').forEach(el => el.remove());
-
-    // If we've exceeded steps, close tutorial
-    if (stepIndex >= tutorialSteps.length) {
-      this._closeDynamicTutorial();
-      return;
-    }
-
-    const step = tutorialSteps[stepIndex];
-
-    // Create highlight box
-    const highlight = document.createElement('div');
-    highlight.className = 'tutorial-highlight';
-    Object.assign(highlight.style, step.highlight);
-    overlay.appendChild(highlight);
-
-    // NOTE: Tooltips removed to prevent blocking modal box
-
-    // Update button text and visibility
-    const nextBtn = document.getElementById('btn-dynamic-tut-next');
-    const gotitBtn = document.getElementById('btn-dynamic-tut-gotit');
-    const messageEl = document.getElementById('dynamic-tut-message');
-
-    if (messageEl) messageEl.textContent = step.text.toUpperCase();
-
-    if (step.buttonText === 'GOT IT!') {
-      if (nextBtn) nextBtn.classList.add('hidden');
-      if (gotitBtn) gotitBtn.classList.remove('hidden');
-    } else {
-      if (nextBtn) {
-        nextBtn.classList.remove('hidden');
-        nextBtn.textContent = step.buttonText;
-      }
-      if (gotitBtn) gotitBtn.classList.add('hidden');
-    }
   }
 
   _startNewGame(diffKey) {
@@ -478,73 +122,23 @@ class UIManager {
   _startPlaying() {
     this.game.currentState = CONSTANTS.STATES.PLAYING;
     this.game.waveManager.startWave(this.game._getWaveEnemies());
-    // Tutorial removed - only triggers from "HOW TO PLAY" button
-  }
-
-  _updateTutorialArrow(delta) {
-    if (!this.showDynamicTutorial && !this.showInGameTutorial) return;
-
-    // Dialog box position (from HTML: bottom: 50px, left: 50%)
-    const dialogX = this.game.canvas.width / 2;      // centered
-    const dialogY = this.game.canvas.height - 50;    // bottom: 50px
-
-    let targetX = this.game.canvas.width / 2;
-    let targetY = 350;
-
-    switch (this.dynamicTutorialStep || 0) {
-      case 0:
-        // Arsenal (3x2 Grid: left: 10px, top: 150px, width: 230px, height: 160px)
-        targetX = 10 + 115;   // 10 + (230/2)
-        targetY = 150 + 80;   // 150 + (160/2)
-        break;
-      case 1:
-        // HUD (Health & Kita: left: 10px, top: 10px, width: 220px, height: 130px)
-        targetX = 10 + 110;   // 10 + (220/2)
-        targetY = 10 + 65;    // 10 + (130/2)
-        break;
-      case 2:
-        // Jo/Catapult (Left side: left: 20px, top: 400px, width: 250px, height: 300px)
-        targetX = 20 + 125;   // 20 + (250/2)
-        targetY = 400 + 150;  // 400 + (300/2)
-        break;
-      case 3:
-        // Enemy Spawn Area (Right: left: 1100px, top: 200px, width: 150px, height: 450px)
-        targetX = 1100 + 75;   // 1100 + (150/2)
-        targetY = 200 + 225;   // 200 + (450/2)
-        break;
+    if (this.game.waveManager.currentWave === 1 && !this.game.saveManager.state.hasSeenTutorial) {
+      this.showInGameTutorial = true;
+      this.tutorialIndex = 0;
     }
-
-    const dx = targetX - dialogX;
-    const dy = targetY - dialogY;
-
-    this.tutorialArrowAngle = Math.atan2(dy, dx);
-
-    const pulse = Math.sin(Date.now() * 0.005) * 10;
-    const distance = Math.sqrt(dx * dx + dy * dy) * 0.5;
-
-    this.tutorialArrowX = dialogX + Math.cos(this.tutorialArrowAngle) * (distance + pulse);
-    this.tutorialArrowY = dialogY + Math.sin(this.tutorialArrowAngle) * (distance + pulse);
   }
 
   update(delta) {
     const state = this.game.currentState;
-    
-    // NEW: Update tutorial arrow animation
-    this._updateTutorialArrow(delta);
-    
-    // Screen visibility
     this._showScreen('screen-main-menu', state === CONSTANTS.STATES.MAIN_MENU && !this.isSettingsOpen);
     this._showScreen('screen-difficulty', state === CONSTANTS.STATES.DIFFICULTY_SELECT && !this.isSettingsOpen);
+    this._showScreen('hud-panel', state === CONSTANTS.STATES.PLAYING && !this.isSettingsOpen);
     this._showScreen('screen-tutorial', this.showInGameTutorial && !this.isSettingsOpen);
     this._showScreen('screen-victory', state === CONSTANTS.STATES.VICTORY && !this.isSettingsOpen);
     this._showScreen('screen-shop', state === CONSTANTS.STATES.SHOP && !this.isSettingsOpen);
     this._showScreen('screen-gameover', state === CONSTANTS.STATES.GAMEOVER && !this.isSettingsOpen);
     this._showScreen('screen-settings', this.isSettingsOpen);
-    this._showScreen('screen-pause', this.isPaused && !this.isSettingsOpen && !this.showDynamicTutorial);
-    
-    // NEW: Tutorial screens
-    this._showScreen('screen-static-tutorial', this.showStaticTutorial);
-    this._showScreen('dynamic-tutorial-overlay', this.showDynamicTutorial);
+    this._showScreen('screen-pause', this.isPaused && !this.isSettingsOpen);
 
     if (state === CONSTANTS.STATES.MAIN_MENU) {
       const loadBtn = document.getElementById('btn-load-game');
@@ -572,27 +166,6 @@ class UIManager {
       if (pauseBtn) {
         if (state === CONSTANTS.STATES.PLAYING) pauseBtn.classList.remove('hidden');
         else pauseBtn.classList.add('hidden');
-      }
-    }
-    
-    // NEW: Context-aware settings buttons
-    const homeButtons = document.getElementById('settings-home-buttons');
-    const playingButtons = document.getElementById('settings-playing-buttons');
-    
-    if (homeButtons) {
-      if (state === CONSTANTS.STATES.MAIN_MENU) {
-        homeButtons.classList.remove('hidden');
-      } else {
-        homeButtons.classList.add('hidden');
-      }
-    }
-    
-    if (playingButtons) {
-      if (state === CONSTANTS.STATES.PLAYING || state === CONSTANTS.STATES.SHOP || 
-          state === CONSTANTS.STATES.VICTORY || state === CONSTANTS.STATES.GAMEOVER) {
-        playingButtons.classList.remove('hidden');
-      } else {
-        playingButtons.classList.add('hidden');
       }
     }
 
@@ -703,211 +276,6 @@ class UIManager {
       case CONSTANTS.STATES.SHOP: this._drawSunburst(ctx, '#e67e22', '#d35400'); break;
       case CONSTANTS.STATES.GAMEOVER: this._drawSunburst(ctx, '#e74c3c', '#c0392b'); break;
     }
-
-    if (this.isSettingsOpen) {
-      this._drawSettingsHomeButton(ctx);
-    }
-    
-    // Draw arrow BEFORE confirmation modal so it's visible
-    this._drawTutorialArrow(ctx);
-    
-    // Draw confirmation modal LAST (highest z-index)
-    this._drawConfirmationModal(ctx);
-  }
-
-  _drawTutorialArrow(ctx) {
-    if (!this.showDynamicTutorial && !this.showInGameTutorial) {
-      return;
-    }
-
-    const x = this.tutorialArrowX;
-    const y = this.tutorialArrowY;
-    const angle = this.tutorialArrowAngle;
-    const shaftLength = 100;
-    const arrowHeadSize = 18;
-
-    // Animated glow intensity - MUCH BRIGHTER
-    const glowPulse = Math.sin(Date.now() * 0.008) * 0.2 + 0.8;
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(angle);
-
-    // === BRIGHT GLOW LAYERS - Hugging the arrow ===
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // Outer glow layer 1 - BRIGHT
-    ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-
-    ctx.strokeStyle = `rgba(255, 215, 0, ${0.6 * glowPulse})`;
-    ctx.lineWidth = 20;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(shaftLength, 0);
-    ctx.stroke();
-
-    // Outer glow layer 2 - EVEN BRIGHTER
-    ctx.strokeStyle = `rgba(255, 230, 0, ${0.5 * glowPulse})`;
-    ctx.lineWidth = 28;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(shaftLength, 0);
-    ctx.stroke();
-
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-
-    // === MAIN SHAFT - Gold with black outline ===
-    // Black outline
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(shaftLength, 0);
-    ctx.stroke();
-
-    // Gold inner line - BRIGHT
-    ctx.strokeStyle = '#ffed4e';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(shaftLength, 0);
-    ctx.stroke();
-
-    // === ANIMATED PULSE WAVE ===
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.6 * glowPulse})`;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(shaftLength, 0);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // === ARROWHEAD - Bright glow + Shadow + Main ===
-    // Arrowhead outer glow - BRIGHT
-    ctx.fillStyle = `rgba(255, 215, 0, ${0.4 * glowPulse})`;
-    ctx.beginPath();
-    ctx.moveTo(shaftLength + 4, 0);
-    ctx.lineTo(shaftLength - arrowHeadSize + 4, -arrowHeadSize - 4);
-    ctx.lineTo(shaftLength - arrowHeadSize + 4, arrowHeadSize + 4);
-    ctx.closePath();
-    ctx.fill();
-
-    // Arrowhead shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.beginPath();
-    ctx.moveTo(shaftLength + 2, 2);
-    ctx.lineTo(shaftLength - arrowHeadSize + 2, -arrowHeadSize + 2);
-    ctx.lineTo(shaftLength - arrowHeadSize + 2, arrowHeadSize + 2);
-    ctx.closePath();
-    ctx.fill();
-
-    // Main arrowhead (bright gold)
-    ctx.fillStyle = '#ffed4e';
-    ctx.beginPath();
-    ctx.moveTo(shaftLength, 0);
-    ctx.lineTo(shaftLength - arrowHeadSize, -arrowHeadSize);
-    ctx.lineTo(shaftLength - arrowHeadSize, arrowHeadSize);
-    ctx.closePath();
-    ctx.fill();
-
-    // Arrowhead outline
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Arrowhead highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.beginPath();
-    ctx.moveTo(shaftLength - 2, -3);
-    ctx.lineTo(shaftLength - arrowHeadSize + 4, -arrowHeadSize + 6);
-    ctx.lineTo(shaftLength - arrowHeadSize + 3, -arrowHeadSize + 2);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
-
-    // === BRIGHT CENTER CORE ===
-    const centerGlowAlpha = (Math.sin(Date.now() * 0.01) + 1) * 0.4;
-    ctx.fillStyle = `rgba(255, 255, 150, ${centerGlowAlpha})`;
-    ctx.beginPath();
-    ctx.arc(x, y, 10, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ffff99';
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  _drawConfirmationModal(ctx) {
-    if (!this.isConfirmingHome) return;
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
-
-    const modalW = 400;
-    const modalH = 250;
-    const modalX = (this.game.canvas.width - modalW) / 2;
-    const modalY = (this.game.canvas.height - modalH) / 2;
-
-    this._drawComicBox(ctx, modalX, modalY, modalW, modalH, '#fff', '#000');
-
-    ctx.fillStyle = '#e74c3c';
-    ctx.font = 'bold 24px "Comic Sans MS", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('CONFIRM RETURN HOME?', this.game.canvas.width / 2, modalY + 40);
-
-    ctx.fillStyle = '#000';
-    ctx.font = '16px "Comic Sans MS", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Unsaved progress will be lost.', this.game.canvas.width / 2, modalY + 90);
-    ctx.fillText('Jo will be reset to level 1.', this.game.canvas.width / 2, modalY + 120);
-
-    const yesX = modalX + 50;
-    const yesY = modalY + 190;
-    const yesBtnW = 140;
-    const yesBtnH = 40;
-    
-    this._drawComicBox(ctx, yesX, yesY, yesBtnW, yesBtnH, '#2ecc71', '#27ae60');
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px "Comic Sans MS", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('YES', yesX + yesBtnW / 2, yesY + yesBtnH / 2);
-
-    const noX = modalX + 210;
-    const noY = modalY + 190;
-    const noBtnW = 140;
-    const noBtnH = 40;
-    
-    this._drawComicBox(ctx, noX, noY, noBtnW, noBtnH, '#e74c3c', '#c0392b');
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px "Comic Sans MS", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('NO', noX + noBtnW / 2, noY + noBtnH / 2);
-  }
-
-  _drawSettingsHomeButton(ctx) {
-    if (!this.isSettingsOpen || this.game.currentState === CONSTANTS.STATES.MAIN_MENU) return;
-
-    const btnX = (this.game.canvas.width - 200) / 2;
-    const btnY = 450;
-    const btnW = 200;
-    const btnH = 50;
-
-    this._drawComicBox(ctx, btnX, btnY, btnW, btnH, '#e74c3c', '#c0392b');
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px "Comic Sans MS", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('BACK TO HOME', btnX + btnW / 2, btnY + btnH / 2);
   }
 
   _drawSunburst(ctx, color1, color2) {
@@ -1018,12 +386,10 @@ _drawPlayingHUD(ctx) {
       this._drawComicText(ctx, levelData.label.toUpperCase(), this.game.canvas.width / 2, 35, 28, '#f1c40f');
     }
     
-    // --- 3. ARSENAL HUD (3x2 Grid: Weapons + Specials) ---
+    // --- 3. Dynamic Weapon HUD ---
     const player = this.game.player;
     const weapons = ['mami', 'pares', 'rice'];
-    const specialKeys = ['calamansi', 'chili', 'garlic'];
     const wSheet = this.game.assetLoader?.images?.projectilesSheet;
-    const specSheet = this.game.assetLoader?.images?.specialsSheet;
     
     const boxSize = 70;
     const spacing = 5;
@@ -1033,7 +399,6 @@ _drawPlayingHUD(ctx) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Draw Weapons (slots 1-3, first row)
     weapons.forEach((weaponKey, index) => {
       const weaponData = player.arsenal[weaponKey];
       const isSelected = player.selectedWeapon === weaponKey;
@@ -1090,11 +455,17 @@ _drawPlayingHUD(ctx) {
       }
     });
 
-    // Draw Specials (slots 4-6, second row below weapons)
-    const sBoxSize = boxSize; 
-    const sSpacing = spacing;
-    const sStartX = startX;
-    const sStartY = startY + boxSize + 10; // Position below weapons
+    // =========================================================
+    // --- 4. UPDATED: SPECIALS HUD (MOVED BELOW WEAPONS) ---
+    // =========================================================
+    const specialKeys = ['calamansi', 'chili', 'garlic'];
+    const specSheet = this.game.assetLoader?.images?.specialsSheet;
+    
+    // Position it directly under the Weapons HUD
+    const sBoxSize = 70; 
+    const sSpacing = 5;
+    const sStartX = 10;
+    const sStartY = 150 + boxSize + 10; // startY of weapons + boxSize + 10px margin
 
     specialKeys.forEach((specKey, index) => {
       const specialData = player.specials[specKey];
