@@ -5,70 +5,16 @@ class ShopManager {
   constructor(game) {
     this.game = game;
     this.isOpen = false;
-
-    // Button layout for weapon upgrade display
-    this.buttons = [
-      { name: 'mami',  x: this.game.canvas.width / 2 - 350, y: 200, width: 700, height: 90 },
-      { name: 'pares', x: this.game.canvas.width / 2 - 350, y: 320, width: 700, height: 90 },
-      { name: 'rice',  x: this.game.canvas.width / 2 - 350, y: 440, width: 700, height: 90 }
-    ];
   }
 
-  /**
-   * Open the shop.
-   */
-  open() {
-    this.isOpen = true;
-  }
+  open() { this.isOpen = true; }
+  close() { this.isOpen = false; }
+  toggle() { this.isOpen = !this.isOpen; }
 
-  /**
-   * Close the shop.
-   */
-  close() {
-    this.isOpen = false;
-  }
+  unlockWeapon(weaponName) { return this.game.player.unlockWeapon(weaponName); }
+  unlockSpecial(specialName) { return this.game.player.unlockSpecial(specialName); }
+  upgradeWeapon(weaponName) { return this.game.player.upgradeWeapon(weaponName); }
 
-  /**
-   * Toggle shop open/closed.
-   */
-  toggle() {
-    this.isOpen = !this.isOpen;
-  }
-
-  /**
-   * Unlock a weapon if affordable.
-   * @param {string} weaponName
-   * @returns {boolean} - True if unlock successful
-   */
-  unlockWeapon(weaponName) {
-    return this.game.player.unlockWeapon(weaponName);
-  }
-
-  /**
-   * Unlock a special if affordable.
-   * @param {string} specialName
-   * @returns {boolean}
-   */
-  unlockSpecial(specialName) {
-    return this.game.player.unlockSpecial(specialName);
-  }
-
-  /**
-   * Upgrade a weapon level if affordable.
-   * @param {string} weaponName
-   * @returns {boolean} - True if upgrade successful
-   */
-  upgradeWeapon(weaponName) {
-    return this.game.player.upgradeWeapon(weaponName);
-  }
-
-  /**
-   * Handle shop selection via numeric keys (1-5).
-   * 1-3: Weapons
-   * 4-5: Specials
-   * @param {number} num - Button number (1-5)
-   * @returns {boolean}
-   */
   handleSelection(num) {
     switch (num) {
       case 1:
@@ -78,21 +24,13 @@ class ShopManager {
         const weapon = this.game.player.arsenal[weaponKey];
         return !weapon.unlocked ? this.unlockWeapon(weaponKey) : this.upgradeWeapon(weaponKey);
       }
-      case 4:
-        return this.unlockSpecial('calamansi');
-      case 5:
-        return this.unlockSpecial('chili');
-      default:
-        return false;
+      case 4: return this.unlockSpecial('calamansi');
+      case 5: return this.unlockSpecial('chili');
+      case 6: return this.unlockSpecial('garlic'); // --- NEW: Added Garlic Shop Unlock ---
+      default: return false;
     }
   }
 
-  /**
-   * Get upgrade cost for a weapon.
-   * Cost = 50 * (1.5 ^ (level - 1))
-   * @param {string} weaponName
-   * @returns {number}
-   */
   getUpgradeCost(weaponName) {
     const weapon = this.game.player.arsenal[weaponName];
     if (!weapon || weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL) return Infinity;
@@ -101,17 +39,6 @@ class ShopManager {
     return Math.ceil(50 * costMultiplier);
   }
 
-  /**
-   * Update shop state.
-   * @param {number} delta
-   */
-  update(delta) {
-    if (!this.isOpen) return;
-  }
-
-  /**
-   * Draw shop UI – No longer needed as we use HTML UI.
-   * @param {CanvasRenderingContext2D} ctx
-   */
+  update(delta) { if (!this.isOpen) return; }
   draw(ctx) {}
 }

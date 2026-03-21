@@ -62,6 +62,7 @@ class AssetLoader {
 
       // Projectiles
       projectilesSheet: 'assets/projectiles.png',
+      specialsSheet: 'assets/specials.jpg',
       proj_mami: 'assets/sprites/proj_mami.png',
       proj_pares: 'assets/sprites/proj_pares.png',
       proj_cola: 'assets/sprites/proj_cola.png',

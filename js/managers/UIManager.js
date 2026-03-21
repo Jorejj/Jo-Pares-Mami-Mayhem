@@ -18,8 +18,8 @@ class UIManager {
   _setupHtmlButtons() {
     const actions = {
       'btn-new-game': () => { 
-        this.game.saveManager.reset(); // Reset to fresh state
-        this.game.waveManager.currentWave = 1; // RESET TO WAVE 1
+        this.game.saveManager.reset(); 
+        this.game.waveManager.currentWave = 1; 
         this.game.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT; 
       },
       'btn-load-game': () => { this.game.loadSavedGame(); },
@@ -27,25 +27,22 @@ class UIManager {
       'btn-diff-easy': () => this._startNewGame('easy'),
       'btn-diff-medium': () => this._startNewGame('medium'),
       'btn-diff-hard': () => this._startNewGame('hard'),
-      'btn-mami': () => this.game.player.selectWeapon('mami'),
-      'btn-pares': () => this.game.player.selectWeapon('pares'),
-      'btn-rice': () => this.game.player.selectWeapon('rice'),
       'btn-tut-next': () => this._advanceTutorial(),
       'btn-visit-shop': () => { this.game.currentState = CONSTANTS.STATES.SHOP; this.game.shopManager.open(); },
+      // Added Garlic [6] to Shop interactions
       'btn-shop-mami': () => { this.game.shopManager.handleSelection(1); this._updateShopUI(); },
       'btn-shop-pares': () => { this.game.shopManager.handleSelection(2); this._updateShopUI(); },
       'btn-shop-rice': () => { this.game.shopManager.handleSelection(3); this._updateShopUI(); },
       'btn-shop-calamansi': () => { this.game.shopManager.handleSelection(4); this._updateShopUI(); },
       'btn-shop-chili': () => { this.game.shopManager.handleSelection(5); this._updateShopUI(); },
+      'btn-shop-garlic': () => { this.game.shopManager.handleSelection(6); this._updateShopUI(); }, // NEW
       'btn-shop-done': () => this._finishShopping(),
       'btn-restart': () => location.reload(),
       
-      // Pause Controls
       'btn-pause-toggle': () => { this._togglePause(); },
       'btn-resume': () => { this._togglePause(); },
       'btn-pause-home': () => { this.isPaused = false; this.game.currentState = CONSTANTS.STATES.MAIN_MENU; },
 
-      // Settings Controls
       'btn-settings-open': () => { this.isSettingsOpen = true; },
       'btn-settings-close': () => { this.isSettingsOpen = false; },
       'btn-settings-x': () => { this.isSettingsOpen = false; },
@@ -54,28 +51,14 @@ class UIManager {
         this.game.currentState = CONSTANTS.STATES.MAIN_MENU;
       },
       'btn-save-game': () => { 
-        this.game.saveManager.state.kita = this.game.player.kita;
-        this.game.saveManager.state.currentLevel = this.game.waveManager.currentWave;
-        this.game.saveManager.state.currentGameState = this.game.currentState;
-        this.game.saveManager.state.hasSeenTutorial = this.game.saveManager.state.hasSeenTutorial;
-        
-        // Save weapon levels AND unlocks
-        this.game.saveManager.state.weaponLevels = {};
-        this.game.saveManager.state.weaponUnlocks = {};
-        for(const [key, data] of Object.entries(this.game.player.arsenal)) {
-          this.game.saveManager.state.weaponLevels[key] = data.level;
-          this.game.saveManager.state.weaponUnlocks[key] = data.unlocked;
-        }
-        
-        // Save specials
-        this.game.saveManager.state.specialUnlocks = {};
-        for(const [key, data] of Object.entries(this.game.player.specials)) {
-          this.game.saveManager.state.specialUnlocks[key] = data.unlocked;
-        }
-        this.game.saveManager.save(); 
-        alert("Game Saved!"); 
+        this.game.saveCurrentState(); 
+        alert("Game Saved Successfully!"); 
       },
-      'btn-reset-save': () => { if(confirm("Reset all data? This cannot be undone.")) { this.game.saveManager.reset(); location.reload(); } }
+      'btn-reset-save': () => { 
+        if(confirm("Reset all data? This cannot be undone.")) { 
+          this.game.saveManager.reset(); location.reload(); 
+        } 
+      }
     };
 
     for (const [id, action] of Object.entries(actions)) {
@@ -127,7 +110,7 @@ class UIManager {
     if (this.tutorialIndex >= CONSTANTS.TUTORIAL_STEPS.length) {
       this.showInGameTutorial = false;
       this.game.saveManager.state.hasSeenTutorial = true;
-      this.game.saveManager.save();
+      this.game.saveCurrentState();
     }
   }
 
@@ -157,7 +140,6 @@ class UIManager {
     this._showScreen('screen-settings', this.isSettingsOpen);
     this._showScreen('screen-pause', this.isPaused && !this.isSettingsOpen);
 
-    // Update Load Game button state
     if (state === CONSTANTS.STATES.MAIN_MENU) {
       const loadBtn = document.getElementById('btn-load-game');
       if (loadBtn) {
@@ -168,10 +150,8 @@ class UIManager {
       }
     }
 
-    // Show/Hide Pause/Settings buttons based on state
     const settingsContainer = document.getElementById('settings-btn-container');
     if (settingsContainer) {
-      // Show during PLAYING, SHOP, VICTORY, GAMEOVER
       const showContainer = (
         state === CONSTANTS.STATES.PLAYING || 
         state === CONSTANTS.STATES.SHOP ||
@@ -182,7 +162,6 @@ class UIManager {
       if (showContainer) settingsContainer.classList.remove('hidden');
       else settingsContainer.classList.add('hidden');
 
-      // Within the container, only show PAUSE button during actual PLAYING state
       const pauseBtn = document.getElementById('btn-pause-toggle');
       if (pauseBtn) {
         if (state === CONSTANTS.STATES.PLAYING) pauseBtn.classList.remove('hidden');
@@ -190,7 +169,6 @@ class UIManager {
       }
     }
 
-    if (state === CONSTANTS.STATES.PLAYING) this._updateHUDButtons();
     if (state === CONSTANTS.STATES.SHOP) this._updateShopUI();
     if (state === CONSTANTS.STATES.VICTORY) {
         const stats = document.getElementById('victory-stats');
@@ -208,7 +186,6 @@ class UIManager {
     if (state === CONSTANTS.STATES.PROLOGUE && !this.isSettingsOpen) {
       this.prologueTimer += delta;
       
-      // --- TYPING EFFECT ---
       const fullText = CONSTANTS.PROLOGUE_LINES[this.prologueIndex] || "";
       if (this.prologueCharIndex < fullText.length) {
         this.prologueTypingTimer += delta;
@@ -218,13 +195,11 @@ class UIManager {
         }
       }
 
-      // --- FADE EFFECT ---
       if (this.prologueFade < 1.0) {
-        this.prologueFade += delta * 0.002; // Fade in over 500ms
+        this.prologueFade += delta * 0.002; 
         if (this.prologueFade > 1.0) this.prologueFade = 1.0;
       }
 
-      // Auto-advance after 5s ONLY if typing is done
       if (this.prologueTimer > 5000 && this.prologueCharIndex >= fullText.length) { 
         this._advancePrologue(); 
       }
@@ -239,26 +214,13 @@ class UIManager {
     }
   }
 
-  _updateHUDButtons() {
-    const player = this.game.player;
-    ['mami', 'pares', 'rice'].forEach(w => {
-      const btn = document.getElementById(`btn-${w}`);
-      if (!btn) return;
-      btn.className = 'game-btn';
-      if (!player.arsenal[w].unlocked) btn.classList.add('locked');
-      if (player.selectedWeapon === w) btn.classList.add('selected');
-      const cd = player.getWeaponCooldownPercent(w);
-      btn.style.opacity = cd < 100 ? "0.6" : "1.0";
-    });
-  }
-
   _updateShopUI() {
     const player = this.game.player;
     const shop = this.game.shopManager;
     const shopKitaEl = document.getElementById('shop-kita');
     if (shopKitaEl) shopKitaEl.innerText = `${CONSTANTS.CURRENCY_SYMBOL}${player.kita}`;
 
-    // Update Weapons
+    // Update Weapons [1, 2, 3]
     ['mami', 'pares', 'rice'].forEach((w, index) => {
       const btn = document.getElementById(`btn-shop-${w}`);
       if (!btn) return;
@@ -280,15 +242,15 @@ class UIManager {
       btn.innerHTML = content;
     });
 
-    // Update Specials
-    ['calamansi', 'chili'].forEach((s, index) => {
+    // --- NEW: Update Specials [4, 5, 6] ---
+    ['calamansi', 'chili', 'garlic'].forEach((s, index) => {
       const btn = document.getElementById(`btn-shop-${s}`);
-      if (!btn) return;
+      if (!btn) return; // Note: Ensure you add <button id="btn-shop-garlic"> to your HTML!
       const special = player.specials[s];
       const cost = special.baseCost;
-      const key = index === 0 ? '4' : '5';
+      const keyMap = ['4', '5', '6'];
 
-      let content = `<span class="item-name">[${key}] ${s.toUpperCase()}</span>`;
+      let content = `<span class="item-name">[${keyMap[index]}] ${s.toUpperCase()}</span>`;
       if (!special.unlocked) {
         content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
         btn.disabled = player.kita < cost;
@@ -330,14 +292,12 @@ class UIManager {
   }
 
   _drawPrologue(ctx) {
-    // 1. Comic-Style Background (Radial Gradient + Halftone pattern)
     const grad = ctx.createRadialGradient(this.game.canvas.width/2, this.game.canvas.height/2, 100, this.game.canvas.width/2, this.game.canvas.height/2, 800);
     grad.addColorStop(0, '#f4f4f0');
     grad.addColorStop(1, '#d1d1ca');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
 
-    // Subtle Halftone Pattern
     ctx.fillStyle = 'rgba(0,0,0,0.03)';
     for(let i=0; i<this.game.canvas.width; i+=20) {
       for(let j=0; j<this.game.canvas.height; j+=20) {
@@ -348,17 +308,14 @@ class UIManager {
     const lines = CONSTANTS.PROLOGUE_LINES;
     const maxIndex = Math.min(this.prologueIndex, lines.length - 1);
     
-    // 2. Cinematic Vignette
     const vignette = ctx.createRadialGradient(this.game.canvas.width/2, this.game.canvas.height/2, 300, this.game.canvas.width/2, this.game.canvas.height/2, 1000);
     vignette.addColorStop(0, 'rgba(0,0,0,0)');
     vignette.addColorStop(1, 'rgba(0,0,0,0.4)');
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
 
-    // Draw Title
     this._drawComicText(ctx, "THE STORY OF JO", this.game.canvas.width / 2, 70, 64, '#f1c40f');
     
-    // Larger Panel for better visibility (1000x550)
     const panelW = 1000; 
     const panelH = 550;
     const x = this.game.canvas.width / 2 - panelW / 2;
@@ -367,7 +324,7 @@ class UIManager {
     this._drawComicBox(ctx, x, y, panelW, panelH, '#fff');
     
     ctx.save();
-    ctx.globalAlpha = this.prologueFade; // SMOOTH FADE IN
+    ctx.globalAlpha = this.prologueFade; 
     
     const storyImage = this.game.assetLoader.images[`story${maxIndex + 1}`];
     if (storyImage && storyImage.complete) {
@@ -384,7 +341,6 @@ class UIManager {
     }
     ctx.restore();
     
-    // Text background box
     const textAreaY = y + panelH * 0.7 + 10;
     const textAreaH = panelH * 0.3 - 30;
     ctx.fillStyle = '#fffae6';
@@ -392,51 +348,183 @@ class UIManager {
     ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
     ctx.strokeRect(x + 20, textAreaY, panelW - 40, textAreaH);
     
-    // Story Text (TYPED OUT)
     ctx.fillStyle = '#000';
     ctx.font = 'bold 24px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'center';
     const displayedText = lines[maxIndex].toUpperCase().slice(0, this.prologueCharIndex);
     this._wrapText(ctx, displayedText, this.game.canvas.width / 2, textAreaY + textAreaH / 2, panelW - 100, 32);
     
-    // Interaction prompt (Pulsing)
     const pulse = Math.sin(this.game.gameFrame / 18) * 5;
     this._drawComicBox(ctx, this.game.canvas.width / 2 - 250 - pulse/2, this.game.canvas.height - 65 - pulse/2, 500 + pulse, 50 + pulse, '#e74c3c');
     ctx.fillStyle = '#fff'; ctx.font = 'bold 22px "Comic Sans MS", sans-serif';
     ctx.fillText('CLICK ANYWHERE TO CONTINUE', this.game.canvas.width / 2, this.game.canvas.height - 32);
   }
 
-  _drawPlayingHUD(ctx) {
+_drawPlayingHUD(ctx) {
+    // --- 1. Player Stats Box (Top Left) ---
     this._drawComicBox(ctx, 10, 10, 220, 130, '#fff', '#000');
     ctx.fillStyle = '#000'; ctx.font = 'bold 18px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     
-    // Health Info
     ctx.fillText(`JO HP: ${Math.floor(this.game.player.hp)}/${this.game.player.maxHp}`, 20, 20);
     ctx.fillStyle = '#e74c3c';
     ctx.fillRect(20, 40, 180 * (Math.max(0, this.game.player.hp) / this.game.player.maxHp), 10);
     ctx.strokeRect(20, 40, 180, 10);
     
-    // Stats Info
     ctx.fillStyle = '#000';
     ctx.fillText(`KITA: ${CONSTANTS.CURRENCY_SYMBOL}${Math.floor(this.game.player.kita)}`, 20, 60);
     ctx.fillText(`WAVE: ${this.game.waveManager.currentWave}`, 20, 80);
     
-    // Kill Count Info
     const kills = this.game.waveManager.killCount;
     const total = this.game.waveManager.waveEnemies.length;
     ctx.fillText(`KILLS: ${kills}/${total}`, 20, 100);
 
+    // --- 2. Stage Name (Top Center) ---
     const levelData = this.game.levelManager.getLevelData();
     if (levelData) {
       ctx.textAlign = 'center';
       this._drawComicText(ctx, levelData.label.toUpperCase(), this.game.canvas.width / 2, 35, 28, '#f1c40f');
     }
     
-    ctx.textAlign = 'left'; ctx.font = 'bold 14px "Comic Sans MS", sans-serif';
-    const weapon = this.game.player.selectedWeapon.toUpperCase();
-    const cd = this.game.player.getWeaponCooldownPercent(this.game.player.selectedWeapon);
-    ctx.fillText(`${weapon}: ${cd >= 100 ? 'READY' : 'RELOADING...'}`, 240, 90);
+    // --- 3. Dynamic Weapon HUD ---
+    const player = this.game.player;
+    const weapons = ['mami', 'pares', 'rice'];
+    const wSheet = this.game.assetLoader?.images?.projectilesSheet;
+    
+    const boxSize = 70;
+    const spacing = 5;
+    const startX = 10;
+    const startY = 150;
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    weapons.forEach((weaponKey, index) => {
+      const weaponData = player.arsenal[weaponKey];
+      const isSelected = player.selectedWeapon === weaponKey;
+      const isLocked = !weaponData.unlocked;
+      const cdPercent = player.getWeaponCooldownPercent(weaponKey);
+      const hasAmmo = weaponData.isInfinite || weaponData.usesLeft > 0;
+
+      const currentX = startX + (index * (boxSize + spacing));
+
+      let bgColor = isSelected ? '#fffdf0' : '#ffffff';
+      let borderColor = isSelected ? '#f1c40f' : '#000';
+      if (isLocked) bgColor = '#dddddd';
+      
+      ctx.fillStyle = '#000'; ctx.fillRect(currentX + 4, startY + 4, boxSize, boxSize); 
+      ctx.fillStyle = bgColor; ctx.fillRect(currentX, startY, boxSize, boxSize);
+      ctx.strokeStyle = borderColor; ctx.lineWidth = isSelected ? 4 : 2; ctx.strokeRect(currentX, startY, boxSize, boxSize);
+
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 12px "Comic Sans MS", sans-serif';
+      ctx.fillText(`[${index + 1}]`, currentX + 12, startY + 12);
+
+      if (isLocked) {
+        ctx.fillStyle = '#7f8c8d';
+        ctx.font = 'bold 14px "Comic Sans MS", sans-serif';
+        ctx.fillText("LOCKED", currentX + boxSize / 2, startY + boxSize / 2);
+      } else {
+        if (wSheet && wSheet.complete && wSheet.width > 0) {
+          const typeMap = { 'mami': 0, 'pares': 1, 'rice': 2 }; 
+          const row = typeMap[weaponKey] !== undefined ? typeMap[weaponKey] : 0;
+          const col = Math.min(weaponData.level - 1, 4);
+
+          const fw = wSheet.width / 5;
+          const fh = wSheet.height / 3;
+
+          const sx = col * fw;
+          const sy = row * fh;
+          
+          if (cdPercent < 100 || !hasAmmo) ctx.globalAlpha = 0.4;
+          const drawSize = 48; 
+          ctx.drawImage(wSheet, sx, sy, fw, fh, currentX + (boxSize - drawSize)/2, startY + (boxSize - drawSize)/2 - 2, drawSize, drawSize);
+          ctx.globalAlpha = 1.0;
+        }
+
+        const barHeight = 6;
+        const barY = startY + boxSize - barHeight;
+        ctx.fillStyle = cdPercent >= 100 ? '#2ecc71' : '#e74c3c';
+        ctx.fillRect(currentX, barY, boxSize * (cdPercent / 100), barHeight);
+        
+        if (!weaponData.isInfinite) {
+          ctx.fillStyle = hasAmmo ? '#000' : '#e74c3c';
+          ctx.font = 'bold 12px "Comic Sans MS", sans-serif';
+          ctx.fillText(`${weaponData.usesLeft}/${weaponData.maxUses}`, currentX + boxSize - 18, startY + 12); 
+        }
+      }
+    });
+
+    // =========================================================
+    // --- 4. UPDATED: SPECIALS HUD (MOVED BELOW WEAPONS) ---
+    // =========================================================
+    const specialKeys = ['calamansi', 'chili', 'garlic'];
+    const specSheet = this.game.assetLoader?.images?.specialsSheet;
+    
+    // Position it directly under the Weapons HUD
+    const sBoxSize = 70; 
+    const sSpacing = 5;
+    const sStartX = 10;
+    const sStartY = 150 + boxSize + 10; // startY of weapons + boxSize + 10px margin
+
+    specialKeys.forEach((specKey, index) => {
+      const specialData = player.specials[specKey];
+      const isLocked = !specialData.unlocked;
+      const cdPercent = player.getSpecialCooldownPercent(specKey);
+      
+      const currentX = sStartX + (index * (sBoxSize + sSpacing));
+
+      let bgColor = '#ffffff';
+      let borderColor = '#f1c40f'; // Gold border for specials
+      if (isLocked) { bgColor = '#dddddd'; borderColor = '#000'; }
+      
+      ctx.fillStyle = '#000'; ctx.fillRect(currentX + 4, sStartY + 4, sBoxSize, sBoxSize); 
+      ctx.fillStyle = bgColor; ctx.fillRect(currentX, sStartY, sBoxSize, sBoxSize);
+      ctx.strokeStyle = borderColor; ctx.lineWidth = 2; ctx.strokeRect(currentX, sStartY, sBoxSize, sBoxSize);
+
+      // Keybind Number [4], [5], [6]
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 12px "Comic Sans MS", sans-serif';
+      ctx.fillText(`[${index + 4}]`, currentX + 12, sStartY + 12);
+
+      if (isLocked) {
+        ctx.fillStyle = '#7f8c8d';
+        ctx.font = 'bold 14px "Comic Sans MS", sans-serif';
+        ctx.fillText("LOCKED", currentX + sBoxSize / 2, sStartY + sBoxSize / 2);
+      } else {
+        // Draw the Special Sprite
+        if (specSheet && specSheet.complete && specSheet.width > 0) {
+          const typeMap = { 'calamansi': 0, 'chili': 1, 'garlic': 2 }; 
+          const row = typeMap[specKey] !== undefined ? typeMap[specKey] : 0;
+          const col = 4; // Always use the final frame (index 4)
+
+          const fw = specSheet.width / 5;
+          const fh = specSheet.height / 3;
+
+          const sx = col * fw;
+          const sy = row * fh;
+          
+          if (cdPercent < 100) ctx.globalAlpha = 0.4;
+          const drawSize = 48; 
+          ctx.drawImage(specSheet, sx, sy, fw, fh, currentX + (sBoxSize - drawSize)/2, sStartY + (sBoxSize - drawSize)/2 - 2, drawSize, drawSize);
+          ctx.globalAlpha = 1.0;
+        }
+
+        // Draw Cooldown Bar at bottom of box
+        const barHeight = 6;
+        const barY = sStartY + sBoxSize - barHeight;
+        ctx.fillStyle = cdPercent >= 100 ? '#f1c40f' : '#e74c3c';
+        ctx.fillRect(currentX, barY, sBoxSize * (cdPercent / 100), barHeight);
+
+        // Draw 'READY' text inside
+        if (cdPercent >= 100) {
+          const pulse = Math.abs(Math.sin(this.game.gameFrame / 10)) * 0.5 + 0.5;
+          ctx.fillStyle = `rgba(241, 196, 15, ${pulse})`;
+          ctx.font = 'bold 12px "Comic Sans MS", sans-serif';
+          ctx.fillText("READY", currentX + sBoxSize - 22, sStartY + 12);
+        }
+      }
+    });
   }
 
   _drawInGameTutorialOverlay(ctx) {
@@ -466,33 +554,19 @@ class UIManager {
       let metrics = ctx.measureText(testLine);
 
       if (metrics.width > maxWidth && n > 0) {
-        lines.push(line);
-        line = word + ' ';
+        lines.push(line); line = word + ' ';
       } else {
-        // If a single word is wider than maxWidth, split it character by character
         let wordMetrics = ctx.measureText(word);
         if (wordMetrics.width > maxWidth) {
-          // Finish the current line first if there is any
-          if (line.length > 0) {
-            lines.push(line);
-            line = '';
-          }
-          // Split the long word
-          let chars = word.split('');
-          let charLine = '';
+          if (line.length > 0) { lines.push(line); line = ''; }
+          let chars = word.split(''); let charLine = '';
           for (let c = 0; c < chars.length; c++) {
             let testCharLine = charLine + chars[c];
-            if (ctx.measureText(testCharLine).width > maxWidth) {
-              lines.push(charLine);
-              charLine = chars[c];
-            } else {
-              charLine = testCharLine;
-            }
+            if (ctx.measureText(testCharLine).width > maxWidth) { lines.push(charLine); charLine = chars[c]; } 
+            else { charLine = testCharLine; }
           }
           line = charLine + ' ';
-        } else {
-          line = testLine;
-        }
+        } else { line = testLine; }
       }
     }
     lines.push(line);
@@ -510,5 +584,5 @@ class UIManager {
     if (btn) btn.innerText = this.isPaused ? '▶️' : '⏸️';
   }
 
-  _drawShop(ctx) { /* Handled by HTML overlay */ }
+  _drawShop(ctx) { }
 }
