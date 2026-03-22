@@ -316,7 +316,7 @@ class BossKap extends Enemy {
     }
   }
 
-  draw(ctx) {
+ draw(ctx) {
     if (this.state === 'dead') {
       // Death animation - last row frames 3, 4, 5
       const deathFrame = Math.min(4, Math.max(2, Math.floor(this.currentFrame)));
@@ -329,7 +329,7 @@ class BossKap extends Enemy {
       // Invincible - first row frames 0-4
       this._drawBossSprite(ctx, 0, [0, 1, 2, 3, 4]);
       
-      if (this.isInvincible) {
+      if (this.isInvincible && typeof this._drawShieldEffect === 'function') {
         this._drawShieldEffect(ctx);
       }
     } else if (this.bossPhase === 'VULNERABLE') {
@@ -343,18 +343,52 @@ class BossKap extends Enemy {
 
     this._drawHealthBar(ctx);
 
-    // Burn/slow visual overlays like regular enemies
+    // --- UPGRADED BURN & SLOW VISUAL OVERLAYS ---
     if (this.burnActive) {
-      ctx.save();
-      const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.35;
-      ctx.fillStyle = `rgba(255, 100, 0, ${flicker})`;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.restore();
+      const fireSprite = this.game.assetLoader?.images?.effect_fire;
+      
+      if (fireSprite && fireSprite.complete && fireSprite.width > 0) {
+        ctx.save();
+        const fCols = 5; const fRows = 3;
+        const fw = fireSprite.width / fCols; const fh = fireSprite.height / fRows;
+        const currentFireFrame = Math.floor(this.game.gameFrame / 4) % 15;
+        const fCol = currentFireFrame % fCols; const fRow = Math.floor(currentFireFrame / fCols);
+        
+        const fireW = this.width * 1.5; const fireH = this.height * 0.8;
+        
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(fireSprite, fCol * fw, fRow * fh, fw, fh, this.x - (fireW - this.width) / 2, this.y + this.height - fireH, fireW, fireH);
+        ctx.restore();
+      } else {
+        ctx.save();
+        const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.35;
+        ctx.fillStyle = `rgba(255, 100, 0, ${flicker})`;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.restore();
+      }
     } else if (this.slowActive) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 150, 255, 0.28)';
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.restore();
+      const slowSprite = this.game.assetLoader?.images?.effect_slow;
+      
+      if (slowSprite && slowSprite.complete && slowSprite.width > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen'; 
+        ctx.globalAlpha = 0.85;
+
+        const sCols = 4; const sRows = 2;
+        const sw_slow = slowSprite.width / sCols; const sh_slow = slowSprite.height / sRows;
+        const currentSlowFrame = Math.floor(this.game.gameFrame / 5) % 8;
+        const sCol = currentSlowFrame % sCols; const sRow = Math.floor(currentSlowFrame / sCols);
+        
+        const effectW = this.width * 1.4; const effectH = this.height * 1.1;
+        
+        ctx.drawImage(slowSprite, sCol * sw_slow, sRow * sh_slow, sw_slow, sh_slow, this.x - (effectW - this.width)/2, this.y + this.height - effectH, effectW, effectH);
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 150, 255, 0.28)';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.restore();
+      }
     }
 
     // Draw panting indicator (when vulnerable)
@@ -385,89 +419,5 @@ class BossKap extends Enemy {
       );
       ctx.restore();
     }
-  }
-
-  _drawHealthBar(ctx) {
-    if (this.state === 'dead') return;
-
-    const barWidth = Math.max(180, this.width + 80);
-    const barHeight = 14;
-    const x = this.x + (this.width - barWidth) / 2;
-    const y = this.y - 22;
-    const hpRatio = Math.max(0, this.hp / this.maxHp);
-
-    ctx.save();
-
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.fillRect(x, y, barWidth, barHeight);
-
-    // HP fill
-    ctx.fillStyle = hpRatio > 0.35 ? '#24d14b' : '#ff5a5a';
-    ctx.fillRect(x + 2, y + 2, (barWidth - 4) * hpRatio, barHeight - 4);
-
-    // Border
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, barWidth, barHeight);
-
-    // Label
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 12px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('KAP NINO', x + barWidth / 2, y - 6);
-
-    ctx.restore();
-  }
-
-  _drawBossSprite(ctx, row, frameLoop) {
-    const sprite = this.game.assetLoader?.images?.boss_kap;
-    if (!sprite || !sprite.complete || sprite.width === 0) {
-      // Fallback placeholder
-      ctx.fillStyle = this.isInvincible ? '#FFD700' : '#FF6B6B';
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      return;
-    }
-
-    // Sprite sheet configuration (3 rows x 5 columns)
-    // Crop frame borders to avoid guide-line bleed from the source sheet.
-    const totalCols = 5;
-    const totalRows = 3;
-    const frameWidth = Math.floor(sprite.width / totalCols);
-    const frameHeight = Math.floor(sprite.height / totalRows);
-    const extraRowPixels = sprite.height - (frameHeight * totalRows);
-    const rowGap = totalRows > 1 ? Math.floor(extraRowPixels / (totalRows - 1)) : 0;
-    const cropPad = 2;
-    
-    // Determine which frame to show
-    const frameIndex = frameLoop.length === 1 
-      ? frameLoop[0] 
-      : frameLoop[Math.floor(this.currentFrame) % frameLoop.length];
-    
-    const col = frameIndex % totalCols;
-    const sx = (col * frameWidth) + cropPad;
-    const sy = (row * (frameHeight + rowGap)) + cropPad;
-    const sw = Math.max(1, frameWidth - (cropPad * 2));
-    const sh = Math.max(1, frameHeight - (cropPad * 2));
-    
-    // Draw sprite flipped horizontally to face player (who is to the left)
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    
-    // Simple horizontal flip without translation issues
-    ctx.scale(-1, 1);
-    ctx.drawImage(
-      sprite,
-      sx,                    // sx
-      sy,                    // sy
-      sw,                    // sWidth
-      sh,                    // sHeight
-      -(this.x + this.width), // dx (flipped X coordinate)
-      this.y,                // dy (normal Y coordinate)
-      this.width,            // dWidth
-      this.height            // dHeight
-    );
-    
-    ctx.restore();
   }
 }
