@@ -9,15 +9,45 @@ body {
    font-family: Arial, sans-serif;
   /* font-family: 'Comic Sans MS', 'Impact', sans-serif; */
 }
+
+/* ===== RESPONSIVE CANVAS SCALING ===== */
+/* Maintains 16:9 aspect ratio while scaling to fit viewport */
 #game-container {
   position: relative;
   width: 1280px;
   height: 720px;
+  max-width: 100vw;
+  max-height: calc(100vw * 9 / 16);
   border: 6px solid #000;
   box-shadow: 10px 10px 0px rgba(0,0,0,0.5);
   background: #ffcc00;
 }
-#gameCanvas { display: block; width: 100%; height: 100%; }
+
+/* Scale down on smaller screens */
+@media (max-width: 1300px) {
+  #game-container {
+    width: 100vw;
+    height: calc(100vw * 9 / 16);
+    max-height: 100vh;
+  }
+}
+
+/* Handle tall/narrow viewports (tablets in portrait, etc.) */
+@media (max-aspect-ratio: 16/9) {
+  #game-container {
+    width: calc(100vh * 16 / 9);
+    height: 100vh;
+    max-width: 100vw;
+  }
+}
+
+#gameCanvas { 
+  display: block; 
+  width: 100%; 
+  height: 100%; 
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
 
 /* HTML UI OVERLAY */
 #ui-layer {
@@ -253,6 +283,41 @@ input[type=range] { width: 100%; cursor: pointer; }
   pointer-events: auto; /* Catch clicks so they don't hit the game */
   z-index: 100;
 }
+
+/* New game confirmation should always be above home screen and UI */
+#newgame-confirm-overlay {
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.confirm-overlay-box {
+  width: min(560px, 92%);
+  text-align: center;
+}
+
+.comic-title.red.small {
+  color: #e74c3c;
+  font-size: 42px;
+  margin-bottom: 16px;
+}
+
+.confirm-text {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.confirm-actions .menu-btn {
+  width: 220px;
+  font-size: 20px;
+}
 .tutorial-highlight {
   position: absolute;
   border: 4px dashed #f1c40f;
@@ -294,3 +359,124 @@ input[type=range] { width: 100%; cursor: pointer; }
 
 .victory-stats { font-size: 24px; margin-bottom: 20px; }
 .volume-label { font-weight: 900; font-size: 18px; }
+
+/* ===== LOADING SCREEN ===== */
+#loading-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.5s ease-out;
+}
+
+#loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#loading-screen.hidden {
+  display: none;
+}
+
+.loading-title {
+  font-size: 48px;
+  font-weight: 900;
+  color: #f1c40f;
+  text-shadow: 4px 4px 0px #000, 6px 6px 0px rgba(0,0,0,0.3);
+  margin-bottom: 20px;
+  font-family: 'Comic Sans MS', 'Impact', sans-serif;
+  animation: titlePulse 2s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.loading-subtitle {
+  font-size: 20px;
+  color: #ecf0f1;
+  margin-bottom: 40px;
+  letter-spacing: 3px;
+}
+
+.loading-bar-container {
+  width: 400px;
+  max-width: 80%;
+  height: 30px;
+  background: #34495e;
+  border: 4px solid #000;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 5px 5px 0px #000;
+}
+
+.loading-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #e74c3c 0%, #f1c40f 50%, #2ecc71 100%);
+  background-size: 200% 100%;
+  animation: loadingGradient 1.5s ease-in-out infinite;
+  transition: width 0.3s ease-out;
+  border-radius: 10px;
+}
+
+@keyframes loadingGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.loading-text {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #bdc3c7;
+  font-weight: bold;
+}
+
+.loading-percent {
+  color: #f1c40f;
+  font-size: 24px;
+}
+
+/* Loading screen bowl animation */
+.loading-bowl {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 30px;
+  animation: steamBounce 2s ease-in-out infinite;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.loading-bowl img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+@keyframes steamBounce {
+  0%, 100% { 
+    transform: translateY(0) scale(1); 
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+  }
+  25% { 
+    transform: translateY(-8px) scale(1.02); 
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+  }
+  75% { 
+    transform: translateY(-8px) scale(1.02); 
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+  }
+}

@@ -14,10 +14,17 @@ class Game {
     this.waveManager = new WaveManager(this);
     this.shopManager = new ShopManager(this);
     this.uiManager = new UIManager(this);
+    
+    // ===== STAGE MANAGER (Data-driven level/story config) =====
+    this.stageManager = new StageManager(this);
 
     this.currentState = CONSTANTS.STATES.MAIN_MENU;
     this.currentDifficulty = null;
     
+    // --- Story Cutscene Tracking ---
+    this.isPlayingStoryAfter = false; // Tracks if we're playing post-level story
+    
+    // --- AUDIO TRACKING ---
     this.currentBgmKey = null;
     this.currentBgmTrack = null;
 
@@ -139,22 +146,24 @@ class Game {
         }
       }
       else if (this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
-        // --- FIXED: NOW TRIGGERS THE MEMORY WIPE ---
-        if (key === "e") { this.startNewGame(CONSTANTS.DIFFICULTY.easy); }
-        else if (key === "m") { this.startNewGame(CONSTANTS.DIFFICULTY.medium); }
-        else if (key === "h") { this.startNewGame(CONSTANTS.DIFFICULTY.hard); }
+        if (key === "e") { this.currentDifficulty = CONSTANTS.DIFFICULTY.easy; this._startStoryOrLevel(); }
+        else if (key === "m") { this.currentDifficulty = CONSTANTS.DIFFICULTY.medium; this._startStoryOrLevel(); }
+        else if (key === "h") { this.currentDifficulty = CONSTANTS.DIFFICULTY.hard; this._startStoryOrLevel(); }
       }
-      else if (this.currentState === CONSTANTS.STATES.PROLOGUE) {
+      else if (this.currentState === CONSTANTS.STATES.STORY_CUTSCENE || this.currentState === CONSTANTS.STATES.PROLOGUE) {
         if (key === " " || key === "enter") {
-          this.uiManager.prologueIndex++;
-          if (this.uiManager.prologueIndex >= CONSTANTS.PROLOGUE_LINES.length) {
-            this.currentState = CONSTANTS.STATES.ARSENAL_SELECT;
-            this.waveManager.startWave(this._getWaveEnemies());
-          }
+          this._advanceStoryCutscene();
         }
       }
-      else if (this.currentState === CONSTANTS.STATES.ARSENAL_SELECT) {
+      else if (this.currentState === CONSTANTS.STATES.PLAYING) {
+        if (this.uiManager.showInGameTutorial) return;
+        
+        // Allow weapon switching during gameplay
         if (key === "1") this.player.selectWeapon("mami");
+        else if (key === "2" && this.player.arsenal["pares"].unlocked) this.player.selectWeapon("pares");
+        else if (key === "3" && this.player.arsenal["rice"].unlocked) this.player.selectWeapon("rice");
+        
+        if (key === 'p') this.uiManager._togglePause();
         else if (key === "2") this.player.selectWeapon("pares");
         else if (key === "3") this.player.selectWeapon("rice");
 
@@ -178,9 +187,7 @@ class Game {
         if (key >= "1" && key <= "6") this.shopManager.handleSelection(parseInt(key)); 
 
         if (key === "enter") {
-          this.shopManager.close();
-          this.currentState = CONSTANTS.STATES.ARSENAL_SELECT;
-          this.waveManager.startWave(this._getWaveEnemies());
+          this._finishShoppingAndStartNextLevel();
         }
       }
       else if (this.currentState === CONSTANTS.STATES.GAMEOVER) {
@@ -194,7 +201,84 @@ class Game {
     });
   }
 
+  /**
+   * Start story cutscene or skip directly to level if no story exists
+   */
+  _startStoryOrLevel() {
+    const currentLevel = this.levelManager.currentLevel;
+    
+    if (this.stageManager.hasStoryBefore(currentLevel)) {
+      this.stageManager.startStoryBefore(currentLevel);
+      this.isPlayingStoryAfter = false;
+      this.currentState = CONSTANTS.STATES.STORY_CUTSCENE;
+      this.uiManager.prologueIndex = 0;
+      this.uiManager.prologueCharIndex = 0;
+      this.uiManager.prologueFade = 0;
+    } else {
+      this._startLevel();
+    }
+  }
+
+  /**
+   * Advance dialogue in story cutscene
+   */
+  _advanceStoryCutscene() {
+    const hasMore = this.stageManager.advanceDialogue();
+    this.uiManager.prologueIndex = this.stageManager.currentDialogueIndex;
+    this.uiManager.prologueCharIndex = 0;
+    this.uiManager.prologueFade = 0;
+    
+    if (!hasMore) {
+      // Cutscene complete
+      if (this.isPlayingStoryAfter) {
+        // After-level story is done, go to shop
+        this.currentState = CONSTANTS.STATES.SHOP;
+        this.shopManager.open();
+      } else {
+        // Before-level story is done, start the level
+        this._startLevel();
+      }
+    }
+  }
+
+  /**
+   * Start the actual gameplay level
+   */
+  _startLevel() {
+    this.currentState = CONSTANTS.STATES.PLAYING;
+    const waveEnemies = this.stageManager.getWaveEnemies(this.levelManager.currentLevel);
+    console.log('[Game._startLevel] Level:', this.levelManager.currentLevel, 'Enemies:', waveEnemies);
+    this.waveManager.startWave(waveEnemies);
+    this.player.resetAmmo();
+  }
+
+  /**
+   * Finish shopping and check if next level has story before it
+   */
+  _finishShoppingAndStartNextLevel() {
+    this.shopManager.close();
+    
+    const currentLevel = this.levelManager.currentLevel;
+    
+    // Check if next level has a story before it
+    if (this.stageManager.hasStoryBefore(currentLevel)) {
+      this.stageManager.startStoryBefore(currentLevel);
+      this.isPlayingStoryAfter = false;
+      this.currentState = CONSTANTS.STATES.STORY_CUTSCENE;
+      this.uiManager.prologueIndex = 0;
+      this.uiManager.prologueCharIndex = 0;
+      this.uiManager.prologueFade = 0;
+    } else {
+      this._startLevel();
+    }
+  }
+
   _getWaveEnemies() {
+    // Now uses StageManager for data-driven wave configuration
+    return this.stageManager.getWaveEnemies(this.levelManager.currentLevel);
+  }
+
+  _getWaveEnemiesLegacy() {
     const level = this.levelManager.currentLevel;
     const enemies = [];
     
@@ -220,6 +304,30 @@ class Game {
     }
     if (isBossLevel) enemies.push(bossKey);
     return enemies;
+  }
+
+  /**
+   * Start game with loading screen integration
+   * @param {Function} onProgress - Called with (loaded, total) during loading
+   * @param {Function} onComplete - Called when loading is complete
+   */
+  startWithLoadingScreen(onProgress, onComplete) {
+    this.assetLoader.loadAll(
+      () => {
+        // Loading complete
+        this.saveManager.load();
+        this.levelManager.init();
+        this.currentState = CONSTANTS.STATES.MAIN_MENU;
+        this.isRunning = true;
+        
+        // Hide loading screen
+        if (onComplete) onComplete();
+        
+        // Start game loop
+        requestAnimationFrame((ts) => this.loop(ts));
+      },
+      onProgress
+    );
   }
 
   start() {
@@ -360,9 +468,26 @@ _updatePlaying() {
     }
 
     if (this.waveManager.isWaveComplete()) {
+      // Get the completed level BEFORE advancing
+      const completedLevel = this.levelManager.currentLevel;
+      
       this.levelManager.advance(); 
       this.waveManager.currentWave = this.levelManager.currentLevel; 
       
+      // Save progress
+      this.saveCurrentState();
+      
+      // Check if completed level has storyAfter
+      if (this.stageManager.hasStoryAfter(completedLevel)) {
+        this.stageManager.startStoryAfter(completedLevel);
+        this.isPlayingStoryAfter = true;
+        this.currentState = CONSTANTS.STATES.STORY_CUTSCENE;
+        this.uiManager.prologueIndex = 0;
+        this.uiManager.prologueCharIndex = 0;
+        this.uiManager.prologueFade = 0;
+      } else {
+        // No story after, go directly to victory/shop
+        this.currentState = CONSTANTS.STATES.VICTORY;
       // --- FIXED: INSTANTLY REFILL AMMO HERE ---
       this.player.resetAmmo(); 
       
@@ -407,11 +532,9 @@ _updatePlaying() {
         this.enemyProjectiles.forEach(ep => ep.draw(this.ctx));
     }
 
-    if (this.currentState === CONSTANTS.STATES.PLAYING || this.currentState === CONSTANTS.STATES.ARSENAL_SELECT) {
+    if (this.currentState === CONSTANTS.STATES.PLAYING) {
       if (this.player) this.player.draw(this.ctx);
-      if (this.currentState === CONSTANTS.STATES.PLAYING && this.waveManager) {
-        this.waveManager.draw(this.ctx);
-      }
+      if (this.waveManager) this.waveManager.draw(this.ctx);
     }
 
     if (this.uiManager) this.uiManager.draw(this.ctx);

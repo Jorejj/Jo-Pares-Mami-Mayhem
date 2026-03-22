@@ -1,5 +1,5 @@
 // AssetLoader.js – Preloads all images and audio required by the game.
-// Calls the provided callback once every asset has finished loading.
+// Calls onProgress callback during loading and onComplete when finished.
 
 class AssetLoader {
   constructor() {
@@ -8,10 +8,17 @@ class AssetLoader {
     this._total = 0;
     this._loaded = 0;
     this._onComplete = null;
+    this._onProgress = null;
   }
 
-  loadAll(onComplete) {
+  /**
+   * Load all game assets
+   * @param {Function} onComplete - Called when all assets are loaded
+   * @param {Function} onProgress - Called with (loaded, total) as assets load
+   */
+  loadAll(onComplete, onProgress = null) {
     this._onComplete = onComplete;
+    this._onProgress = onProgress;
 
     const imageSources = {
       // Backgrounds
@@ -47,8 +54,9 @@ class AssetLoader {
       enemy_rat: 'assets/animations/enemy/rat.png',
       enemy_student: 'assets/animations/jbhotdog.png',
       boss_vlogger: 'assets/animations/boss_vlogger.png',
-      boss_kap: 'assets/animations/boss_kap.png',
-      enemy_newDaga1: 'assets/animations/newDaga1.png',
+      boss_kap: 'assets/animations/boss/boss1_kap.png',
+      boss1_proj: 'assets/animations/boss/boss1_proj.png',
+      newDaga1: 'assets/animations/newDaga1.png',
       ian: 'assets/animations/ian.png',
       chair: 'assets/animations/chair.png',
       table: 'assets/animations/table.png',
@@ -229,8 +237,33 @@ const audioSources = {
 
   _onAssetLoaded() {
     this._loaded++;
+    
+    // Call progress callback if provided
+    if (this._onProgress) {
+      this._onProgress(this._loaded, this._total);
+    }
+    
     if (this._loaded >= this._total && this._onComplete) {
       this._onComplete();
     }
+  }
+
+  /**
+   * Get loading progress as percentage (0-100)
+   */
+  getProgress() {
+    if (this._total === 0) return 100;
+    return Math.round((this._loaded / this._total) * 100);
+  }
+
+  /**
+   * Get loading status
+   */
+  getStatus() {
+    return {
+      loaded: this._loaded,
+      total: this._total,
+      percent: this.getProgress()
+    };
   }
 }
