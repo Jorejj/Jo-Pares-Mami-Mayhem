@@ -85,7 +85,7 @@ class Player {
     const SPECIALS_CONFIG = {
       'calamansi': { cooldown: 30000, unlockCost: 150, effect: 'slow' },
       'chili':     { cooldown: 45000, unlockCost: 250, effect: 'burn' },
-      'garlic':    { cooldown: 60000, unlockCost: 400, effect: 'spikes' } // --- CHANGED TO SPIKES ---
+      'garlic':    { cooldown: 60000, unlockCost: 400, effect: 'spikes' } 
     };
 
     for (const [specialKey, stats] of Object.entries(SPECIALS_CONFIG)) {
@@ -148,20 +148,16 @@ class Player {
     const audio = this.game.assetLoader?.audio?.sfx_fmattack;
     if (audio) { audio.currentTime = 0; audio.volume = 1.0; const p = audio.play(); if(p && p.catch) p.catch(()=>{}); }
 
-    // --- NEW: SPAWN GARLIC SPIKES ---
-   // --- NEW: SPAWN GARLIC SPIKES (FIXED PLACEMENT) ---
     if (special.effect === 'spikes') {
-      // Spawn 15 Garlic Spikes (increased from 12)
       for (let i = 0; i < 15; i++) {
-        // Spawn strictly on the walkable road area
         const spawnX = 250 + Math.random() * (this.game.canvas.width - 300); 
         const spawnY = CONSTANTS.GAME_BOTTOM_HALF + Math.random() * (this.game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - 80);
         
         this.traps.push({
           x: spawnX,
           y: spawnY,
-          width: 80,   // BIGGER HITBOX so enemies easily step on it
-          height: 80,  // BIGGER HITBOX
+          width: 80,  
+          height: 80,  
           damage: 150,
           active: true,
           timer: 20000 
@@ -191,43 +187,80 @@ class Player {
     return Math.min(100, (special.timeSinceLastFire / special.cooldown) * 100);
   }
 
+  // --- NEW: UI SOUND HELPER ---
+  _playUI(sfxKey) {
+      const audio = this.game.assetLoader?.audio?.[sfxKey];
+      if (audio) { 
+          audio.currentTime = 0; 
+          audio.volume = 0.6; 
+          const p = audio.play(); 
+          if (p && p.catch) p.catch(()=>{}); 
+      }
+  }
+
   unlockWeapon(weaponName) {
     const weapon = this.arsenal[weaponName];
-    if (!weapon || weapon.unlocked) return false;
-    if (this.kita < weapon.baseCost) return false;
+    if (!weapon || weapon.unlocked || this.kita < weapon.baseCost) {
+        this._playUI('sfx_locked'); // Plays if you are broke!
+        return false;
+    }
     this.kita -= weapon.baseCost;
     weapon.unlocked = true;
     this.resetAmmo(); 
     this.game.saveCurrentState(); 
+    this._playUI('sfx_cash_register'); // *CHA-CHING!*
     return true;
   }
 
   unlockSpecial(specialName) {
     const special = this.specials[specialName];
-    if (!special || special.unlocked) return false;
-    if (this.kita < special.baseCost) return false;
+    if (!special || special.unlocked || this.kita < special.baseCost) {
+        this._playUI('sfx_locked');
+        return false;
+    }
     this.kita -= special.baseCost;
     special.unlocked = true;
     this.game.saveCurrentState(); 
+    this._playUI('sfx_cash_register'); // *CHA-CHING!*
     return true;
   }
 
   upgradeWeapon(weaponName) {
     const weapon = this.arsenal[weaponName];
-    if (!weapon || !weapon.unlocked || weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL) return false;
+    if (!weapon || !weapon.unlocked || weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL) {
+        this._playUI('sfx_locked');
+        return false;
+    }
     const costMultiplier = Math.pow(CONSTANTS.WEAPON_UPGRADE_COST_MULTIPLIER, weapon.level);
     const upgradeCost = Math.ceil(50 * costMultiplier);
-    if (this.kita < upgradeCost) return false;
+    
+    if (this.kita < upgradeCost) {
+        this._playUI('sfx_locked');
+        return false;
+    }
+    
     this.kita -= upgradeCost;
     weapon.level++;
     weapon.damage += 5;
     this.resetAmmo(); 
     this.game.saveCurrentState(); 
+    this._playUI('sfx_cash_register'); // *CHA-CHING!*
     return true;
   }
 
   addKita(amount) { this.kita += amount; }
-  takeDamage(amount) { this.hp = Math.max(0, this.hp - amount); }
+  takeDamage(amount) { 
+    this.hp = Math.max(0, this.hp - amount); 
+    
+    // Completely bypasses the missing _playUI function and plays it safely!
+    const audio = this.game.assetLoader?.audio?.sfx_jo_damage;
+    if (audio) { 
+        audio.currentTime = 0; 
+        audio.volume = 0.8; 
+        const p = audio.play(); 
+        if (p && p.catch) p.catch(()=>{}); 
+    }
+  }
   isDead() { return this.hp <= 0; }
 
   syncWithSave(state) {
@@ -338,6 +371,32 @@ class Player {
     this.projectiles = this.projectilePool.getActive();
 
     // --- MANAGE TRAPS AND COLLISION ---
+   // Update Jo's projectiles
+    // Use a classic loop so if a Pares splits and adds NEW items to the array, they don't get deleted!
+    for (let i = 0; i < this.projectiles.length; i++) {
+        this.projectiles[i].update(delta);
+    }
+    this.projectiles = this.projectiles.filter(p => p.isActive);
+    // --- NEW: UPDATE ENEMY PROJECTILES & CHECK JO HIT ---
+    if (this.game.enemyProjectiles) {
+      this.game.enemyProjectiles = this.game.enemyProjectiles.filter(ep => {
+        ep.update(delta);
+        
+        // Basic Rectangle Collision against Jo
+        if (ep.isActive && ep.x < this.x + this.width && ep.x + ep.width > this.x &&
+            ep.y < this.y + this.height && ep.y + ep.height > this.y) {
+            
+          this.takeDamage(ep.damage);
+          ep.isActive = false;
+          
+          const dmgAudio = this.game.assetLoader?.audio?.sfx_hit; 
+          if (dmgAudio) { dmgAudio.currentTime = 0; const p = dmgAudio.play(); if (p && p.catch) p.catch(()=>{}); }
+        }
+        return ep.isActive;
+      });
+    }
+
+    // --- MANAGE GARLIC TRAPS ---
     this.traps = this.traps.filter(t => t.active && t.timer > 0);
     const enemies = this.game.waveManager.getActiveEnemies ? this.game.waveManager.getActiveEnemies() : (this.game.waveManager.enemies || []);
     
@@ -347,12 +406,11 @@ class Player {
       
       enemies.forEach(enemy => {
         if (enemy.isAlive && trap.active && enemy.state !== 'dead') {
-          // Simple Hitbox Collision Check
           if (trap.x < enemy.x + enemy.width && trap.x + trap.width > enemy.x &&
               trap.y < enemy.y + enemy.height && trap.y + trap.height > enemy.y) {
               
               enemy.takeDamage(trap.damage);
-              trap.active = false; // The trap breaks after hurting one enemy
+              trap.active = false; 
               
               const hitSfx = this.game.assetLoader?.audio?.sfx_hit;
               if (hitSfx) { hitSfx.currentTime = 0; const p = hitSfx.play(); if(p && p.catch) p.catch(()=>{}); }
@@ -404,6 +462,47 @@ class Player {
             const p = hitSfx.play();
             if (p && p.catch) p.catch(() => {});
           }
+    // --- CHECK JO'S PROJECTILES AGAINST ENEMIES & ENEMY PROJECTILES ---
+this.projectiles.forEach(proj => {
+      
+      // 1. SHOOT ENEMY PROJECTILES OUT OF THE AIR! (Robust Distance Check)
+      if (this.game.enemyProjectiles) {
+        this.game.enemyProjectiles.forEach(ep => {
+          if (ep.isActive && proj.isActive) {
+             
+             // Find the center of Jo's projectile (with a fallback of 20 just in case)
+             const projCenterX = proj.x + (proj.width ? proj.width / 2 : 20);
+             const projCenterY = proj.y + (proj.height ? proj.height / 2 : 20);
+             
+             // Find the center of the Enemy's projectile
+             const epCenterX = ep.x + ep.width / 2;
+             const epCenterY = ep.y + ep.height / 2;
+             
+             // Calculate the exact distance between the two objects
+             const dist = Math.hypot(projCenterX - epCenterX, projCenterY - epCenterY);
+             
+             // If they are within 60 pixels of each other, it's a solid hit!
+             if (dist < 60) {
+                 ep.takeDamage(this.arsenal[proj.type].damage); 
+                 proj.isActive = false; // Destroy Jo's food
+                 
+                 const hitSfx = this.game.assetLoader?.audio?.sfx_hit;
+                 if (hitSfx) { hitSfx.currentTime = 0; const p = hitSfx.play(); if(p && p.catch) p.catch(()=>{}); }
+             }
+          }
+        });
+      }
+
+      // 2. HIT ENEMIES
+      enemies.forEach(enemy => {
+        if (enemy.isAlive && proj.isActive && Physics.checkCollision(proj, enemy)) {
+          
+          // FIXED: Use proj.damage! 
+          // (Looking up this.arsenal['pares_split'].damage caused the crash because it doesn't exist!)
+          enemy.takeDamage(proj.damage);
+          
+          proj.onHit(enemy); 
+          proj.isActive = false;
         }
       });
     });
@@ -441,15 +540,20 @@ class Player {
     });
   }
 
-  _fire() {
+ _fire() {
     const { vx, vy } = this.game.inputHandler.getDragVector();
     if ((vx === 0 && vy === 0) || !this.fireWeapon()) return;
     const weaponData = this.arsenal[this.selectedWeapon];
     const startX = this.x + this.width * 0.7; const startY = this.y + this.height * 0.4;
     
-    const throwSound = Math.random() > 0.5 ? 'sfx_fmattack' : 'sfx_fmattack1';
-    const audio = this.game.assetLoader?.audio?.[throwSound];
-    if (audio) { audio.currentTime = 0; audio.volume = 0.8; const p = audio.play(); if (p && p.catch) p.catch(() => {}); }
+    // --- ONLY CHANGED THIS BLOCK: Plays the Slingshot sound instead of fmattack! ---
+    const audio = this.game.assetLoader?.audio?.sfx_slingshot;
+    if (audio) { 
+      audio.currentTime = 0; 
+      audio.volume = 0.8; 
+      const p = audio.play(); 
+      if (p && p.catch) p.catch(() => {}); 
+    }
 
     // Fire from pool instead of creating new projectile
     this.projectilePool.fire(startX, startY, vx, vy, this.selectedWeapon, weaponData.damage, weaponData.level);
@@ -497,7 +601,6 @@ class Player {
       ctx.fillStyle = CONSTANTS.COLORS.PLAYER; ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
-    // --- NEW: DRAW GARLIC TRAPS ---
     // --- DRAW GARLIC TRAPS ---
     const specSheet = this.game.assetLoader?.images?.specialsSheet;
     this.traps.forEach(trap => {
@@ -533,6 +636,11 @@ class Player {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
       ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y); points.forEach(p => ctx.lineTo(p.x, p.y));
       ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // --- ENEMY PROJECTILES MUST BE DRAWN OUTSIDE THE DRAG CHECK ---
+    if (this.game.enemyProjectiles) {
+        this.game.enemyProjectiles.forEach(ep => ep.draw(ctx));
     }
   }
 }
