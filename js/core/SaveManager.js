@@ -12,6 +12,8 @@ class SaveManager {
       currentLevel: 1,
       kita: 0,
       hasSeenTutorial: false,
+      hasSeenPrologue: false,
+      difficultyKey: 'medium',
       currentGameState: 'MAIN_MENU',
       weaponLevels: {
         mami: 1,

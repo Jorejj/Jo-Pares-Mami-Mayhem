@@ -166,11 +166,19 @@ class Player {
       const enemies = this.game.waveManager.getActiveEnemies
         ? this.game.waveManager.getActiveEnemies()
         : (this.game.waveManager.enemies || []);
-        
+      const enemyProjectiles = this.game.waveManager?.enemyProjectilePool?.getActive?.() || [];
+         
       enemies.forEach(enemy => {
         if (!enemy.isAlive) return;
         // Bosses get a slight resilience to specials
         const isBoss = typeof enemy.type === 'string' && enemy.type.startsWith('boss_');
+        const directSpecialDamage = special.effect === 'slow'
+          ? (isBoss ? 14 : 10)
+          : (isBoss ? 20 : 14);
+
+        if (typeof enemy.takeDamage === 'function') {
+          enemy.takeDamage(directSpecialDamage, true);
+        }
         
         if (special.effect === 'slow') {
             const slowDur = isBoss ? 3500 : 5000;
@@ -180,6 +188,18 @@ class Player {
             const burnDur = isBoss ? 4000 : 6000;
             const burnDmg = isBoss ? 10 : 15;
             enemy.applyBurnStatus(burnDur, burnDmg); 
+        }
+      });
+
+      enemyProjectiles.forEach((proj) => {
+        if (!proj || !proj.isActive) return;
+
+        if (special.effect === 'slow' && typeof proj.applySlowStatus === 'function') {
+          proj.applySlowStatus(2500, 0.55);
+          if (typeof proj.takeDamage === 'function') proj.takeDamage(5);
+        } else if (special.effect === 'burn' && typeof proj.applyBurnStatus === 'function') {
+          proj.applyBurnStatus(2600, 8);
+          if (typeof proj.takeDamage === 'function') proj.takeDamage(8);
         }
       });
     }
@@ -415,7 +435,32 @@ class Player {
         
         if (dist < collisionDist) {
           playerProj.isActive = false;
-          enemyProj.isActive = false;
+
+          // Trigger pares split logic even when impact target is an enemy projectile.
+          if (playerProj.type === 'pares' && typeof playerProj.onHit === 'function') {
+            playerProj.onHit(enemyProj);
+          }
+
+          if (playerProj.type === 'rice' && typeof enemyProj.applyBurnStatus === 'function') {
+            const burnDamageScaling = [2, 4, 8, 12, 16];
+            const tickDamage = burnDamageScaling[(playerProj.level || 1) - 1] || 2;
+            enemyProj.applyBurnStatus(2200, tickDamage);
+            if (typeof enemyProj.takeDamage === 'function') enemyProj.takeDamage(Math.max(1, Math.ceil((playerProj.damage || 8) * 0.35)));
+          }
+
+          if (playerProj.type === 'pares' && typeof enemyProj.takeDamage === 'function') {
+            enemyProj.takeDamage(Math.max(1, Math.ceil((playerProj.damage || 10) * 0.45)));
+          }
+
+          // Apply direct-hit damage for food projectiles that should break enemy projectiles immediately.
+          if (playerProj.type === 'mami' || playerProj.type === 'cola' || playerProj.type === 'pares_split') {
+            const weaponDamage = this.arsenal[playerProj.type]?.damage || playerProj.damage || 10;
+            if (typeof enemyProj.takeDamage === 'function') {
+              enemyProj.takeDamage(weaponDamage);
+            } else {
+              enemyProj.isActive = false;
+            }
+          }
           
           const hitSfx = this.game.assetLoader?.audio?.sfx_hit;
           if (hitSfx) {
@@ -429,9 +474,19 @@ class Player {
 
 // 2. Check Collision Against Enemies
       enemies.forEach(enemy => {
-        if (enemy.isAlive && playerProj.isActive && Physics.checkCollision(playerProj, enemy)) {
+        if (!enemy.isAlive || !playerProj.isActive) return;
+        const collisionTarget = (typeof enemy.getCollisionRect === 'function') ? enemy.getCollisionRect() : enemy;
+        if (Physics.checkCollision(playerProj, collisionTarget)) {
           const weaponDamage = this.arsenal[playerProj.type]?.damage || playerProj.damage;
           enemy.takeDamage(weaponDamage);
+
+          const isBoss = typeof enemy.type === 'string' && enemy.type.startsWith('boss_');
+          if (playerProj.type === 'rice' && typeof enemy.applyBurnStatus === 'function') {
+            const burnDamageScaling = [2, 4, 8, 12, 16];
+            const tickDamage = burnDamageScaling[(playerProj.level || 1) - 1] || 2;
+            enemy.applyBurnStatus(isBoss ? 2200 : 3200, isBoss ? Math.max(1, tickDamage - 1) : tickDamage);
+          }
+
           if (playerProj.onHit) playerProj.onHit(enemy); 
           playerProj.isActive = false;
           

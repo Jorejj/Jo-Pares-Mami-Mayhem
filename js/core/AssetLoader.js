@@ -55,6 +55,7 @@ class AssetLoader {
       enemy_student: 'assets/animations/jbhotdog.png',
       boss_vlogger: 'assets/animations/boss_vlogger.png',
       boss_kap: 'assets/animations/boss/boss1_kap.png',
+      boss_ian: 'assets/animations/boss/boss2_ian.png',
       boss1_proj: 'assets/animations/boss/boss1_proj.png',
       newDaga1: 'assets/animations/newDaga1.png',
       ian: 'assets/animations/ian.png',
@@ -68,7 +69,9 @@ class AssetLoader {
       enemy_willie: 'assets/animations/willie.png',
       enemy_fmbad: 'assets/animations/fmbad.png',
       enemy_angryfm: 'assets/animations/angryfm.png',
-      boss_mastermind: 'assets/animations/malupiton.png',
+      boss_mastermind: 'assets/animations/boss/boss3_malu.png',
+      boss3_proj: 'assets/animations/boss/boss3_proj.png',
+      boss3_aura: 'assets/animations/boss/boss3_aura.png',
 
       // Story/Prologue Assets
       story1: 'assets/story/story1.png',
@@ -82,6 +85,41 @@ class AssetLoader {
       story_caloocan: 'assets/animations/enemy/Gemini_Generated_Image_vjuv9gvjuv9gvjuv.png',
       story_villains: 'assets/animations/enemy/Gemini_Generated_Image_z5q5nez5q5nez5q5 (1).png',
       story_jo_sad: 'assets/sprites/cartniJO.jpg',
+
+      // New Story Sets
+      story_prologue_1: 'assets/story/Prologue/Prologue 1.png',
+      story_prologue_2: 'assets/story/Prologue/Prologue 2.png',
+      story_prologue_3: 'assets/story/Prologue/Prologue 3.png',
+      story_prologue_4: 'assets/story/Prologue/Prologue 4.png',
+      story_prologue_5: 'assets/story/Prologue/Prologue 5.png',
+      story_prologue_6: 'assets/story/Prologue/Prologue 6.png',
+
+      story_manila_1: 'assets/story/Manila/Manila 1.png',
+      story_manila_2: 'assets/story/Manila/Manila 2.png',
+      story_manila_3: 'assets/story/Manila/Manila 3.png',
+
+      story_makati_1: 'assets/story/Makati/Makati 1.png',
+      story_makati_2: 'assets/story/Makati/Makati 2.png',
+      story_makati_3: 'assets/story/Makati/Makati 3.png',
+
+      story_boss1_open_1: 'assets/story/Boss 1 Open/BossKap1.png',
+      story_boss1_open_2: 'assets/story/Boss 1 Open/BossKap2.png',
+      story_boss1_open_3: 'assets/story/Boss 1 Open/BossKap3.png',
+
+      story_boss2_open_1: 'assets/story/Boss 2 Open/BossIan1.png',
+      story_boss2_open_2: 'assets/story/Boss 2 Open/BossIan2.png',
+      story_boss2_open_3: 'assets/story/Boss 2 Open/BossIan3.png',
+
+      story_boss3_open_1: 'assets/story/Boss 3 Open/BossMalu1.png',
+      story_boss3_open_2: 'assets/story/Boss 3 Open/BossMalu2.png',
+      story_boss3_open_3: 'assets/story/Boss 3 Open/BossMalu3.png',
+
+      story_ending_1: 'assets/story/Ending/Ending 1.png',
+      story_ending_2: 'assets/story/Ending/Ending.png',
+      story_ending_3: 'assets/story/Ending/Ending 3.png',
+      story_ending_4: 'assets/story/Ending/Ending 4.png',
+      story_ending_5: 'assets/story/Ending/Ending 5.png',
+      story_ending_6: 'assets/story/Ending/Ending 6.png',
 
       //gifs
       story_boss1_open: 'assets/story/boss1.gif',
@@ -133,6 +171,43 @@ const audioSources = {
       sfx_button_hover: 'assets/audio/UI/ButtonHover.wav',
       sfx_defeat: 'assets/audio/UI/Defeat.wav', 
       sfx_victory: 'assets/audio/UI/VictoryTriumph.wav',
+      sfx_stun: 'assets/audio/UI/PauseMenu.wav',
+      sfx_summon: 'assets/audio/UI/ButtonHover.wav',
+
+      // --- BOSS: KAP ---
+      sfx_kap_attack: 'assets/audio/KAP/kap_attack.mp3',
+      sfx_kap_attack1: 'assets/audio/KAP/kap_attack1.mp3',
+      sfx_kap_attack2: 'assets/audio/KAP/kap_attack2.mp3',
+      bgm_kap_background: 'assets/audio/KAP/kap_background.mp3',
+      sfx_kap_block: 'assets/audio/KAP/kap_block.mp3',
+      sfx_kap_break_pen: 'assets/audio/KAP/kap_break_pen.mp3',
+      sfx_kap_defeat: 'assets/audio/KAP/kap_defeat.mp3',
+      sfx_kap_intro: 'assets/audio/KAP/kap_intro.mp3',
+      sfx_kap_pain: 'assets/audio/KAP/kap_pain.mp3',
+      sfx_kap_walk: 'assets/audio/KAP/kap_walk.mp3',
+      sfx_kap_write: 'assets/audio/KAP/kap_write.mp3',
+
+      // --- BOSS: IAN ---
+      sfx_ian_attack: 'assets/audio/IAN/ian_attack.mp3',
+      bgm_ian_background: 'assets/audio/IAN/ian_background.mp3',
+      sfx_ian_defeat: 'assets/audio/IAN/ian_defeat.mp3',
+      sfx_ian_pain: 'assets/audio/IAN/ian_pain.mp3',
+      sfx_ian_walk: 'assets/audio/IAN/ian_walk.mp3',
+      sfx_ian_win: 'assets/audio/IAN/ian_win.mp3',
+
+      // --- BOSS: MALUPITON ---
+      sfx_malupiton_attack: 'assets/audio/MALUPITON/malupiton_attack.mp3',
+      sfx_malupiton_attack2: 'assets/audio/MALUPITON/malupiton_attack2.mp3',
+      sfx_malupiton_attack_w_scream: 'assets/audio/MALUPITON/malupiton_attack_w_scream.mp3',
+      bgm_malupiton_background: 'assets/audio/MALUPITON/malupiton_background.mp3',
+      sfx_malupiton_defeat: 'assets/audio/MALUPITON/malupiton_defeat.mp3',
+      sfx_malupiton_defeat1: 'assets/audio/MALUPITON/malupiton_defeat1.mp3',
+      sfx_malupiton_intro: 'assets/audio/MALUPITON/malupiton_intro.mp3',
+      sfx_malupiton_pain: 'assets/audio/MALUPITON/malupiton_pain.mp3',
+      sfx_malupiton_scream: 'assets/audio/MALUPITON/malupiton_scream.mp3',
+      sfx_malupiton_walk: 'assets/audio/MALUPITON/malupiton_walk.mp3',
+      sfx_malupiton_win: 'assets/audio/MALUPITON/malupiton_win.mp3',
+      sfx_malupiton_win_voiceline: 'assets/audio/MALUPITON/malupiton_win_voiceline.mp3',
 
 
       // --- ANIMAL DEATHS ---

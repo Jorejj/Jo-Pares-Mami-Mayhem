@@ -15,21 +15,21 @@ class LevelManager {
       { act: 1, bg: 'bg_sangandaan',    label: 'Sangandaan Market',         bgm: 'bgm_vendors' },
       { act: 1, bg: 'bg_bagong_barrio', label: 'Bagong Barrio',             bgm: 'bgm_street'  },
       { act: 1, bg: 'bg_c3',            label: 'C-3 Road',                  bgm: 'bgm_traffic' },
-      { act: 1, bg: 'bg_bagumbong',     label: 'Boss: Kap Nino',            bgm: 'bgm_crowd'   },
+      { act: 1, bg: 'bg_bagumbong',     label: 'Boss: Kap Nino',            bgm: 'bgm_kap_background'   },
 
       // ACT 2: MANILA (The Historical Core)
       { act: 2, bg: 'bg_intramuros',    label: 'Intramuros (Area 1)',       bgm: 'bgm_people'  },
       { act: 2, bg: 'bg_quiapo',        label: 'Quiapo Mayhem',             bgm: 'bgm_vendors' },
       { act: 2, bg: 'bg_chinatown',     label: 'Binondo Food Trip',         bgm: 'bgm_street'  },
       { act: 2, bg: 'bg_luneta',        label: 'Rizal Park (Luneta)',       bgm: 'bgm_people'  },
-      { act: 2, bg: 'bg_baywalk',       label: 'Boss: Vlogger Ian',         bgm: 'bgm_crowd'   },
+      { act: 2, bg: 'bg_baywalk',       label: 'Boss: Vlogger Ian',         bgm: 'bgm_ian_background'   },
 
       // ACT 3: MAKATI (The Corporate Jungle)
       { act: 3, bg: 'bg_ayalaAvenue',   label: 'Ayala Avenue (Area 1)',     bgm: 'bgm_makati'  },
       { act: 3, bg: 'bg_poblacion',     label: 'Poblacion Party',           bgm: 'bgm_people'  },
       { act: 3, bg: 'bg_legazpi',       label: 'Legazpi Village',           bgm: 'bgm_makati'  },
       { act: 3, bg: 'bg_guadalupe',     label: 'Guadalupe Bridge',          bgm: 'bgm_traffic' },
-      { act: 3, bg: 'bg_malacanang',    label: 'Final Boss: The Mastermind',bgm: 'bgm_crowd'   },
+      { act: 3, bg: 'bg_malacanang',    label: 'Final Boss: The Mastermind',bgm: 'bgm_malupiton_background'   },
     ];
   }
 
