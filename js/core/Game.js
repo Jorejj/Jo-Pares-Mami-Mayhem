@@ -347,7 +347,13 @@ _advanceStoryCutscene() {
   }
 
   _updateAudio() {
-    // 1. We added MAIN_MENU and DIFFICULTY_SELECT to the active states
+    // 1. Check if Secret Menu is open - if so, silence everything and return
+    if (window.secretMenu && window.secretMenu.isMenuOpen) {
+      if (this.currentBgmTrack) this.currentBgmTrack.pause();
+      return;
+    }
+
+    // 2. We added MAIN_MENU and DIFFICULTY_SELECT to the active states
     const isActiveState = (
       this.currentState === CONSTANTS.STATES.PLAYING || 
       this.currentState === CONSTANTS.STATES.SHOP || 
@@ -361,36 +367,37 @@ _advanceStoryCutscene() {
       return;
     }
 
-    // 2. Check which track we should be playing
+    // 3. Check which track we should be playing
     let targetBgmKey = null;
-    if (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
-      targetBgmKey = 'bgm_main_menu'; // Play the new menu music!
+    
+    // Block main menu music if we've jumped
+    if (window.isSecretMenuJumped && (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT)) {
+        targetBgmKey = null; 
+    } else if (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
+      targetBgmKey = 'bgm_main_menu'; 
     } else {
       const levelData = this.levelManager.getLevelData();
-      targetBgmKey = levelData.bgm; // Play normal level music
+      targetBgmKey = levelData.bgm; 
     }
 
-    // 3. Handle changing the tracks
+    // 4. Handle changing the tracks
     if (this.currentBgmKey !== targetBgmKey) {
       if (this.currentBgmTrack) {
         this.currentBgmTrack.pause();
         this.currentBgmTrack.currentTime = 0; 
       }
+      
       this.currentBgmKey = targetBgmKey;
-      this.currentBgmTrack = this.assetLoader?.audio?.[targetBgmKey];
+      this.currentBgmTrack = targetBgmKey ? this.assetLoader?.audio?.[targetBgmKey] : null;
 
       if (this.currentBgmTrack) {
         this.currentBgmTrack.loop = true;
         this.currentBgmTrack.volume = 0.3; 
         
         const p = this.currentBgmTrack.play();
-        if (p && p.catch) p.catch(() => {
-            // If the browser blocks autoplay upon opening the tab, don't crash.
-            // Just wait for the user to click something.
-        });
+        if (p && p.catch) p.catch(() => {});
       }
     } else if (this.currentBgmTrack && this.currentBgmTrack.paused) {
-      // If the track is paused (likely blocked by browser), try to play it again
       const p = this.currentBgmTrack.play();
       if (p && p.catch) p.catch(() => {});
     }
