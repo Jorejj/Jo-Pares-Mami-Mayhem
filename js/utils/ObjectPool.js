@@ -217,6 +217,7 @@ class PooledProjectile {
     this.apexReached = false;
     this.isSplitChild = false; // New property to track if this is a split projectile
     this.hasSplit = false; // Flag to prevent multiple splits
+    this.lifetime = 0;
 
     this.frameWidth = 64;
     this.frameHeight = 64;
@@ -244,6 +245,7 @@ class PooledProjectile {
     this.apexReached = false;
     this.isSplitChild = isSplitChild;
     this.hasSplit = false; // Reset split flag
+    this.lifetime = 0;
     
     // No longer split at launch - pares splits on impact instead
   }
@@ -360,6 +362,7 @@ class PooledProjectile {
     this.prevVelY = this.velY;
     this.x += this.velX;
     this.y += this.velY;
+    this.lifetime += delta;
     
     // Apply gravity to parent projectiles, but not to pares children (they should travel straight to target)
     if (!(this.type === 'pares' && this.isSplitChild)) {
@@ -510,6 +513,20 @@ class EnemyPool {
   }
 
   /**
+   * Boss/legacy alias for spawn() to keep API explicit in callers.
+   */
+  get(type) {
+    return this.spawn(type);
+  }
+
+  /**
+   * Release a specific enemy back to the pool.
+   */
+  release(enemy) {
+    this.pool.release(enemy);
+  }
+
+  /**
    * Update all enemies and release dead ones
    */
   update(delta) {
@@ -563,6 +580,7 @@ const POOLED_ENEMY_TYPES = {
   worker:     { hp: 50,  speed: 1.0, damage: 12, kitaReward: 20, baseWidth: 55, baseHeight: 110, spriteKey: 'enemy_worker' },
   elite:      { hp: 80,  speed: 0.8, damage: 20, kitaReward: 300, baseWidth: 60, baseHeight: 120, spriteKey: 'enemy_elite' },
   boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_kap' },
+  boss_ian:   { hp: 900, speed: 0.9, damage: 40, kitaReward: 300, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_ian' },
   boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_vlogger' },
   boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind' },
   newDaga1:   { hp: 150, speed: 0.4, damage: 40, kitaReward: 30, baseWidth: 60, baseHeight: 150, spriteKey: 'newDaga1' },
@@ -661,6 +679,8 @@ class PooledEnemy {
 
     this.isAlive = true;
     this.alive = true;
+    this.__bossIanOwnerId = null;
+    this.__bossMaluOwnerId = null;
     this.isRanged = ['fmbad', 'angryfm', 'fmteacher'].includes(this.type);
     this.isFemale = ['blonde', 'fmbad', 'angryfm', 'fmteacher', 'boss_diwata'].includes(this.type);
     this.isAnimal = ['cockroach', 'rat', 'newDaga1', 'dog'].includes(this.type);
@@ -810,7 +830,7 @@ class PooledEnemy {
                 if (this.game.waveManager && this.game.waveManager.enemyProjectilePool) {
                     const pX = player.x + player.width / 2;
                     const pY = player.y + player.height / 2;
-                    this.game.waveManager.enemyProjectilePool.fire(this.x, this.y + this.height * 0.2, pX, pY, this.damage, 'vial');
+                    this.game.waveManager.enemyProjectilePool.fire(this.x, this.y + this.height * 0.2, pX, pY, this.damage, 'vial', this.spriteKey);
                 }
                 const atkSound = Math.random() > 0.5 ? 'sfx_fmattack' : 'sfx_fmattack1';
                 const audio = this.game.assetLoader?.audio?.[atkSound];
@@ -1027,8 +1047,8 @@ class EnemyProjectilePool {
       // Factory
       () => new PooledEnemyProjectile(game),
       // Reset
-      (proj, x, y, targetX, targetY, damage, type) => {
-        proj.init(x, y, targetX, targetY, damage, type);
+      (proj, x, y, targetX, targetY, damage, type, spriteKey) => {
+        proj.init(x, y, targetX, targetY, damage, type, spriteKey);
       },
       initialSize
     );
@@ -1037,8 +1057,8 @@ class EnemyProjectilePool {
   /**
    * Fire an enemy projectile
    */
-  fire(x, y, targetX, targetY, damage, type = 'vial') {
-    return this.pool.acquire(x, y, targetX, targetY, damage, type);
+  fire(x, y, targetX, targetY, damage, type = 'vial', spriteKey = null) {
+    return this.pool.acquire(x, y, targetX, targetY, damage, type, spriteKey);
   }
 
   /**
@@ -1098,14 +1118,52 @@ class PooledEnemyProjectile {
     this.speed = 1.5; // Very slow base speed for easy deflection
     this.width = 40;
     this.height = 40;
+    this.maxHp = 25;
+    this.hp = this.maxHp;
+    this.spriteKey = 'boss1_proj';
+    this.animationTimer = 0;
+    this.currentFrame = 0;
+    this.rotation = 0;
+    this.baseVelX = 0;
+    this.baseVelY = 0;
+    this.slowActive = false;
+    this.slowDuration = 0;
+    this.slowFactor = 1;
+    this.burnActive = false;
+    this.burnDuration = 0;
+    this.burnDamagePerTick = 0;
+    this.burnTickTimer = 0;
+    this.hurtFlashTimer = 0;
+    this.gravityScale = 0;
+    this.usesAutoRotation = true;
+    this.lockSpriteFacing = false;
+    this.visualAngle = 0;
   }
 
-  init(x, y, targetX, targetY, damage, type = 'vial') {
+  init(x, y, targetX, targetY, damage, type = 'vial', spriteKey = null) {
     this.x = x;
     this.y = y;
     this.damage = damage;
     this.type = type;
     this.isActive = true;
+    this.spriteKey = spriteKey || 'boss1_proj';
+    this.animationTimer = 0;
+    this.currentFrame = 0;
+    this.rotation = 0;
+    this.slowActive = false;
+    this.slowDuration = 0;
+    this.slowFactor = 1;
+    this.burnActive = false;
+    this.burnDuration = 0;
+    this.burnDamagePerTick = 0;
+    this.burnTickTimer = 0;
+    this.hurtFlashTimer = 0;
+    this.maxHp = 25;
+    this.hp = this.maxHp;
+    this.gravityScale = 0;
+    this.usesAutoRotation = true;
+    this.lockSpriteFacing = false;
+    this.visualAngle = 0;
 
     // Calculate velocity toward target
     const dx = targetX - x;
@@ -1121,7 +1179,7 @@ class PooledEnemyProjectile {
     }
 
     // Type-specific properties
-    if (type === 'vial') {
+    if (type === 'vial' || type === 'cola') {
       this.radius = 20;
       this.width = 40;
       this.height = 40;
@@ -1132,31 +1190,121 @@ class PooledEnemyProjectile {
         baseSpeed *= this.game.currentDifficulty.speedMult;
       }
       this.speed = baseSpeed;
+      this.gravityScale = 0;
       
       // Simple direct movement toward Jo (not catapult physics)
       // Just move straight toward target slowly
       if (dist > 0) {
         this.velX = (dx / dist) * this.speed;
         this.velY = (dy / dist) * this.speed;
+        this.visualAngle = Math.atan2(this.velY, this.velX);
       } else {
         this.velX = -this.speed; // Default left movement if no target
         this.velY = 0;
+        this.visualAngle = Math.PI;
       }
-      
-      console.log('[EnemyProjectile] Vial direct movement: speed=', this.speed, 'velX=', this.velX, 'velY=', this.velY);
+    } else {
+      // Non-vial projectiles keep ballistic behavior.
+      this.gravityScale = 0.5;
+      if (dist > 0) this.visualAngle = Math.atan2(this.velY, this.velX);
+    }
+
+    // Boss 3 fist projectile: always direct at player, no gravity.
+    if (this.spriteKey === 'boss3_proj') {
+      this.type = 'vial';
+      this.gravityScale = 0;
+      this.radius = 24;
+      this.width = 84;
+      this.height = 54;
+      this.speed = 2.1;
+      if (dist > 0) {
+        this.velX = (dx / dist) * this.speed;
+        this.velY = (dy / dist) * this.speed;
+        this.visualAngle = Math.atan2(this.velY, this.velX);
+      } else {
+        this.velX = -this.speed;
+        this.velY = 0;
+        this.visualAngle = Math.PI;
+      }
+      this.usesAutoRotation = false;
+      this.lockSpriteFacing = true;
+    }
+
+    this.baseVelX = this.velX;
+    this.baseVelY = this.velY;
+    this._updateVelocityFromSlow();
+  }
+
+  _updateVelocityFromSlow() {
+    const factor = this.slowActive ? this.slowFactor : 1;
+    this.velX = this.baseVelX * factor;
+    this.velY = this.baseVelY * factor;
+  }
+
+  applySlowStatus(duration, factor) {
+    this.slowActive = true;
+    this.slowDuration = Math.max(this.slowDuration, duration);
+    this.slowFactor = Math.max(0.2, Math.min(this.slowFactor, factor));
+    this._updateVelocityFromSlow();
+  }
+
+  applyBurnStatus(duration, damagePerTick) {
+    this.burnActive = true;
+    this.burnDuration = Math.max(this.burnDuration, duration);
+    this.burnDamagePerTick = Math.max(this.burnDamagePerTick, damagePerTick);
+  }
+
+  takeDamage(damage) {
+    this.hp -= damage;
+    this.hurtFlashTimer = Math.max(this.hurtFlashTimer, 110);
+    if (this.hp <= 0) {
+      this.hp = 0;
+      this.isActive = false;
     }
   }
 
   update(delta) {
     if (!this.isActive) return;
+    if (this.hurtFlashTimer > 0) this.hurtFlashTimer -= delta;
+
+    if (this.slowActive) {
+      this.slowDuration -= delta;
+      if (this.slowDuration <= 0) {
+        this.slowActive = false;
+        this.slowFactor = 1;
+        this._updateVelocityFromSlow();
+      }
+    }
+
+    if (this.burnActive) {
+      this.burnDuration -= delta;
+      this.burnTickTimer += delta;
+      if (this.burnTickTimer >= 120) {
+        this.burnTickTimer = 0;
+        this.takeDamage(this.burnDamagePerTick);
+        if (!this.isActive) return;
+      }
+      if (this.burnDuration <= 0) {
+        this.burnActive = false;
+        this.burnDamagePerTick = 0;
+      }
+    }
 
     // Move projectile
     this.x += this.velX;
     this.y += this.velY;
+    if (this.usesAutoRotation) {
+      this.rotation += 0.12;
+    }
+    this.animationTimer += delta;
+    if (this.animationTimer >= 100) {
+      this.animationTimer = 0;
+      this.currentFrame = (this.currentFrame + 1) % 2;
+    }
 
     // Boss vials move in straight line (no gravity), other projectiles have gravity
-    if (this.type !== 'vial') {
-      this.velY += CONSTANTS.GRAVITY * 0.5;
+    if (this.gravityScale > 0) {
+      this.velY += CONSTANTS.GRAVITY * this.gravityScale;
     }
     // Boss vials maintain constant velocity for predictable movement
 
@@ -1185,19 +1333,60 @@ class PooledEnemyProjectile {
   draw(ctx) {
     if (!this.isActive) return;
 
-    const sprite = this.game.assetLoader?.images?.boss1_proj;
+    const sprite = this.game.assetLoader?.images?.[this.spriteKey];
+    const useEmbeddedEnemyProjectile = (
+      this.type === 'vial' &&
+      ['enemy_fmbad', 'enemy_angryfm', 'enemy_fmteacher'].includes(this.spriteKey)
+    );
+
+    let visualW = this.width;
+    let visualH = this.height;
 
     if (sprite && sprite.complete && sprite.width > 0) {
-      // Draw vial sprite
-      ctx.save();
-      ctx.drawImage(
-        sprite,
-        this.x - this.width / 2,
-        this.y - this.height / 2,
-        this.width,
-        this.height
-      );
-      ctx.restore();
+      if (useEmbeddedEnemyProjectile) {
+        const cols = 5;
+        const rows = 3;
+        const sw = sprite.width / cols;
+        const sh = sprite.height / rows;
+        const frameToDraw = 3 + this.currentFrame; // Row 1, frames 3-4 hold projectile art
+        const sx = frameToDraw * sw;
+        const sy = 1 * sh;
+        const drawSize = 80;
+        visualW = drawSize;
+        visualH = drawSize;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(-1, 1);
+        ctx.rotate(this.rotation);
+        ctx.drawImage(sprite, sx, sy, sw, sh, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        ctx.restore();
+      } else if (this.spriteKey === 'boss3_proj') {
+        visualW = this.width;
+        visualH = this.height;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.visualAngle);
+        if (this.lockSpriteFacing) {
+          // The fist art points right; flip so it punches toward Jo (leftward lane).
+          ctx.scale(1, -1);
+        }
+        ctx.drawImage(sprite, -this.width / 2, -this.height / 2, this.width, this.height);
+        ctx.restore();
+      } else {
+        // Draw boss/default projectile sprite
+        visualW = this.width;
+        visualH = this.height;
+        ctx.save();
+        ctx.drawImage(
+          sprite,
+          this.x - this.width / 2,
+          this.y - this.height / 2,
+          this.width,
+          this.height
+        );
+        ctx.restore();
+      }
     } else {
       // Fallback: draw as purple circle
       ctx.fillStyle = '#9B59B6';
@@ -1207,6 +1396,83 @@ class PooledEnemyProjectile {
       
       // No white stroke outline to avoid visual pollution
     }
+
+    if (this.hurtFlashTimer > 0) {
+      ctx.save();
+      const flashAlpha = Math.min(0.7, this.hurtFlashTimer / 160);
+      ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, Math.max(this.radius * 0.95, Math.max(visualW, visualH) * 0.42), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (this.burnActive) {
+      const fireSprite = this.game.assetLoader?.images?.effect_fire;
+      if (fireSprite && fireSprite.complete && fireSprite.width > 0) {
+        ctx.save();
+        const fCols = 5; const fRows = 3;
+        const fw = fireSprite.width / fCols; const fh = fireSprite.height / fRows;
+        const currentFireFrame = Math.floor(this.game.gameFrame / 4) % 15;
+        const fCol = currentFireFrame % fCols; const fRow = Math.floor(currentFireFrame / fCols);
+        const fireW = visualW * 1.35;
+        const fireH = visualH * 1.35;
+        ctx.globalAlpha = 0.85;
+        ctx.drawImage(
+          fireSprite,
+          fCol * fw, fRow * fh, fw, fh,
+          this.x - fireW / 2, this.y - fireH / 2, fireW, fireH
+        );
+        ctx.restore();
+      } else {
+        ctx.save();
+        const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.35;
+        ctx.fillStyle = `rgba(255, 100, 0, ${flicker})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, Math.max(this.radius, visualW * 0.46), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    } else if (this.slowActive) {
+      const slowSprite = this.game.assetLoader?.images?.effect_slow;
+      if (slowSprite && slowSprite.complete && slowSprite.width > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 0.8;
+        const sCols = 4; const sRows = 2;
+        const swSlow = slowSprite.width / sCols; const shSlow = slowSprite.height / sRows;
+        const currentSlowFrame = Math.floor(this.game.gameFrame / 5) % 8;
+        const sCol = currentSlowFrame % sCols; const sRow = Math.floor(currentSlowFrame / sCols);
+        const effectW = visualW * 1.4;
+        const effectH = visualH * 1.4;
+        ctx.drawImage(
+          slowSprite,
+          sCol * swSlow, sRow * shSlow, swSlow, shSlow,
+          this.x - effectW / 2, this.y - effectH / 2, effectW, effectH
+        );
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 150, 255, 0.28)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, Math.max(this.radius, visualW * 0.5), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    const hpRatio = this.maxHp > 0 ? Math.max(0, this.hp / this.maxHp) : 0;
+    const barW = Math.max(28, visualW * 0.7);
+    const barH = 5;
+    const barX = this.x - (barW / 2);
+    const barY = this.y - (visualH / 2) - 10;
+    ctx.fillStyle = '#121212';
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.fillStyle = hpRatio > 0.35 ? '#24d14b' : '#ff5a5a';
+    ctx.fillRect(barX + 1, barY + 1, (barW - 2) * hpRatio, barH - 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
   }
 
   // For mid-air collision detection

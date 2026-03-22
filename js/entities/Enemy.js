@@ -18,6 +18,7 @@ const ENEMY_TYPES = {
   willie:     { hp: 85,  speed: 1.2, damage: 25, kitaReward: 35, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_willie' },
   fmbad:      { hp: 65,  speed: 1.5, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmbad' },
   angryfm:    { hp: 60,  speed: 1.6, damage: 18, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_angryfm' },
+  boss_ian:   { hp: 900, speed: 0.9, damage: 40, kitaReward: 300, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_ian' },
   boss_final: { hp: 800, speed: 0.4, damage: 50, kitaReward: 500, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind' }, 
 };
 

@@ -20,6 +20,7 @@ class Game {
 
     this.currentState = CONSTANTS.STATES.MAIN_MENU;
     this.currentDifficulty = null;
+    this.currentDifficultyKey = null;
     
     // --- Story Cutscene Tracking ---
     this.isPlayingStoryAfter = false; 
@@ -95,6 +96,7 @@ class Game {
     state.kita = this.player.kita;
     state.currentLevel = this.waveManager.currentWave;
     state.currentGameState = this.currentState;
+    state.difficultyKey = this.currentDifficultyKey || state.difficultyKey || 'medium';
     
     state.weaponLevels = {};
     state.weaponUnlocks = {};
@@ -184,7 +186,18 @@ class Game {
 
   _startStoryOrLevel() {
     const currentLevel = this.levelManager.currentLevel;
-    if (this.stageManager.hasStoryBefore(currentLevel)) {
+    const shouldPlayGlobalPrologue = currentLevel === 1 && !this.saveManager.state.hasSeenPrologue;
+
+    if (shouldPlayGlobalPrologue) {
+      this.stageManager.startGlobalPrologue();
+      this.saveManager.state.hasSeenPrologue = true;
+      this.isPlayingStoryAfter = false;
+      this.currentState = CONSTANTS.STATES.STORY_CUTSCENE;
+      this.uiManager.prologueIndex = 0;
+      this.uiManager.prologueCharIndex = 0;
+      this.uiManager.prologueFade = 0;
+      this.saveCurrentState();
+    } else if (this.stageManager.hasStoryBefore(currentLevel)) {
       this.stageManager.startStoryBefore(currentLevel);
       this.isPlayingStoryAfter = false;
       this.currentState = CONSTANTS.STATES.STORY_CUTSCENE;
@@ -249,7 +262,9 @@ class Game {
         const pendingNewGameDiff = localStorage.getItem('pendingNewGame');
         if (pendingNewGameDiff) {
             localStorage.removeItem('pendingNewGame');
+            this.currentDifficultyKey = pendingNewGameDiff;
             this.currentDifficulty = CONSTANTS.DIFFICULTY[pendingNewGameDiff];
+            this.levelManager.currentDifficulty = this.currentDifficulty;
             this._startStoryOrLevel();
             this.player.hp = this.player.maxHp; 
         } else {
@@ -268,26 +283,34 @@ class Game {
     this.saveManager.load();
     const state = this.saveManager.state;
     
-    const loadedLevel = state.currentLevel || 1;
+    const loadedLevel = Math.max(1, Math.min(CONSTANTS.TOTAL_LEVELS, state.currentLevel || 1));
     this.levelManager.currentLevel = loadedLevel;
     this.waveManager.currentWave = loadedLevel;
+    const savedDifficultyKey = (state.difficultyKey && CONSTANTS.DIFFICULTY[state.difficultyKey])
+      ? state.difficultyKey
+      : 'medium';
+    this.currentDifficultyKey = savedDifficultyKey;
+    this.currentDifficulty = CONSTANTS.DIFFICULTY[savedDifficultyKey] || CONSTANTS.DIFFICULTY.medium;
+    this.levelManager.currentDifficulty = this.currentDifficulty;
     this.player.syncWithSave(state);
     
     this.player.hp = this.player.maxHp;
     this.player.isDead = () => { return this.player.hp <= 0; }; 
     
-    let targetState = state.currentGameState;
-    if (targetState === CONSTANTS.STATES.GAMEOVER || targetState === CONSTANTS.STATES.VICTORY) {
-        targetState = CONSTANTS.STATES.ARSENAL_SELECT; 
-    }
-    
-    this.currentState = targetState;
-
-    if (this.currentState === CONSTANTS.STATES.SHOP) {
+    if (state.currentGameState === CONSTANTS.STATES.SHOP) {
+      this.currentState = CONSTANTS.STATES.SHOP;
       this.shopManager.open();
     } else {
-      this.currentState = CONSTANTS.STATES.ARSENAL_SELECT;
+      // Resume directly to active gameplay so HUD and enemies appear immediately.
+      this.currentState = CONSTANTS.STATES.PLAYING;
       this.waveManager.startWave(this._getWaveEnemies());
+      this.shopManager.close();
+      this.stageManager.resetDialogue();
+      this.isPlayingStoryAfter = false;
+      this.uiManager.prologueIndex = 0;
+      this.uiManager.prologueCharIndex = 0;
+      this.uiManager.prologueFade = 0;
+      this.player.resetAmmo();
     }
   }
 

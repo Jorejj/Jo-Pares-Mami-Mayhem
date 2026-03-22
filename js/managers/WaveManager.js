@@ -16,12 +16,25 @@ class WaveManager {
     
     // Initialize enemy projectile pool for bosses
     this.enemyProjectilePool = new EnemyProjectilePool(game, 20);
+
+    // Dedicated boss pool to keep all entities pool-backed.
+    this.bossIanPool = new ObjectPool(
+      () => new BossIan(game),
+      (boss, bossConfig) => boss.init(bossConfig),
+      2
+    );
+    this.bossMaluPool = new ObjectPool(
+      () => new BossMalu(game),
+      (boss, bossConfig) => boss.init(bossConfig),
+      1
+    );
     
     // Track special enemies (bosses) separately
     this.bosses = [];
     
     // Legacy compatibility - reference to active enemies
     this.enemies = this.enemyPool.getActive();
+    this.activeEnemies = this.getActiveEnemies();
   }
 
   /**
@@ -31,6 +44,8 @@ class WaveManager {
   startWave(waveEnemies) {
     // Release all enemies back to pool instead of creating garbage
     this.enemyPool.releaseAll();
+    this.bossIanPool.releaseAll();
+    this.bossMaluPool.releaseAll();
     
     // Clear bosses array
     this.bosses = [];
@@ -48,6 +63,7 @@ class WaveManager {
     
     // Update legacy reference
     this.enemies = this.enemyPool.getActive();
+    this.activeEnemies = this.getActiveEnemies();
     
     console.log(`[WaveManager] Wave ${this.currentWave} started with ${waveEnemies.length} enemies.`);
   }
@@ -82,6 +98,18 @@ class WaveManager {
         boss.update(delta);
       }
     });
+
+    // Recycle defeated pooled bosses and keep boss list clean.
+    for (let i = this.bosses.length - 1; i >= 0; i--) {
+      const boss = this.bosses[i];
+      if (!boss || boss.isAlive) continue;
+      if (boss.type === 'boss_ian') {
+        this.bossIanPool.release(boss);
+      } else if (boss.type === 'boss_malu' || boss.type === 'boss_final') {
+        this.bossMaluPool.release(boss);
+      }
+      this.bosses.splice(i, 1);
+    }
     
     // Update enemy projectiles
     if (this.enemyProjectilePool) {
@@ -94,6 +122,7 @@ class WaveManager {
     
     // Update legacy reference
     this.enemies = this.enemyPool.getActive();
+    this.activeEnemies = this.getActiveEnemies();
   }
 
   /**
@@ -121,7 +150,7 @@ class WaveManager {
     this.spawnIndex++;
 
     // Special handling for boss types
-    if (type === 'boss_kap' || type === 'boss_diwata' || type === 'boss_final') {
+    if (type === 'boss_kap' || type === 'boss_ian' || type === 'boss_diwata' || type === 'boss_final') {
       this._spawnBoss(type);
     } else {
       // Acquire enemy from pool instead of creating new
@@ -131,10 +160,11 @@ class WaveManager {
     
     // Update legacy reference
     this.enemies = this.enemyPool.getActive();
+    this.activeEnemies = this.getActiveEnemies();
   }
 
   /**
-   * Spawn a boss enemy (not pooled - uses special class)
+   * Spawn a boss enemy (pool-backed special class)
    * @private
    */
   _spawnBoss(type) {
@@ -145,16 +175,34 @@ class WaveManager {
         boss = new BossKap(this.game);
         console.log('[WaveManager] Spawned Boss: Inspector Kap Nino');
         break;
-      case 'boss_diwata':
-        // Future: boss = new BossDiwata(this.game);
-        console.warn('[WaveManager] Boss Diwata not yet implemented, using pooled enemy');
-        boss = this.enemyPool.spawn(type);
-        return;
+      case 'boss_ian':
+        // Pull from pool and initialize with boss-specific HP/speed.
+        boss = this.bossIanPool.acquire({
+          hp: 900,
+          speed: 0.9,
+          damage: 40,
+          kitaReward: 300,
+          centerX: this.game.canvas.width - 250,
+          spawnX: this.game.canvas.width + 50
+        });
+        console.log('[WaveManager] Spawned Boss: Vlogger Ian');
+        break;
       case 'boss_final':
-        // Future: boss = new BossFinal(this.game);
-        console.warn('[WaveManager] Final Boss not yet implemented, using pooled enemy');
-        boss = this.enemyPool.spawn(type);
-        return;
+        boss = this.bossMaluPool.acquire({
+          spriteKey: 'boss_mastermind',
+          projectileSpriteKey: 'boss3_proj',
+          auraSpriteKey: 'boss3_aura',
+          baseHp: 1000,
+          speed: 1.0,
+          damage: 45,
+          kitaReward: 1000,
+          centerX: this.game.canvas.width / 2 - 65,
+          centerY: this.game.canvas.height / 2,
+          ianX: this.game.canvas.width - 260,
+          spawnX: this.game.canvas.width + 90
+        });
+        console.log('[WaveManager] Spawned Boss: Malupiton');
+        break;
       default:
         console.warn(`[WaveManager] Unknown boss type: ${type}`);
         return;
@@ -162,6 +210,7 @@ class WaveManager {
     
     if (boss) {
       this.bosses.push(boss);
+      this.activeEnemies = this.getActiveEnemies();
     }
   }
 
@@ -191,6 +240,8 @@ class WaveManager {
    */
   clearAllEnemies() {
     this.enemyPool.releaseAll();
+    this.bossIanPool.releaseAll();
+    this.bossMaluPool.releaseAll();
     this.bosses = [];
     if (this.enemyProjectilePool) {
       this.enemyProjectilePool.releaseAll();
@@ -200,6 +251,7 @@ class WaveManager {
     this.spawnIndex = 0;
     this.waveEnemies = [];
     this.enemies = this.enemyPool.getActive();
+    this.activeEnemies = this.getActiveEnemies();
   }
 
   /**

@@ -509,7 +509,9 @@ class UIManager {
   }
 
   _startNewGame(diffKey) {
+    this.game.currentDifficultyKey = diffKey;
     this.game.currentDifficulty = CONSTANTS.DIFFICULTY[diffKey];
+    this.game.levelManager.currentDifficulty = this.game.currentDifficulty;
     
     // Use StageManager to start story
     this.game._startStoryOrLevel();

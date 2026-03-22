@@ -36,9 +36,30 @@ class BossKap extends Enemy {
     this.deathAnimationDone = false;
     this.deathHoldTimer = 0;
     this.deathHoldDuration = 900;
+    this.walkSfxTimer = 0;
+    this.introPlayed = false;
+  }
+
+  _playSfx(key, volume = 0.7) {
+    const audio = this.game.assetLoader?.audio?.[key];
+    if (!audio || typeof audio.play !== 'function') return;
+    audio.currentTime = 0;
+    audio.volume = volume;
+    this._playAudioSafe(audio);
+  }
+
+  _playRandomSfx(keys, volume = 0.7) {
+    if (!Array.isArray(keys) || keys.length === 0) return;
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    this._playSfx(key, volume);
   }
 
   update(delta) {
+    if (!this.introPlayed) {
+      this.introPlayed = true;
+      this._playSfx('sfx_kap_intro', 0.75);
+    }
+
     if (this.state === 'dead') {
       // Play death animation frames 3-5 then remove boss
       if (this.currentFrame < 4) {
@@ -147,6 +168,11 @@ class BossKap extends Enemy {
       
       this.x += normalizedX * moveSpeed;
       this.y += normalizedY * moveSpeed;
+      this.walkSfxTimer += delta;
+      if (this.walkSfxTimer >= 650) {
+        this.walkSfxTimer = 0;
+        this._playSfx('sfx_kap_walk', 0.3);
+      }
     } else {
       // Reached center - transition to ATTACKING
       this.hasReachedCenter = true;
@@ -222,14 +248,10 @@ class BossKap extends Enemy {
     const targetY = player.y + player.height / 2;
 
     enemyProjectilePool.fire(startX, startY, targetX, targetY, 15, 'vial');
-
-    const attackSound = this.game.assetLoader?.audio?.sfx_fmattack;
-    if (attackSound) {
-      attackSound.currentTime = 0;
-      attackSound.volume = 0.5;
-      const p = attackSound.play();
-      if (p && p.catch) p.catch(() => {});
-    }
+    this._playRandomSfx(
+      ['sfx_kap_attack', 'sfx_kap_attack1', 'sfx_kap_attack2', 'sfx_kap_write', 'sfx_kap_break_pen'],
+      0.55
+    );
   }
 
   _drawShieldEffect(ctx) {
@@ -252,10 +274,13 @@ class BossKap extends Enemy {
     ctx.restore();
   }
 
-  takeDamage(damage) {
+  takeDamage(damage, ignoreInvincible = false) {
     if (this.state === 'dead') return;
 
-    if (this.bossPhase !== 'VULNERABLE') return;
+    if (this.bossPhase !== 'VULNERABLE' && !ignoreInvincible) {
+      this._playSfx('sfx_kap_block', 0.6);
+      return;
+    }
 
     this.hurtFlashTimer = 250;
     this.hp -= damage;
@@ -271,14 +296,9 @@ class BossKap extends Enemy {
       this.currentFrame = 2; 
       this.deathHoldTimer = 0;
       this.deathAnimationDone = false;
-      
-      const deathSound = this.game.assetLoader?.audio?.sfx_hurt;
-      if (deathSound) {
-        deathSound.currentTime = 0;
-        deathSound.volume = 0.8;
-        const p = deathSound.play();
-        if (p && p.catch) p.catch(() => {});
-      }
+      this._playSfx('sfx_kap_defeat', 0.8);
+    } else {
+      this._playSfx('sfx_kap_pain', 0.55);
     }
   }
 
