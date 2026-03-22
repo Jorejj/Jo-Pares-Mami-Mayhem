@@ -8,6 +8,20 @@
 </head>
 <body>
   <div id="game-container">
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div class="loading-bowl"> <img src="assets/ui/Mamiloading.png" alt="Loading"></div>
+      <h1 class="loading-title">JO'S PARES MAMI</h1>
+      <p class="loading-subtitle">LOADING THE KITCHEN...</p>
+      <div class="loading-bar-container">
+        <div id="loading-bar" class="loading-bar"></div>
+      </div>
+      <p class="loading-text">
+        <span id="loading-status">Preparing ingredients...</span>
+        <span id="loading-percent" class="loading-percent">0%</span>
+      </p>
+    </div>
+    
     <canvas id="gameCanvas" width="1280" height="720"></canvas>
     
     <div id="ui-layer">
@@ -23,6 +37,18 @@
         <button id="btn-settings-menu" class="menu-btn">SETTINGS</button>
         <button id="btn-howtoplay-menu" class="menu-btn">HOW TO PLAY</button>
         <button id="btn-quit" class="menu-btn red">QUIT</button>
+      </div>
+
+      <div id="newgame-confirm-overlay" class="ui-screen hidden">
+        <div class="comic-box confirm-overlay-box">
+          <h1 id="confirm-overlay-title" class="comic-title red small">START NEW GAME?</h1>
+          <p id="confirm-overlay-line1" class="confirm-text">This will overwrite your current save data.</p>
+          <p id="confirm-overlay-line2" class="confirm-text">Start from Level 1?</p>
+          <div class="confirm-actions">
+            <button id="btn-confirm-overlay-yes" class="menu-btn red">YES, OVERWRITE</button>
+            <button id="btn-confirm-overlay-no" class="menu-btn">CANCEL</button>
+          </div>
+        </div>
       </div>
 
       <div id="screen-difficulty" class="ui-screen hidden">
@@ -55,8 +81,7 @@
       <div id="screen-pause" class="ui-screen hidden">
         <div class="comic-box">
           <h1 class="comic-title yellow">GAME PAUSED</h1>
-          <button id="btn-resume" class="menu-btn green">RESUME GAME</button>
-          <button id="btn-pause-home" class="menu-btn red">QUIT TO HOME</button>
+          <p class="tut-text">CLICK ANYWHERE TO RESUME</p>
         </div>
       </div>
 
@@ -164,15 +189,18 @@
 
   <script src="js/utils/Constants.js"></script>
   <script src="js/utils/Physics.js"></script>
+  <script src="js/utils/ObjectPool.js"></script>
   <script src="js/core/AssetLoader.js"></script>
   <script src="js/core/SaveManager.js"></script>
   <script src="js/core/InputHandler.js"></script>
   <script src="js/entities/Player.js"></script>
   <script src="js/entities/Enemy.js"></script>
+  <script src="js/entities/BossKap.js"></script>
   <script src="js/entities/Projectiles.js"></script>
   <script src="js/managers/LevelManager.js"></script>
   <script src="js/managers/WaveManager.js"></script>
   <script src="js/managers/ShopManager.js"></script>
+  <script src="js/managers/StageManager.js"></script>
   <script src="js/managers/UIManager.js"></script>
   <script src="js/core/Game.js"></script>
   <script src="js/main.js"></script>

@@ -33,17 +33,16 @@ class UIManager {
     // === FEATURE 2 & 3: Home Button + Confirmation Modal ===
     this.isConfirmingHome = false;
     this.confirmHomeSource = null;
+    this.confirmAction = null; // 'quit-home' | 'new-game-overwrite'
     
     this._setupHtmlButtons();
   }
 
   _setupHtmlButtons() {
     const actions = {
-      'btn-new-game': () => { 
-        this.game.saveManager.reset(); 
-        this.game.waveManager.currentWave = 1; 
-        this.game.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT; 
-      },
+      'btn-new-game': () => this._handleNewGameClick(),
+      'btn-confirm-overlay-yes': () => this._handleOverlayConfirmYes(),
+      'btn-confirm-overlay-no': () => this._handleOverlayConfirmNo(),
       'btn-load-game': () => { this.game.loadSavedGame(); },
       'btn-quit': () => location.reload(),
       'btn-diff-easy': () => this._startNewGame('easy'),
@@ -62,7 +61,7 @@ class UIManager {
       
       'btn-pause-toggle': () => { this._togglePause(); },
       'btn-resume': () => { this._togglePause(); },
-      'btn-pause-home': () => { this.isPaused = false; this.game.currentState = CONSTANTS.STATES.MAIN_MENU; },
+      'btn-pause-home': () => { this._togglePause(); },
 
       'btn-settings-open': () => { 
         if (this.game.currentState === CONSTANTS.STATES.PLAYING) {
@@ -113,7 +112,18 @@ class UIManager {
         }
       },
       'btn-howtoplay-settings': () => this._openDynamicTutorialFromSettings(),
-      'btn-settings-quit-home': () => { this.isConfirmingHome = true; this.confirmHomeSource = 'settings'; },
+      'btn-settings-quit-home': () => {
+        this._showGlobalConfirmOverlay(
+          'QUIT TO HOME?',
+          'Quit now? Unsaved data will be gone.',
+          'Current run will be terminated.',
+          'YES, QUIT',
+          'quit-home'
+        );
+        this.isConfirmingHome = true;
+        this.confirmHomeSource = 'settings';
+        this.confirmAction = 'quit-home';
+      },
       'btn-dynamic-tut-next': () => this._advanceDynamicTutorial(),
       'btn-dynamic-tut-gotit': () => this._closeDynamicTutorial()
     };
@@ -121,6 +131,17 @@ class UIManager {
     for (const [id, action] of Object.entries(actions)) {
       const btn = document.getElementById(id);
       if (btn) btn.onclick = (e) => { e.preventDefault(); action(); };
+    }
+
+    // Pause screen captures clicks (it's an HTML overlay), so resume from here.
+    const pauseScreen = document.getElementById('screen-pause');
+    if (pauseScreen) {
+      pauseScreen.onclick = (e) => {
+        e.preventDefault();
+        if (this.isPaused && this.game.currentState === CONSTANTS.STATES.PLAYING && !this.isSettingsOpen) {
+          this._togglePause();
+        }
+      };
     }
 
     // OLD: Single global volume slider (keep for compatibility)
@@ -158,6 +179,12 @@ class UIManager {
     }
 
     this.game.canvas.addEventListener('click', (e) => {
+      // Resume instantly when pause screen is clicked
+      if (this.isPaused && this.game.currentState === CONSTANTS.STATES.PLAYING && !this.isSettingsOpen) {
+        this._togglePause();
+        return;
+      }
+
       // FEATURE 3: Handle Confirmation Modal clicks (highest priority)
       if (this.isConfirmingHome) {
         const rect = this.game.canvas.getBoundingClientRect();
@@ -184,19 +211,20 @@ class UIManager {
 
         // Click detection with bounding box
         if (x >= yesX && x < yesX + yesBtnW && y >= yesY && y < yesY + yesBtnH) {
-          // YES clicked - return to home
-          this.isConfirmingHome = false;
-          this.game.saveManager.reset();
-          this.game.currentState = CONSTANTS.STATES.MAIN_MENU;
-          this.isSettingsOpen = false;
-          this.isPaused = false;
-          this.wasPausedBeforeSettings = false;
+          if (this.confirmAction === 'new-game-overwrite') {
+            this._confirmStartNewGame();
+          } else {
+            // Default/quit-home flow
+            this._confirmQuitToHome();
+          }
           return;
         }
 
         if (x >= noX && x < noX + noBtnW && y >= noY && y < noY + noBtnH) {
           // NO clicked - close modal, stay in settings
           this.isConfirmingHome = false;
+          this.confirmAction = null;
+          this._hideGlobalConfirmOverlay();
           return;
         }
       }
@@ -216,12 +244,14 @@ class UIManager {
         if (x >= backHomeX && x < backHomeX + btnW && y >= backHomeY && y < backHomeY + btnH) {
           this.isConfirmingHome = true;
           this.confirmHomeSource = 'settings';
+          this.confirmAction = 'quit-home';
           return;
         }
       }
 
-      // Original behavior: advance prologue on canvas click
-      if (this.game.currentState === CONSTANTS.STATES.PROLOGUE) {
+      // Original behavior: advance prologue/story cutscene on canvas click
+      if (this.game.currentState === CONSTANTS.STATES.PROLOGUE || 
+          this.game.currentState === CONSTANTS.STATES.STORY_CUTSCENE) {
         const rect = this.game.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -235,7 +265,7 @@ class UIManager {
           }
         }
 
-        // Default: advance to next prologue step
+        // Default: advance to next dialogue step
         this._advancePrologue();
       }
     });
@@ -480,25 +510,140 @@ class UIManager {
 
   _startNewGame(diffKey) {
     this.game.currentDifficulty = CONSTANTS.DIFFICULTY[diffKey];
-    this.game.currentState = CONSTANTS.STATES.PROLOGUE;
+    
+    // Use StageManager to start story
+    this.game._startStoryOrLevel();
+    
     this.prologueIndex = 0;
     this.prologueTimer = 0;
+    this.prologueCharIndex = 0;
+    this.prologueFade = 0;
   }
 
-  _advancePrologue() {
-    this.prologueIndex++;
-    this.prologueTimer = 0;
-    this.prologueCharIndex = 0;
-    this.prologueTypingTimer = 0;
-    this.prologueFade = 0; 
-    
-    if (this.prologueIndex >= CONSTANTS.PROLOGUE_LINES.length) {
-      this._startPlaying();
+  _hasExistingSaveData() {
+    const raw = localStorage.getItem(this.game.saveManager._key);
+    if (!raw) return false;
+    try {
+      const parsed = JSON.parse(raw);
+      return !!parsed && (
+        (parsed.currentLevel && parsed.currentLevel > 1) ||
+        (parsed.kita && parsed.kita > 0) ||
+        parsed.currentGameState === CONSTANTS.STATES.PLAYING ||
+        parsed.currentGameState === CONSTANTS.STATES.SHOP ||
+        parsed.currentGameState === CONSTANTS.STATES.VICTORY
+      );
+    } catch {
+      return true;
     }
   }
 
+  _showGlobalConfirmOverlay(title, line1, line2, yesLabel, action) {
+    const titleEl = document.getElementById('confirm-overlay-title');
+    const line1El = document.getElementById('confirm-overlay-line1');
+    const line2El = document.getElementById('confirm-overlay-line2');
+    const yesBtn = document.getElementById('btn-confirm-overlay-yes');
+
+    if (titleEl) titleEl.innerText = title;
+    if (line1El) line1El.innerText = line1;
+    if (line2El) line2El.innerText = line2;
+    if (yesBtn) yesBtn.innerText = yesLabel;
+
+    this.confirmAction = action;
+    this._showScreen('newgame-confirm-overlay', true);
+  }
+
+  _hideGlobalConfirmOverlay() {
+    this._showScreen('newgame-confirm-overlay', false);
+  }
+
+  _handleOverlayConfirmYes() {
+    if (this.confirmAction === 'new-game-overwrite') {
+      this._confirmStartNewGame();
+    } else if (this.confirmAction === 'quit-home') {
+      this._confirmQuitToHome();
+    }
+  }
+
+  _handleOverlayConfirmNo() {
+    this.isConfirmingHome = false;
+    this.confirmAction = null;
+    this._hideGlobalConfirmOverlay();
+  }
+
+  _handleNewGameClick() {
+    if (this._hasExistingSaveData()) {
+      this._showGlobalConfirmOverlay(
+        'START NEW GAME?',
+        'This will overwrite your current save data.',
+        'Start from Level 1?',
+        'YES, OVERWRITE',
+        'new-game-overwrite'
+      );
+      return;
+    }
+
+    this.game.waveManager.currentWave = 1;
+    this.game.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
+  }
+
+  _cancelNewGameConfirmation() {
+    this.confirmAction = null;
+    this._hideGlobalConfirmOverlay();
+  }
+
+  _confirmStartNewGame() {
+    // Clear previous progress, then start from difficulty select
+    this.game.saveManager.reset();
+    this.game.saveManager.load();
+    this.game.player.syncWithSave(this.game.saveManager.state);
+    this.game.player.hp = this.game.player.maxHp;
+    this.game.player.selectedWeapon = 'mami';
+    this.game.waveManager.clearAllEnemies();
+    this.game.waveManager.currentWave = 1;
+    this.game.levelManager.currentLevel = 1;
+
+    this.game.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
+    this._hideGlobalConfirmOverlay();
+    this.isConfirmingHome = false;
+    this.confirmAction = null;
+    this.confirmHomeSource = null;
+    this.isSettingsOpen = false;
+    this.isPaused = false;
+    this.wasPausedBeforeSettings = false;
+  }
+
+  _confirmQuitToHome() {
+    // Save first, then terminate active run state and return home
+    this.game.saveCurrentState();
+    this.game.waveManager.clearAllEnemies();
+    this.game.player.projectilePool.releaseAll();
+    this.game.currentState = CONSTANTS.STATES.MAIN_MENU;
+
+    this.isConfirmingHome = false;
+    this.confirmAction = null;
+    this.confirmHomeSource = null;
+    this._hideGlobalConfirmOverlay();
+    this.isSettingsOpen = false;
+    this.isPaused = false;
+    this.wasPausedBeforeSettings = false;
+  }
+
+  _advancePrologue() {
+    // Use Game's centralized story advancement
+    this.game._advanceStoryCutscene();
+  }
+
   _skipPrologue() {
-    this._startPlaying();
+    // Skip entire cutscene and start level
+    if (this.game.isPlayingStoryAfter) {
+      // If skipping after-level story, go to shop
+      this.game.currentState = CONSTANTS.STATES.SHOP;
+      this.game.shopManager.open();
+    } else {
+      // If skipping before-level story, start level
+      this.game._startLevel();
+    }
+    this.game.stageManager.resetDialogue();
   }
 
   _advanceTutorial() {
@@ -512,13 +657,16 @@ class UIManager {
 
   _finishShopping() {
     this.game.shopManager.close();
-    this._startPlaying();
+    // Use the new Game method that properly checks for story cutscenes
+    this.game._finishShoppingAndStartNextLevel();
   }
 
   _startPlaying() {
+    // DEPRECATED: This method is replaced by Game._finishShoppingAndStartNextLevel()
+    // Kept for backwards compatibility but shouldn't be used
+    console.warn('[UIManager._startPlaying] DEPRECATED: Use Game._finishShoppingAndStartNextLevel() instead');
     this.game.currentState = CONSTANTS.STATES.PLAYING;
     this.game.waveManager.startWave(this.game._getWaveEnemies());
-    // Tutorial removed - only triggers from "HOW TO PLAY" button
   }
 
   _updateTutorialArrow(delta) {
@@ -580,6 +728,10 @@ class UIManager {
     this._showScreen('screen-shop', state === CONSTANTS.STATES.SHOP && !this.isSettingsOpen);
     this._showScreen('screen-gameover', state === CONSTANTS.STATES.GAMEOVER && !this.isSettingsOpen);
     this._showScreen('screen-settings', this.isSettingsOpen && !this.isConfirmingHome);
+    this._showScreen(
+      'newgame-confirm-overlay',
+      this.confirmAction === 'new-game-overwrite' || this.confirmAction === 'quit-home'
+    );
     this._showScreen('screen-pause', this.isPaused && !this.isSettingsOpen && !this.showDynamicTutorial);
     
     // NEW: Tutorial screens
@@ -650,10 +802,14 @@ class UIManager {
       }
     }
 
-    if (state === CONSTANTS.STATES.PROLOGUE && !this.isSettingsOpen) {
+    // Handle both PROLOGUE and STORY_CUTSCENE states
+    if ((state === CONSTANTS.STATES.PROLOGUE || state === CONSTANTS.STATES.STORY_CUTSCENE) && !this.isSettingsOpen) {
       this.prologueTimer += delta;
       
-      const fullText = CONSTANTS.PROLOGUE_LINES[this.prologueIndex] || "";
+      // Get current dialogue from StageManager
+      const dialogue = this.game.stageManager?.getCurrentDialogue();
+      const fullText = dialogue?.text || CONSTANTS.PROLOGUE_LINES?.[this.prologueIndex] || "";
+      
       if (this.prologueCharIndex < fullText.length) {
         this.prologueTypingTimer += delta;
         if (this.prologueTypingTimer > 30) {
@@ -734,7 +890,10 @@ class UIManager {
     switch (state) {
       case CONSTANTS.STATES.MAIN_MENU: this._drawSunburst(ctx, '#ffcc00', '#ffb300'); break;
       case CONSTANTS.STATES.DIFFICULTY_SELECT: this._drawSunburst(ctx, '#3498db', '#2980b9'); break;
-      case CONSTANTS.STATES.PROLOGUE: this._drawPrologue(ctx); break;
+      case CONSTANTS.STATES.PROLOGUE: 
+      case CONSTANTS.STATES.STORY_CUTSCENE: 
+        this._drawStoryCutscene(ctx); 
+        break;
       case CONSTANTS.STATES.PLAYING: 
         this._drawPlayingHUD(ctx); 
         if (this.showInGameTutorial) this._drawInGameTutorialOverlay(ctx);
@@ -886,12 +1045,14 @@ class UIManager {
   }
 
   _drawConfirmationModal(ctx) {
+    // Quit/New-game confirms are now handled by top-level HTML overlay
+    if (this.confirmAction === 'quit-home' || this.confirmAction === 'new-game-overwrite') return;
     if (!this.isConfirmingHome) return;
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
 
-    const modalW = 400;
+    const modalW = 460;
     const modalH = 250;
     const modalX = (this.game.canvas.width - modalW) / 2;
     const modalY = (this.game.canvas.height - modalH) / 2;
@@ -901,13 +1062,23 @@ class UIManager {
     ctx.fillStyle = '#e74c3c';
     ctx.font = 'bold 24px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('CONFIRM RETURN HOME?', this.game.canvas.width / 2, modalY + 40);
+    const isNewGameOverwrite = this.confirmAction === 'new-game-overwrite';
+    ctx.fillText(
+      isNewGameOverwrite ? 'START NEW GAME?' : 'QUIT TO HOME?',
+      this.game.canvas.width / 2,
+      modalY + 40
+    );
 
     ctx.fillStyle = '#000';
     ctx.font = '16px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Unsaved progress will be lost.', this.game.canvas.width / 2, modalY + 90);
-    ctx.fillText('Jo will be reset to level 1.', this.game.canvas.width / 2, modalY + 120);
+    if (isNewGameOverwrite) {
+      ctx.fillText('This will overwrite your current save data.', this.game.canvas.width / 2, modalY + 90);
+      ctx.fillText('Start from Level 1?', this.game.canvas.width / 2, modalY + 120);
+    } else {
+      ctx.fillText('Quit now? Unsaved data will be gone.', this.game.canvas.width / 2, modalY + 90);
+      ctx.fillText('Current run will be terminated.', this.game.canvas.width / 2, modalY + 120);
+    }
 
     const yesX = modalX + 50;
     const yesY = modalY + 190;
@@ -919,7 +1090,7 @@ class UIManager {
     ctx.font = 'bold 16px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('YES', yesX + yesBtnW / 2, yesY + yesBtnH / 2);
+    ctx.fillText(isNewGameOverwrite ? 'YES, OVERWRITE' : 'YES, QUIT', yesX + yesBtnW / 2, yesY + yesBtnH / 2);
 
     const noX = modalX + 210;
     const noY = modalY + 190;
@@ -931,7 +1102,7 @@ class UIManager {
     ctx.font = 'bold 16px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('NO', noX + noBtnW / 2, noY + noBtnH / 2);
+    ctx.fillText('CANCEL', noX + noBtnW / 2, noY + noBtnH / 2);
   }
 
   _drawSettingsHomeButton(ctx) {
@@ -964,6 +1135,15 @@ class UIManager {
   }
 
   _drawPrologue(ctx) {
+    // Legacy method - redirects to _drawStoryCutscene
+    this._drawStoryCutscene(ctx);
+  }
+
+  /**
+   * Draw story cutscene - reads dialogue from StageManager dynamically
+   * Replaces the old hardcoded _drawPrologue function
+   */
+  _drawStoryCutscene(ctx) {
     const grad = ctx.createRadialGradient(this.game.canvas.width/2, this.game.canvas.height/2, 100, this.game.canvas.width/2, this.game.canvas.height/2, 800);
     grad.addColorStop(0, '#f4f4f0');
     grad.addColorStop(1, '#d1d1ca');
@@ -977,8 +1157,12 @@ class UIManager {
       }
     }
 
-    const lines = CONSTANTS.PROLOGUE_LINES;
-    const maxIndex = Math.min(this.prologueIndex, lines.length - 1);
+    // Get current dialogue from StageManager
+    const stageManager = this.game.stageManager;
+    const dialogue = stageManager?.getCurrentDialogue();
+    const dialogueArray = stageManager?.currentDialogueArray || CONSTANTS.PROLOGUE_LINES?.map(text => ({ text, speaker: 'Narrator', imageKey: null })) || [];
+    const maxIndex = Math.min(this.prologueIndex, dialogueArray.length - 1);
+    const currentDialogue = dialogueArray[maxIndex] || { text: '', speaker: 'Narrator', imageKey: null };
     
     const vignette = ctx.createRadialGradient(this.game.canvas.width/2, this.game.canvas.height/2, 300, this.game.canvas.width/2, this.game.canvas.height/2, 1000);
     vignette.addColorStop(0, 'rgba(0,0,0,0)');
@@ -986,7 +1170,10 @@ class UIManager {
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
 
-    this._drawComicText(ctx, "THE STORY OF JO", this.game.canvas.width / 2, 70, 64, '#f1c40f');
+    // Dynamic title based on whether it's before or after level
+    const isAfterStory = this.game.isPlayingStoryAfter;
+    const titleText = isAfterStory ? "AFTERMATH" : "THE STORY OF JO";
+    this._drawComicText(ctx, titleText, this.game.canvas.width / 2, 70, 64, '#f1c40f');
     
     const panelW = 1000; 
     const panelH = 550;
@@ -998,7 +1185,10 @@ class UIManager {
     ctx.save();
     ctx.globalAlpha = this.prologueFade; 
     
-    const storyImage = this.game.assetLoader.images[`story${maxIndex + 1}`];
+    // Get image from dialogue's imageKey, or fallback to story1-8
+    const imageKey = currentDialogue.imageKey || `story${maxIndex + 1}`;
+    const storyImage = this.game.assetLoader.images[imageKey];
+    
     if (storyImage && storyImage.complete) {
       const imgAreaW = panelW - 40;
       const imgAreaH = panelH * 0.7 - 20;
@@ -1020,11 +1210,22 @@ class UIManager {
     ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
     ctx.strokeRect(x + 20, textAreaY, panelW - 40, textAreaH);
     
+    // Draw speaker name if not Narrator
+    const speaker = currentDialogue.speaker || 'Narrator';
+    if (speaker && speaker !== 'Narrator') {
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = 'bold 20px "Comic Sans MS", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(speaker.toUpperCase() + ':', x + 30, textAreaY + 25);
+    }
+    
     ctx.fillStyle = '#000';
     ctx.font = 'bold 24px "Comic Sans MS", sans-serif';
     ctx.textAlign = 'center';
-    const displayedText = lines[maxIndex].toUpperCase().slice(0, this.prologueCharIndex);
-    this._wrapText(ctx, displayedText, this.game.canvas.width / 2, textAreaY + textAreaH / 2, panelW - 100, 32);
+    const fullText = currentDialogue.text || '';
+    const displayedText = fullText.toUpperCase().slice(0, this.prologueCharIndex);
+    const textYOffset = (speaker && speaker !== 'Narrator') ? 15 : 0;
+    this._wrapText(ctx, displayedText, this.game.canvas.width / 2, textAreaY + textAreaH / 2 + textYOffset, panelW - 100, 32);
     
     const pulse = Math.sin(this.game.gameFrame / 18) * 5;
     this._drawComicBox(ctx, this.game.canvas.width / 2 - 250 - pulse/2, this.game.canvas.height - 65 - pulse/2, 500 + pulse, 50 + pulse, '#e74c3c');
@@ -1047,6 +1248,7 @@ class UIManager {
     // Store skip button bounds for click detection
     this._prologueSkipBtnBounds = { x: skipBtnX, y: skipBtnY, w: skipBtnW, h: skipBtnH };
   }
+
 
 _drawPlayingHUD(ctx) {
     // --- 1. Player Stats Box (Top Left) ---

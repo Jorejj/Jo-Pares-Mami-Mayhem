@@ -12,7 +12,8 @@ const CONSTANTS = {
   STATES: {
     MAIN_MENU: 'MAIN_MENU',
     DIFFICULTY_SELECT: 'DIFFICULTY_SELECT',
-    PROLOGUE: 'PROLOGUE',
+    STORY_CUTSCENE: 'STORY_CUTSCENE', // Replaces PROLOGUE - generic story state
+    PROLOGUE: 'PROLOGUE', // Kept for backwards compatibility, maps to STORY_CUTSCENE
     ARSENAL_SELECT: 'ARSENAL_SELECT',
     TUTORIAL: 'TUTORIAL',
     PLAYING: 'PLAYING',

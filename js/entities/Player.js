@@ -1,5 +1,6 @@
 // Player.js – Represents Jo, the player character.
 // Handles catapult drag-and-shoot mechanic, arsenal management, HP, and Kita economy.
+// Uses Object Pooling for projectiles to reduce GC pressure.
 
 class Player {
   constructor(game) {
@@ -35,11 +36,16 @@ class Player {
     this.frameSpeed = 250;  
     this._lastKnownState = null; 
 
-    // ===== PROJECTILES & SPECIALS =====
-    this.projectiles = [];
+    // ===== PROJECTILES (OBJECT POOLING) =====
+    this.projectilePool = new ProjectilePool(game, 50);
+    
+    // Legacy compatibility - reference to active projectiles
+    this.projectiles = this.projectilePool.getActive();
+    
+    // ===== SPECIALS =====
     this.specials = this._initSpecials();
     
-    // --- NEW: TRAPS ARRAY FOR GARLIC SPIKES ---
+    // --- TRAPS ARRAY FOR GARLIC SPIKES ---
     this.traps = []; 
 
     this._bindInput();
@@ -162,7 +168,9 @@ class Player {
         });
       }
     } else {
-      const enemies = this.game.waveManager.enemies || [];
+      const enemies = this.game.waveManager.getActiveEnemies
+        ? this.game.waveManager.getActiveEnemies()
+        : (this.game.waveManager.enemies || []);
       enemies.forEach(enemy => {
         if (!enemy.isAlive) return;
         if (special.effect === 'slow') enemy.applySlowStatus(5000, 0.4); 
@@ -324,11 +332,14 @@ class Player {
       if (special.timeSinceLastFire < special.cooldown) special.timeSinceLastFire += delta;
     }
 
-    this.projectiles = this.projectiles.filter(p => { p.update(delta); return p.isActive; });
+    this.projectilePool.update(delta);
+    
+    // Update legacy reference
+    this.projectiles = this.projectilePool.getActive();
 
-    // --- NEW: MANAGE TRAPS AND COLLISION ---
+    // --- MANAGE TRAPS AND COLLISION ---
     this.traps = this.traps.filter(t => t.active && t.timer > 0);
-    const enemies = this.game.waveManager.enemies || [];
+    const enemies = this.game.waveManager.getActiveEnemies ? this.game.waveManager.getActiveEnemies() : (this.game.waveManager.enemies || []);
     
     this.traps.forEach(trap => {
       trap.timer -= delta;
@@ -350,13 +361,83 @@ class Player {
       });
     });
 
-    this.projectiles.forEach(proj => {
+    // Projectile-Enemy collision using pooled projectiles
+    this.projectilePool.getActive().forEach(proj => {
       enemies.forEach(enemy => {
         if (enemy.isAlive && Physics.checkCollision(proj, enemy)) {
-          enemy.takeDamage(this.arsenal[proj.type].damage);
-          proj.onHit(enemy); proj.isActive = false;
+          const weaponDamage = this.arsenal[proj.type]?.damage || proj.damage;
+          enemy.takeDamage(weaponDamage);
+          proj.onHit(enemy); 
+          proj.isActive = false;
         }
       });
+    });
+
+    // ===== MID-AIR PROJECTILE COLLISION =====
+    // Player projectiles can intercept enemy projectiles (boss vials, etc.)
+    const enemyProjectiles = this.game.waveManager?.enemyProjectilePool?.getActive() || [];
+    
+    this.projectilePool.getActive().forEach(playerProj => {
+      if (!playerProj.isActive) return;
+      
+      enemyProjectiles.forEach(enemyProj => {
+        if (!enemyProj.isActive) return;
+        
+        // Check if projectiles collide
+        const dx = playerProj.x - enemyProj.x;
+        const dy = playerProj.y - enemyProj.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const collisionDist = (playerProj.radius || 5) + (enemyProj.radius || 8);
+        
+        if (dist < collisionDist) {
+          // Both projectiles are destroyed
+          playerProj.isActive = false;
+          enemyProj.isActive = false;
+          
+          console.log('[Player] Mid-air projectile collision!');
+          
+          // Visual/audio feedback
+          const hitSfx = this.game.assetLoader?.audio?.sfx_hit;
+          if (hitSfx) {
+            hitSfx.currentTime = 0;
+            hitSfx.volume = 0.4;
+            const p = hitSfx.play();
+            if (p && p.catch) p.catch(() => {});
+          }
+        }
+      });
+    });
+
+    // ===== ENEMY PROJECTILE vs PLAYER COLLISION =====
+    // If enemy projectiles bypass Jo's food, they can hit Jo directly
+    enemyProjectiles.forEach(enemyProj => {
+      if (!enemyProj.isActive) return;
+      
+      // Check if enemy projectile hits the player
+      const dx = this.x + this.width / 2 - enemyProj.x;
+      const dy = this.y + this.height / 2 - enemyProj.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const collisionDist = (this.width / 3) + (enemyProj.radius || 8);
+      
+      if (dist < collisionDist) {
+        // Player takes damage
+        const damage = enemyProj.damage || 10;
+        this.takeDamage(damage);
+        
+        // Destroy the projectile
+        enemyProj.isActive = false;
+        
+        console.log(`[Player] Hit by enemy projectile! Damage: ${damage}, HP: ${this.hp}`);
+        
+        // Play hurt sound
+        const hurtSfx = this.game.assetLoader?.audio?.sfx_hurt;
+        if (hurtSfx) {
+          hurtSfx.currentTime = 0;
+          hurtSfx.volume = 0.6;
+          const p = hurtSfx.play();
+          if (p && p.catch) p.catch(() => {});
+        }
+      }
     });
   }
 
@@ -370,7 +451,11 @@ class Player {
     const audio = this.game.assetLoader?.audio?.[throwSound];
     if (audio) { audio.currentTime = 0; audio.volume = 0.8; const p = audio.play(); if (p && p.catch) p.catch(() => {}); }
 
-    this.projectiles.push(new Projectile(this.game, startX, startY, vx, vy, this.selectedWeapon, weaponData.damage, weaponData.level));
+    // Fire from pool instead of creating new projectile
+    this.projectilePool.fire(startX, startY, vx, vy, this.selectedWeapon, weaponData.damage, weaponData.level);
+    
+    // Update legacy reference
+    this.projectiles = this.projectilePool.getActive();
   }
   
   draw(ctx) {
@@ -437,7 +522,8 @@ class Player {
       }
     });
 
-    this.projectiles.forEach(p => p.draw(ctx));
+    // Draw projectiles from pool
+    this.projectilePool.draw(ctx);
 
     if (this.isDragging && this.game.inputHandler.isDragging) {
       const { vx, vy } = this.game.inputHandler.getDragVector();
