@@ -347,8 +347,8 @@ _advanceStoryCutscene() {
   }
 
   _updateAudio() {
-    // 1. Check if Secret Menu is open - if so, silence everything and return
-    if (window.secretMenu && window.secretMenu.isMenuOpen) {
+    // 1. Check if Secret Menu is open or Story Cutscene is playing - if so, silence everything and return
+    if ((window.secretMenu && window.secretMenu.isMenuOpen) || this.currentState === CONSTANTS.STATES.STORY_CUTSCENE) {
       if (this.currentBgmTrack) this.currentBgmTrack.pause();
       return;
     }
@@ -375,9 +375,13 @@ _advanceStoryCutscene() {
         targetBgmKey = null; 
     } else if (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
       targetBgmKey = 'bgm_main_menu'; 
-    } else {
+    } else if (this.currentState === CONSTANTS.STATES.PLAYING || this.currentState === CONSTANTS.STATES.ARSENAL_SELECT) {
+      // MISSION MUSIC: Only play when actually inside the stage or selecting gear
       const levelData = this.levelManager.getLevelData();
       targetBgmKey = levelData.bgm; 
+    } else {
+      // For SHOP, VICTORY, etc. - stay silent or maintain current track pause
+      targetBgmKey = null;
     }
 
     // 4. Handle changing the tracks
