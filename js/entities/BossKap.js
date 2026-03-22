@@ -36,8 +36,6 @@ class BossKap extends Enemy {
     this.deathAnimationDone = false;
     this.deathHoldTimer = 0;
     this.deathHoldDuration = 900;
-    
-    console.log('[BossKap] Boss spawned at', this.x, this.y, 'targeting center at', this.targetX, this.targetY);
   }
 
   update(delta) {
@@ -141,7 +139,7 @@ class BossKap extends Enemy {
     const dy = this.targetY - this.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance > 20) { // Close enough threshold
+    if (distance > 20) { 
       // Move toward center
       const moveSpeed = this.speed || 1.0;
       const normalizedX = dx / distance;
@@ -154,9 +152,7 @@ class BossKap extends Enemy {
       this.hasReachedCenter = true;
       this.bossPhase = 'ATTACKING';
       this.attackCounter = 0;
-      this.timeSinceLastAttack = this.attackCooldown; // Ready to attack immediately
-      
-      console.log('[BossKap] Reached center, transitioning to ATTACKING phase');
+      this.timeSinceLastAttack = this.attackCooldown;
     }
   }
 
@@ -177,8 +173,6 @@ class BossKap extends Enemy {
       this.attackCounter++;
       this.timeSinceLastAttack = 0;
 
-      console.log(`[BossKap] Fired vial ${this.attackCounter}/${this.maxAttacks}`);
-
       // After 3rd shot, become vulnerable
       if (this.attackCounter >= this.maxAttacks) {
         this.bossPhase = 'VULNERABLE';
@@ -186,8 +180,6 @@ class BossKap extends Enemy {
         this.isInvincible = false;
         this.panting = true;
         this.currentFrame = 0;
-        
-        console.log('[BossKap] Transitioned to VULNERABLE phase');
       }
     }
   }
@@ -212,37 +204,25 @@ class BossKap extends Enemy {
       this.isInvincible = true;
       this.panting = false;
       this.currentFrame = 0;
-      
-      console.log('[BossKap] Transitioned back to ATTACKING phase');
     }
   }
 
   _fireVial() {
-    // Get enemy projectile pool from WaveManager
     const enemyProjectilePool = this.game.waveManager?.enemyProjectilePool;
-    if (!enemyProjectilePool) {
-      console.warn('[BossKap] No enemy projectile pool available!');
-      return;
-    }
+    if (!enemyProjectilePool) return;
 
     const player = this.game.player;
-    
-    // Spawn projectile a few pixels to the left of the boss, at random Y in enemy gameplay area
-    // Use game bottom half to avoid spawning in UI area
     const CONSTANTS = this.game.CONSTANTS || window.CONSTANTS;
     const gameBottomHalf = CONSTANTS?.GAME_BOTTOM_HALF || 360;
     const canvasHeight = CONSTANTS?.CANVAS_HEIGHT || 720;
     
-    const startX = this.x - 10 - Math.random() * 15; // 10-25 pixels to the left
-    const startY = gameBottomHalf + Math.random() * (canvasHeight - gameBottomHalf - 50); // Random Y in gameplay area
+    const startX = this.x - 10 - Math.random() * 15; 
+    const startY = gameBottomHalf + Math.random() * (canvasHeight - gameBottomHalf - 50); 
     const targetX = player.x + player.width / 2;
     const targetY = player.y + player.height / 2;
 
-    // Fire vial from pool
-    const proj = enemyProjectilePool.fire(startX, startY, targetX, targetY, 15, 'vial');
-    console.log(`[BossKap] Projectile fired at (${startX.toFixed(1)}, ${startY.toFixed(1)}) toward player:`, proj ? 'SUCCESS' : 'FAILED');
+    enemyProjectilePool.fire(startX, startY, targetX, targetY, 15, 'vial');
 
-    // Play attack sound (use throw sound if boss attack not available)
     const attackSound = this.game.assetLoader?.audio?.sfx_fmattack;
     if (attackSound) {
       attackSound.currentTime = 0;
@@ -253,20 +233,15 @@ class BossKap extends Enemy {
   }
 
   _drawShieldEffect(ctx) {
-    // Only draw shield if actually invincible
     if (!this.isInvincible || this.bossPhase === 'VULNERABLE') return;
     
-    // Tight shield effect that hugs the boss sprite
     const centerX = this.x + this.width / 2;
     const centerY = this.y + this.height / 2;
-    const shieldRadius = Math.max(this.width, this.height) / 2 + 8; // Just 8 pixels beyond boss
+    const shieldRadius = Math.max(this.width, this.height) / 2 + 8; 
     
     ctx.save();
-    
-    // Pulsing shield effect
     const pulseIntensity = 0.3 + 0.2 * Math.sin(Date.now() / 300);
     
-    // Shield outline only - no glow for now
     ctx.strokeStyle = `rgba(255, 215, 0, ${0.6 + pulseIntensity})`;
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
@@ -274,25 +249,17 @@ class BossKap extends Enemy {
     ctx.arc(centerX, centerY, shieldRadius, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    
     ctx.restore();
   }
 
   takeDamage(damage) {
     if (this.state === 'dead') return;
 
-    // Boss can ONLY be damaged during vulnerable phase
-    if (this.bossPhase !== 'VULNERABLE') {
-      return;
-    }
+    if (this.bossPhase !== 'VULNERABLE') return;
 
-    // Trigger brief hurt flash (last row frames 1-2)
     this.hurtFlashTimer = 250;
-    
-    // Apply damage
     this.hp -= damage;
     
-    // Check death
     if (this.hp <= 0 && this.state !== 'dead') {
       this.hp = 0;
       this.state = 'dead';
@@ -301,11 +268,10 @@ class BossKap extends Enemy {
       this.bossPhase = 'VULNERABLE';
       this.frameTimer = 0;
       this.currentRow = 2;
-      this.currentFrame = 2; // Start at death frame 3 and advance to 5
+      this.currentFrame = 2; 
       this.deathHoldTimer = 0;
       this.deathAnimationDone = false;
       
-      // Play death sound (use hurt sound if boss death not available)
       const deathSound = this.game.assetLoader?.audio?.sfx_hurt;
       if (deathSound) {
         deathSound.currentTime = 0;
@@ -316,24 +282,19 @@ class BossKap extends Enemy {
     }
   }
 
- draw(ctx) {
+  draw(ctx) {
     if (this.state === 'dead') {
-      // Death animation - last row frames 3, 4, 5
       const deathFrame = Math.min(4, Math.max(2, Math.floor(this.currentFrame)));
       this._drawBossSprite(ctx, 2, [deathFrame]);
       return;
     }
 
-    // Draw boss sprite based on current phase
     if (this.bossPhase === 'MOVING' || this.bossPhase === 'ATTACKING') {
-      // Invincible - first row frames 0-4
       this._drawBossSprite(ctx, 0, [0, 1, 2, 3, 4]);
-      
-      if (this.isInvincible && typeof this._drawShieldEffect === 'function') {
+      if (this.isInvincible) {
         this._drawShieldEffect(ctx);
       }
     } else if (this.bossPhase === 'VULNERABLE') {
-      // Vulnerable - middle row frames 4-5, or hurt flash frames when just hit
       if (this.hurtFlashTimer > 0) {
         this._drawBossSprite(ctx, 2, [0, 1]);
       } else {
@@ -343,7 +304,7 @@ class BossKap extends Enemy {
 
     this._drawHealthBar(ctx);
 
-    // --- UPGRADED BURN & SLOW VISUAL OVERLAYS ---
+    // --- VISUAL OVERLAYS ---
     if (this.burnActive) {
       const fireSprite = this.game.assetLoader?.images?.effect_fire;
       
@@ -391,33 +352,84 @@ class BossKap extends Enemy {
       }
     }
 
-    // Draw panting indicator (when vulnerable)
     if (this.panting && this.state !== 'dead') {
       ctx.save();
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 24px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      
-      // Bouncing "..." effect
       const bounce = Math.sin(Date.now() / 200) * 5;
       ctx.fillText('...', this.x + this.width / 2, this.y - 30 + bounce);
-      
       ctx.restore();
+    }
+  }
+
+  _drawHealthBar(ctx) {
+    if (this.state === 'dead') return;
+
+    const barWidth = Math.max(180, this.width + 80);
+    const barHeight = 14;
+    const x = this.x + (this.width - barWidth) / 2;
+    const y = this.y - 22;
+    const hpRatio = Math.max(0, this.hp / this.maxHp);
+
+    ctx.save();
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.fillRect(x, y, barWidth, barHeight);
+
+    ctx.fillStyle = hpRatio > 0.35 ? '#24d14b' : '#ff5a5a';
+    ctx.fillRect(x + 2, y + 2, (barWidth - 4) * hpRatio, barHeight - 4);
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, barWidth, barHeight);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('KAP NINO', x + barWidth / 2, y - 6);
+
+    ctx.restore();
+  }
+
+  _drawBossSprite(ctx, row, frameLoop) {
+    const sprite = this.game.assetLoader?.images?.boss_kap;
+    if (!sprite || !sprite.complete || sprite.width === 0) {
+      ctx.fillStyle = this.isInvincible ? '#FFD700' : '#FF6B6B';
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+      return;
     }
 
-    // Draw boss phase indicator (debug)
-    if (CONSTANTS.DEBUG_MODE) {
-      ctx.save();
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(
-        `Phase: ${this.bossPhase} | Invincible: ${this.isInvincible} | HP: ${this.hp}`,
-        this.x + this.width / 2,
-        this.y - 50
-      );
-      ctx.restore();
-    }
+    const totalCols = 5;
+    const totalRows = 3;
+    const frameWidth = Math.floor(sprite.width / totalCols);
+    const frameHeight = Math.floor(sprite.height / totalRows);
+    const extraRowPixels = sprite.height - (frameHeight * totalRows);
+    const rowGap = totalRows > 1 ? Math.floor(extraRowPixels / (totalRows - 1)) : 0;
+    const cropPad = 2;
+    
+    const frameIndex = frameLoop.length === 1 
+      ? frameLoop[0] 
+      : frameLoop[Math.floor(this.currentFrame) % frameLoop.length];
+    
+    const col = frameIndex % totalCols;
+    const sx = (col * frameWidth) + cropPad;
+    const sy = (row * (frameHeight + rowGap)) + cropPad;
+    const sw = Math.max(1, frameWidth - (cropPad * 2));
+    const sh = Math.max(1, frameHeight - (cropPad * 2));
+    
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.scale(-1, 1);
+    ctx.drawImage(
+      sprite,
+      sx, sy, sw, sh,
+      -(this.x + this.width), 
+      this.y,                
+      this.width,            
+      this.height            
+    );
+    ctx.restore();
   }
 }

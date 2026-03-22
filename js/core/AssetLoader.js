@@ -83,6 +83,10 @@ class AssetLoader {
       story_villains: 'assets/animations/enemy/Gemini_Generated_Image_z5q5nez5q5nez5q5 (1).png',
       story_jo_sad: 'assets/sprites/cartniJO.jpg',
 
+      //gifs
+      story_boss1_open: 'assets/story/boss1.gif',
+      story_manila: 'assets/story/manila.gif',
+
       // Projectiles
       projectilesSheet: 'assets/projectiles.png',
       specialsSheet: 'assets/specials.png',
