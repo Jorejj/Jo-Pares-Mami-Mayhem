@@ -115,9 +115,9 @@ const audioSources = {
       // Jo & UI
       sfx_money: 'assets/audio/moneyget.mp3',
       sfx_stir: 'assets/audio/potstriing.mp3',
-      sfx_miss_ground: 'assets/audio/Miss Ground Hit.wav',
-      sfx_slingshot: 'assets/audio/Slingshot.wav',
-      sfx_jo_damage: 'assets/audio/Taking damage.wav',
+      sfx_miss_ground: 'assets/audio/Impacts/Miss Ground Hit.wav',
+      sfx_slingshot: 'assets/audio/Impacts/Slingshot.wav',
+      sfx_jo_damage: 'assets/audio/Impacts/Taking damage.wav',
       // --- UI & PROGRESSION SFX ---
       sfx_burn_tick: 'assets/audio/UI/BurningTick.wav',
       sfx_cash_register: 'assets/audio/UI/CashRegister.wav',
@@ -154,12 +154,12 @@ const audioSources = {
       sfx_deathsoundfm3: 'assets/audio/deathsoundfm3.mp3',
 
       // Attack Sounds
-      sfx_attack_bite: 'assets/audio/Bite.wav', 
-      sfx_attack_slash: 'assets/audio/attack-slash.mp3',
-      sfx_attack_blunt: 'assets/audio/attack-blunt.mp3',
-      sfx_attack_drill: 'assets/audio/dentist-drill.mp3',
-      sfx_attack_shutup: 'assets/audio/shut-up_2.mp3',
-      sfx_attack_punch: 'assets/audio/Punch.mp3', // Default punch for unlisted enemies
+      sfx_attack_bite: 'assets/audio/Melee/Bite.wav', 
+      sfx_attack_slash: 'assets/audio/Melee/Slash.wav',
+      sfx_attack_blunt: 'assets/audio/Melee/Blunt.wav',
+      sfx_attack_drill: 'assets/audio/Melee/Drill.wav',
+      sfx_attack_shutup: 'assets/audio/Melee/ShutUp.wav',
+      sfx_attack_punch: 'assets/audio/Melee/punch.mp3', // Default punch for unlisted enemies
 
       // Movement & Voice Placeholders
       sfx_footstep: 'assets/audio/footsteps.mp3',

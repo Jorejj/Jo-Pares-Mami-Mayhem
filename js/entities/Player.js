@@ -406,17 +406,36 @@ class Player {
         }
       });
 
-      // 2. Check Collision Against Enemies
+// 2. Check Collision Against Enemies
       enemies.forEach(enemy => {
         if (enemy.isAlive && playerProj.isActive && Physics.checkCollision(playerProj, enemy)) {
           const weaponDamage = this.arsenal[playerProj.type]?.damage || playerProj.damage;
           enemy.takeDamage(weaponDamage);
-          playerProj.onHit(enemy); 
+          if (playerProj.onHit) playerProj.onHit(enemy); 
           playerProj.isActive = false;
+          
+          // --- FIXED: CUSTOM FOOD IMPACT SOUNDS ---
+          let hitSfxKey = 'sfx_hit'; // Default fallback
+          
+          if (playerProj.type === 'mami') {
+              hitSfxKey = 'sfx_mami_impact'; 
+          } else if (playerProj.type === 'pares') {
+              hitSfxKey = 'sfx_pares_split'; 
+          } else if (playerProj.type === 'rice') {
+              hitSfxKey = 'sfx_rice_sizzle';
+          }
+
+          const hitSfx = this.game.assetLoader?.audio?.[hitSfxKey];
+          if (hitSfx) {
+              hitSfx.currentTime = 0;
+              hitSfx.volume = 0.6; 
+              const p = hitSfx.play();
+              if (p && p.catch) p.catch(() => {});
+          }
         }
       });
     });
-
+    
     // ===== ENEMY PROJECTILE vs PLAYER COLLISION =====
     enemyProjectiles.forEach(enemyProj => {
       if (!enemyProj.isActive) return;
