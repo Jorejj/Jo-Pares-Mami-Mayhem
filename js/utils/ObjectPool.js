@@ -552,7 +552,7 @@ class EnemyPool {
 
 const POOLED_ENEMY_TYPES = {
   gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_gangster' },
-  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach' },
+  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 1000, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach' },
   jbhotdog:   { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 55, baseHeight: 160, spriteKey: 'enemy_jbhotdog' },
   bikejor:    { hp: 25,  speed: 2.2, damage: 10, kitaReward: 15, baseWidth: 70, baseHeight: 190, spriteKey: 'enemy_bikejor' },
   kitboard:   { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard' },
@@ -901,13 +901,11 @@ class PooledEnemy {
     }
   }
 
-  draw(ctx) {
+draw(ctx) {
     if (!this.isAlive) return;
     
     ctx.imageSmoothingEnabled = false;
-    
-    // Allows the sprite to actually fade transparent!
-    ctx.globalAlpha = Math.max(0, this.alpha);
+    ctx.globalAlpha = Math.max(0, this.alpha !== undefined ? this.alpha : 1);
 
     const sprite = this.game.assetLoader?.images?.[this.spriteKey];
     
@@ -931,24 +929,84 @@ class PooledEnemy {
       ctx.scale(-1, 1);
       ctx.drawImage(sprite, sx, sy, sw, sh, -drawW / 2, -drawH, drawW, drawH);
       
+      // --- UPGRADED FIRE SPRITE ANIMATION ---
       if (this.burnActive) {
-        ctx.save(); ctx.globalCompositeOperation = 'source-atop';
-        const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.4;
-        ctx.fillStyle = `rgba(255, 100, 0, ${flicker})`;
-        ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
-        ctx.restore();
-      } else if (this.slowActive) {
-        ctx.fillStyle = 'rgba(0, 150, 255, 0.4)'; ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillRect(-drawW / 2, -drawH, drawW, drawH); ctx.globalCompositeOperation = 'source-over';
+        const fireSprite = this.game.assetLoader?.images?.effect_fire;
+        
+        if (fireSprite && fireSprite.complete && fireSprite.width > 0) {
+          ctx.save();
+          
+          const fCols = 5;
+          const fRows = 3;
+          const fw = fireSprite.width / fCols;
+          const fh = fireSprite.height / fRows;
+          
+          const totalFrames = 15;
+          const currentFireFrame = Math.floor(this.game.gameFrame / 4) % totalFrames;
+          const fCol = currentFireFrame % fCols;
+          const fRow = Math.floor(currentFireFrame / fCols);
+          
+          const fireW = drawW * 1.8;
+          const fireH = drawH * 0.9;
+          
+          ctx.globalAlpha = 0.9; 
+          ctx.drawImage(
+            fireSprite, 
+            fCol * fw, fRow * fh, fw, fh, 
+            -fireW / 2, -fireH + (drawH * 0.1), fireW, fireH
+          );
+          ctx.restore();
+        } else {
+          ctx.save(); ctx.globalCompositeOperation = 'source-atop';
+          const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.4;
+          ctx.fillStyle = `rgba(255, 100, 0, ${flicker})`;
+          ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
+          ctx.restore();
+        }
+      } 
+      // --- NEW: UPGRADED SLOW SPRITE ANIMATION ---
+      else if (this.slowActive) {
+        const slowSprite = this.game.assetLoader?.images?.effect_slow;
+        
+        if (slowSprite && slowSprite.complete && slowSprite.width > 0) {
+          ctx.save();
+          // We MUST use 'screen' here because slow.jpg has a solid black background
+          ctx.globalAlpha = 0.85;
+
+          const sCols = 4;
+          const sRows = 2;
+          const sw_slow = slowSprite.width / sCols;
+          const sh_slow = slowSprite.height / sRows;
+          
+          const currentSlowFrame = Math.floor(this.game.gameFrame / 5) % 8;
+          const sCol = currentSlowFrame % sCols;
+          const sRow = Math.floor(currentSlowFrame / sCols);
+          
+          const effectW = drawW * 1.6;
+          const effectH = drawH * 1.1;
+          
+          ctx.drawImage(
+            slowSprite, 
+            sCol * sw_slow, sRow * sh_slow, sw_slow, sh_slow, 
+            -effectW / 2, -effectH, effectW, effectH
+          );
+          ctx.restore();
+        } else {
+          ctx.save(); 
+          ctx.globalCompositeOperation = 'source-atop';
+          ctx.fillStyle = 'rgba(0, 150, 255, 0.4)'; 
+          ctx.fillRect(-drawW / 2, -drawH, drawW, drawH); 
+          ctx.restore();
+        }
       }
+      
       ctx.restore();
     } else {
-      ctx.fillStyle = CONSTANTS.COLORS.ENEMY; ctx.fillRect(this.drawX, this.drawY, this.width, this.height);
+      ctx.fillStyle = '#FF0000'; ctx.fillRect(this.drawX, this.drawY, this.width, this.height);
     }
 
     ctx.globalAlpha = 1.0; 
     
-    // Only draw the health bar if they are actively fighting
     if (this.state !== 'dead' && this.state !== 'fading') {
       ctx.fillStyle = '#00FF00';
       const barWidth = this.width * (this.hp / this.maxHp);
@@ -957,8 +1015,6 @@ class PooledEnemy {
     }
   }
 }
-
-
 // ============================================================
 // ENEMY PROJECTILE POOL - For boss projectiles (vials, etc.)
 // ============================================================

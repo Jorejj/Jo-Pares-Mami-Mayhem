@@ -129,37 +129,58 @@ class Player {
     return special && special.unlocked && special.timeSinceLastFire >= special.cooldown;
   }
 
+ // --- UPDATED ActivateSpecial in js/entities/Player.js ---
   activateSpecial(specialName) {
     if (!this.canUseSpecial(specialName)) return;
     const special = this.specials[specialName];
     special.timeSinceLastFire = 0; 
     
-    const audio = this.game.assetLoader?.audio?.sfx_fmattack;
-    if (audio) { audio.currentTime = 0; audio.volume = 1.0; const p = audio.play(); if(p && p.catch) p.catch(()=>{}); }
+    // --- NEW: CUSTOM SOUNDS FOR SPECIALS ---
+    let sfxKey = 'sfx_fmattack'; // Default fallback
 
+    if (specialName === 'calamansi') {
+        sfxKey = 'sfx_sticky'; // Play the sticky sound for the slow!
+    } else if (specialName === 'chili') {
+        sfxKey = 'sfx_rice_sizzle'; // Play the sizzle for the burn!
+    } else if (specialName === 'garlic') {
+        sfxKey = 'sfx_throw'; // Example generic throw sound
+    }
+
+    const audio = this.game.assetLoader?.audio?.[sfxKey];
+    if (audio) { 
+        audio.currentTime = 0; 
+        audio.volume = 0.8; 
+        const p = audio.play(); 
+        if(p && p.catch) p.catch(()=>{}); 
+    }
+
+    // Apply the actual effects to the game
     if (special.effect === 'spikes') {
       for (let i = 0; i < 15; i++) {
+        // ... (Trap spawning logic remains the same) ...
         const spawnX = 250 + Math.random() * (this.game.canvas.width - 300); 
         const spawnY = CONSTANTS.GAME_BOTTOM_HALF + Math.random() * (this.game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - 80);
-        
-        this.traps.push({
-          x: spawnX,
-          y: spawnY,
-          width: 80,  
-          height: 80,  
-          damage: 150,
-          active: true,
-          timer: 20000 
-        });
+        this.traps.push({ x: spawnX, y: spawnY, width: 80, height: 80, damage: 150, active: true, timer: 20000 });
       }
     } else {
       const enemies = this.game.waveManager.getActiveEnemies
         ? this.game.waveManager.getActiveEnemies()
         : (this.game.waveManager.enemies || []);
+        
       enemies.forEach(enemy => {
         if (!enemy.isAlive) return;
-        if (special.effect === 'slow') enemy.applySlowStatus(5000, 0.4); 
-        else if (special.effect === 'burn') enemy.applyBurnStatus(6000, 15); 
+        // Bosses get a slight resilience to specials
+        const isBoss = typeof enemy.type === 'string' && enemy.type.startsWith('boss_');
+        
+        if (special.effect === 'slow') {
+            const slowDur = isBoss ? 3500 : 5000;
+            const slowFact = isBoss ? 0.6 : 0.4;
+            enemy.applySlowStatus(slowDur, slowFact); 
+        } else if (special.effect === 'burn') {
+            const burnDur = isBoss ? 4000 : 6000;
+            const burnDmg = isBoss ? 10 : 15;
+            enemy.applyBurnStatus(burnDur, burnDmg); 
+        }
       });
     }
   }

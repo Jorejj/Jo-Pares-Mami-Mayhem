@@ -95,6 +95,9 @@ class AssetLoader {
       ui_hud: 'assets/ui/hud.png',
       ui_shop: 'assets/ui/shop.png',
       ui_coin: 'assets/ui/coin.png',
+            // Inside your imageSources:
+      effect_fire: 'assets/animations/fire.png', // <-- ADD THIS LINE!
+      effect_slow: 'assets/animations/slow.png',
 
       // Tutorial
       tutorial_arsenal: 'assets/ui/Tutorial/Arsenal.png',
@@ -170,6 +173,8 @@ const audioSources = {
       sfx_pares_split: 'assets/audio/Impacts/Pares Split.wav',
       sfx_mami_impact: 'assets/audio/Impacts/Mami Impact.wav',
       sfx_rice_sizzle: 'assets/audio/Impacts/Rice Sizzle.wav',
+      sfx_sticky: 'assets/audio/ui/stickysound.wav',
+
     };
 
     const imageEntries = Object.entries(imageSources);
