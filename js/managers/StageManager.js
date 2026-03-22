@@ -24,7 +24,7 @@ class StageManager {
         bgKey: 'bg_monumento',
         bgmKey: 'bgm_traffic',
         waveConfig: {
-          enemyPool: ['gangster', 'cockroach'],
+          enemyPool: ['cockroach', 'gangster'],
           baseCount: 5,
           scaling: 0
         },
@@ -47,7 +47,7 @@ class StageManager {
         bgKey: 'bg_bagong_barrio',
         bgmKey: 'bgm_street',
         waveConfig: {
-          enemyPool: ['gangster', 'cockroach', 'dog'],
+          enemyPool: ['cockroach', 'gangster', 'dog'],
           baseCount: 6,
           scaling: 1
         },
@@ -61,7 +61,7 @@ class StageManager {
         bgKey: 'bg_c3',
         bgmKey: 'bgm_traffic',
         waveConfig: {
-          enemyPool: ['gangster', 'cockroach', 'dog', 'jbhotdog'],
+          enemyPool: ['cockroach', 'gangster', 'dog', 'newDaga1'],
           baseCount: 7,
           scaling: 1
         },
@@ -75,7 +75,7 @@ class StageManager {
         bgKey: 'bg_sangandaan',
         bgmKey: 'bgm_vendors',
         waveConfig: {
-          enemyPool: ['gangster', 'cockroach', 'dog', 'jbhotdog', 'bikejor'],
+          enemyPool: ['cockroach', 'gangster', 'dog', 'newDaga1'],
           baseCount: 8,
           scaling: 2
         },
@@ -91,7 +91,7 @@ class StageManager {
         bgKey: 'bg_monumento',
         bgmKey: 'bgm_crowd',
         waveConfig: {
-          enemyPool: ['gangster', 'cockroach', 'dog', 'jbhotdog', 'bikejor'],
+          enemyPool: ['cockroach', 'gangster', 'dog', 'newDaga1'],
           baseCount: 15,
           scaling: 0,
           boss: 'boss_kap'
@@ -114,7 +114,7 @@ class StageManager {
         bgKey: 'bg_intramuros',
         bgmKey: 'bgm_people',
         waveConfig: {
-          enemyPool: ['gangster', 'jbhotdog', 'bikejor', 'kitboard'],
+          enemyPool: ['jbhotdog', 'bikejor'],
           baseCount: 10,
           scaling: 2
         },
@@ -130,7 +130,7 @@ class StageManager {
         bgKey: 'bg_intramuros',
         bgmKey: 'bgm_vendors',
         waveConfig: {
-          enemyPool: ['gangster', 'jbhotdog', 'bikejor', 'kitboard', 'rex'],
+          enemyPool: ['jbhotdog', 'bikejor', 'kitboard'],
           baseCount: 11,
           scaling: 2
         },
@@ -144,7 +144,7 @@ class StageManager {
         bgKey: 'bg_intramuros',
         bgmKey: 'bgm_street',
         waveConfig: {
-          enemyPool: ['gangster', 'bikejor', 'kitboard', 'rex', 'newDaga1'],
+          enemyPool: ['jbhotdog', 'bikejor', 'kitboard', 'fmteacher'],
           baseCount: 12,
           scaling: 2
         },
@@ -158,7 +158,7 @@ class StageManager {
         bgKey: 'bg_intramuros',
         bgmKey: 'bgm_people',
         waveConfig: {
-          enemyPool: ['gangster', 'kitboard', 'rex', 'newDaga1', 'ian'],
+          enemyPool: ['jbhotdog', 'bikejor', 'kitboard', 'fmteacher', 'rex'],
           baseCount: 13,
           scaling: 3
         },
@@ -174,10 +174,10 @@ class StageManager {
         bgKey: 'bg_intramuros',
         bgmKey: 'bgm_crowd',
         waveConfig: {
-          enemyPool: ['gangster', 'kitboard', 'rex', 'newDaga1', 'ian'],
+          enemyPool: ['jbhotdog', 'bikejor', 'kitboard', 'fmteacher', 'rex'],
           baseCount: 15,
           scaling: 0,
-          boss: 'boss_diwata'
+          boss: 'ian'
         },
         storyBefore: [
           { speaker: 'Diwata', text: 'OMG! It\'s that paresan boy! This is gonna go VIRAL!', imageKey: 'story_villains' },
@@ -198,7 +198,7 @@ class StageManager {
         bgKey: 'bg_guadalupe',
         bgmKey: 'bgm_traffic',
         waveConfig: {
-          enemyPool: ['bikejor', 'kitboard', 'rex', 'newDaga1', 'ian'],
+          enemyPool: ['blonde', 'asbula'],
           baseCount: 14,
           scaling: 3
         },
@@ -214,7 +214,7 @@ class StageManager {
         bgKey: 'bg_guadalupe',
         bgmKey: 'bgm_people',
         waveConfig: {
-          enemyPool: ['kitboard', 'rex', 'newDaga1', 'ian'],
+          enemyPool: ['blonde', 'asbula', 'willie'],
           baseCount: 15,
           scaling: 3
         },
@@ -228,7 +228,7 @@ class StageManager {
         bgKey: 'bg_legazpi',
         bgmKey: 'bgm_makati',
         waveConfig: {
-          enemyPool: ['rex', 'newDaga1', 'ian'],
+          enemyPool: ['blonde', 'asbula', 'willie', 'fmbad'],
           baseCount: 16,
           scaling: 4
         },
@@ -242,7 +242,7 @@ class StageManager {
         bgKey: 'bg_legazpi',
         bgmKey: 'bgm_makati',
         waveConfig: {
-          enemyPool: ['rex', 'newDaga1', 'ian'],
+          enemyPool: ['blonde', 'asbula', 'willie', 'fmbad', 'angryfm'],
           baseCount: 18,
           scaling: 4
         },
@@ -258,7 +258,7 @@ class StageManager {
         bgKey: 'bg_legazpi',
         bgmKey: 'bgm_crowd',
         waveConfig: {
-          enemyPool: ['rex', 'newDaga1', 'ian'],
+          enemyPool: ['blonde', 'asbula', 'willie', 'fmbad', 'angryfm'],
           baseCount: 20,
           scaling: 0,
           boss: 'boss_final'
@@ -279,45 +279,28 @@ class StageManager {
     ];
   }
 
-  /**
-   * Get configuration for a specific level
-   * @param {number} level - Level number (1-15)
-   * @returns {Object} Level configuration
-   */
   getLevelConfig(level) {
     return this.levelConfigs[level - 1] || this.levelConfigs[0];
   }
 
-  /**
-   * Get current level configuration based on LevelManager
-   * @returns {Object} Current level configuration
-   */
   getCurrentLevelConfig() {
     const currentLevel = this.game.levelManager?.currentLevel || 1;
     return this.getLevelConfig(currentLevel);
   }
 
-  /**
-   * Generate array of enemies for WaveManager based on level config
-   * @param {number} level - Level number (1-15)
-   * @returns {Array<string>} Array of enemy type strings
-   */
   getWaveEnemies(level) {
     const config = this.getLevelConfig(level);
     const { waveConfig } = config;
     const enemies = [];
 
-    // Calculate enemy count based on level scaling
     const enemyCount = waveConfig.baseCount + (waveConfig.scaling * (level - 1));
-    const cappedCount = Math.min(enemyCount, 25); // Cap at 25 enemies
+    const cappedCount = Math.min(enemyCount, 25); 
 
-    // Populate with random enemies from the pool
     for (let i = 0; i < cappedCount; i++) {
       const randomIndex = Math.floor(Math.random() * waveConfig.enemyPool.length);
       enemies.push(waveConfig.enemyPool[randomIndex]);
     }
 
-    // Add boss if configured
     if (waveConfig.boss) {
       enemies.push(waveConfig.boss);
     }
@@ -325,30 +308,16 @@ class StageManager {
     return enemies;
   }
 
-  /**
-   * Check if the level has story dialogue before it
-   * @param {number} level - Level number
-   * @returns {boolean}
-   */
   hasStoryBefore(level) {
     const config = this.getLevelConfig(level);
     return config.storyBefore && config.storyBefore.length > 0;
   }
 
-  /**
-   * Check if the level has story dialogue after it
-   * @param {number} level - Level number
-   * @returns {boolean}
-   */
   hasStoryAfter(level) {
     const config = this.getLevelConfig(level);
     return config.storyAfter && config.storyAfter.length > 0;
   }
 
-  /**
-   * Start the "before" story cutscene for a level
-   * @param {number} level - Level number
-   */
   startStoryBefore(level) {
     const config = this.getLevelConfig(level);
     if (config.storyBefore && config.storyBefore.length > 0) {
@@ -360,10 +329,6 @@ class StageManager {
     return false;
   }
 
-  /**
-   * Start the "after" story cutscene for a level
-   * @param {number} level - Level number
-   */
   startStoryAfter(level) {
     const config = this.getLevelConfig(level);
     if (config.storyAfter && config.storyAfter.length > 0) {
@@ -375,10 +340,6 @@ class StageManager {
     return false;
   }
 
-  /**
-   * Get current dialogue object
-   * @returns {Object|null} Current dialogue { speaker, text, imageKey }
-   */
   getCurrentDialogue() {
     if (this.currentDialogueIndex < this.currentDialogueArray.length) {
       return this.currentDialogueArray[this.currentDialogueIndex];
@@ -386,26 +347,15 @@ class StageManager {
     return null;
   }
 
-  /**
-   * Advance to next dialogue line
-   * @returns {boolean} True if more dialogue exists, false if cutscene is done
-   */
   advanceDialogue() {
     this.currentDialogueIndex++;
     return this.currentDialogueIndex < this.currentDialogueArray.length;
   }
 
-  /**
-   * Check if current cutscene is complete
-   * @returns {boolean}
-   */
   isCutsceneComplete() {
     return this.currentDialogueIndex >= this.currentDialogueArray.length;
   }
 
-  /**
-   * Reset dialogue state
-   */
   resetDialogue() {
     this.currentDialogueIndex = 0;
     this.currentDialogueArray = [];

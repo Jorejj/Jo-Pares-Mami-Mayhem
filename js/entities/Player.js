@@ -6,31 +6,25 @@ class Player {
   constructor(game) {
     this.game = game;
 
-    // ===== POSITION & DISPLAY =====
     this.x = CONSTANTS.PLAYER_X;
     this.width = 160; 
     this.height = 160; 
     this.y = game.canvas.height - this.height - 100;
 
-    // ===== HEALTH =====
     this.maxHp = CONSTANTS.PLAYER_MAX_HP;
     this.hp = CONSTANTS.PLAYER_MAX_HP;
 
-    // ===== ECONOMY =====
     this.kita = CONSTANTS.PLAYER_START_KITA;
 
-    // ===== ARSENAL SYSTEM =====
     this.selectedWeapon = 'mami';
     this.arsenal = this._initArsenal();
 
-    // ===== CATAPULT DRAG STATE =====
     this.isDragging = false;
     this.isFiring = false; 
     this.dragStart = { x: 0, y: 0 };
     this.dragCurrent = { x: 0, y: 0 };
     this.aimAngle = 0;
 
-    // ===== ANIMATION STATE =====
     this.animationTimer = 0;
     this.currentFrame = 0;
     this.frameSpeed = 250;  
@@ -38,14 +32,9 @@ class Player {
 
     // ===== PROJECTILES (OBJECT POOLING) =====
     this.projectilePool = new ProjectilePool(game, 50);
-    
-    // Legacy compatibility - reference to active projectiles
     this.projectiles = this.projectilePool.getActive();
     
-    // ===== SPECIALS =====
     this.specials = this._initSpecials();
-    
-    // --- TRAPS ARRAY FOR GARLIC SPIKES ---
     this.traps = []; 
 
     this._bindInput();
@@ -187,7 +176,6 @@ class Player {
     return Math.min(100, (special.timeSinceLastFire / special.cooldown) * 100);
   }
 
-  // --- NEW: UI SOUND HELPER ---
   _playUI(sfxKey) {
       const audio = this.game.assetLoader?.audio?.[sfxKey];
       if (audio) { 
@@ -201,14 +189,14 @@ class Player {
   unlockWeapon(weaponName) {
     const weapon = this.arsenal[weaponName];
     if (!weapon || weapon.unlocked || this.kita < weapon.baseCost) {
-        this._playUI('sfx_locked'); // Plays if you are broke!
+        this._playUI('sfx_locked'); 
         return false;
     }
     this.kita -= weapon.baseCost;
     weapon.unlocked = true;
     this.resetAmmo(); 
     this.game.saveCurrentState(); 
-    this._playUI('sfx_cash_register'); // *CHA-CHING!*
+    this._playUI('sfx_cash_register'); 
     return true;
   }
 
@@ -221,7 +209,7 @@ class Player {
     this.kita -= special.baseCost;
     special.unlocked = true;
     this.game.saveCurrentState(); 
-    this._playUI('sfx_cash_register'); // *CHA-CHING!*
+    this._playUI('sfx_cash_register'); 
     return true;
   }
 
@@ -244,7 +232,7 @@ class Player {
     weapon.damage += 5;
     this.resetAmmo(); 
     this.game.saveCurrentState(); 
-    this._playUI('sfx_cash_register'); // *CHA-CHING!*
+    this._playUI('sfx_cash_register'); 
     return true;
   }
 
@@ -252,7 +240,6 @@ class Player {
   takeDamage(amount) { 
     this.hp = Math.max(0, this.hp - amount); 
     
-    // Completely bypasses the missing _playUI function and plays it safely!
     const audio = this.game.assetLoader?.audio?.sfx_jo_damage;
     if (audio) { 
         audio.currentTime = 0; 
@@ -366,40 +353,13 @@ class Player {
     }
 
     this.projectilePool.update(delta);
-    
-    // Update legacy reference
     this.projectiles = this.projectilePool.getActive();
-
-    // --- MANAGE TRAPS AND COLLISION ---
-   // Update Jo's projectiles
-    // Use a classic loop so if a Pares splits and adds NEW items to the array, they don't get deleted!
-    for (let i = 0; i < this.projectiles.length; i++) {
-        this.projectiles[i].update(delta);
-    }
-    this.projectiles = this.projectiles.filter(p => p.isActive);
-    // --- NEW: UPDATE ENEMY PROJECTILES & CHECK JO HIT ---
-    if (this.game.enemyProjectiles) {
-      this.game.enemyProjectiles = this.game.enemyProjectiles.filter(ep => {
-        ep.update(delta);
-        
-        // Basic Rectangle Collision against Jo
-        if (ep.isActive && ep.x < this.x + this.width && ep.x + ep.width > this.x &&
-            ep.y < this.y + this.height && ep.y + ep.height > this.y) {
-            
-          this.takeDamage(ep.damage);
-          ep.isActive = false;
-          
-          const dmgAudio = this.game.assetLoader?.audio?.sfx_hit; 
-          if (dmgAudio) { dmgAudio.currentTime = 0; const p = dmgAudio.play(); if (p && p.catch) p.catch(()=>{}); }
-        }
-        return ep.isActive;
-      });
-    }
+    
+    const enemyProjectiles = this.game.waveManager?.enemyProjectilePool?.getActive() || [];
+    const enemies = this.game.waveManager.getActiveEnemies ? this.game.waveManager.getActiveEnemies() : (this.game.waveManager.enemies || []);
 
     // --- MANAGE GARLIC TRAPS ---
     this.traps = this.traps.filter(t => t.active && t.timer > 0);
-    const enemies = this.game.waveManager.getActiveEnemies ? this.game.waveManager.getActiveEnemies() : (this.game.waveManager.enemies || []);
-    
     this.traps.forEach(trap => {
       trap.timer -= delta;
       if (trap.timer <= 0) trap.active = false;
@@ -419,42 +379,23 @@ class Player {
       });
     });
 
-    // Projectile-Enemy collision using pooled projectiles
-    this.projectilePool.getActive().forEach(proj => {
-      enemies.forEach(enemy => {
-        if (enemy.isAlive && Physics.checkCollision(proj, enemy)) {
-          const weaponDamage = this.arsenal[proj.type]?.damage || proj.damage;
-          enemy.takeDamage(weaponDamage);
-          proj.onHit(enemy); 
-          proj.isActive = false;
-        }
-      });
-    });
-
-    // ===== MID-AIR PROJECTILE COLLISION =====
-    // Player projectiles can intercept enemy projectiles (boss vials, etc.)
-    const enemyProjectiles = this.game.waveManager?.enemyProjectilePool?.getActive() || [];
-    
-    this.projectilePool.getActive().forEach(playerProj => {
+    // ===== MID-AIR PROJECTILE & ENEMY COLLISION =====
+    this.projectiles.forEach(playerProj => {
       if (!playerProj.isActive) return;
       
+      // 1. Check Collision Against Enemy Projectiles
       enemyProjectiles.forEach(enemyProj => {
         if (!enemyProj.isActive) return;
         
-        // Check if projectiles collide
         const dx = playerProj.x - enemyProj.x;
         const dy = playerProj.y - enemyProj.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const collisionDist = (playerProj.radius || 5) + (enemyProj.radius || 8);
+        const collisionDist = (playerProj.radius || 20) + (enemyProj.radius || 20);
         
         if (dist < collisionDist) {
-          // Both projectiles are destroyed
           playerProj.isActive = false;
           enemyProj.isActive = false;
           
-          console.log('[Player] Mid-air projectile collision!');
-          
-          // Visual/audio feedback
           const hitSfx = this.game.assetLoader?.audio?.sfx_hit;
           if (hitSfx) {
             hitSfx.currentTime = 0;
@@ -462,74 +403,35 @@ class Player {
             const p = hitSfx.play();
             if (p && p.catch) p.catch(() => {});
           }
-    // --- CHECK JO'S PROJECTILES AGAINST ENEMIES & ENEMY PROJECTILES ---
-this.projectiles.forEach(proj => {
-      
-      // 1. SHOOT ENEMY PROJECTILES OUT OF THE AIR! (Robust Distance Check)
-      if (this.game.enemyProjectiles) {
-        this.game.enemyProjectiles.forEach(ep => {
-          if (ep.isActive && proj.isActive) {
-             
-             // Find the center of Jo's projectile (with a fallback of 20 just in case)
-             const projCenterX = proj.x + (proj.width ? proj.width / 2 : 20);
-             const projCenterY = proj.y + (proj.height ? proj.height / 2 : 20);
-             
-             // Find the center of the Enemy's projectile
-             const epCenterX = ep.x + ep.width / 2;
-             const epCenterY = ep.y + ep.height / 2;
-             
-             // Calculate the exact distance between the two objects
-             const dist = Math.hypot(projCenterX - epCenterX, projCenterY - epCenterY);
-             
-             // If they are within 60 pixels of each other, it's a solid hit!
-             if (dist < 60) {
-                 ep.takeDamage(this.arsenal[proj.type].damage); 
-                 proj.isActive = false; // Destroy Jo's food
-                 
-                 const hitSfx = this.game.assetLoader?.audio?.sfx_hit;
-                 if (hitSfx) { hitSfx.currentTime = 0; const p = hitSfx.play(); if(p && p.catch) p.catch(()=>{}); }
-             }
-          }
-        });
-      }
+        }
+      });
 
-      // 2. HIT ENEMIES
+      // 2. Check Collision Against Enemies
       enemies.forEach(enemy => {
-        if (enemy.isAlive && proj.isActive && Physics.checkCollision(proj, enemy)) {
-          
-          // FIXED: Use proj.damage! 
-          // (Looking up this.arsenal['pares_split'].damage caused the crash because it doesn't exist!)
-          enemy.takeDamage(proj.damage);
-          
-          proj.onHit(enemy); 
-          proj.isActive = false;
+        if (enemy.isAlive && playerProj.isActive && Physics.checkCollision(playerProj, enemy)) {
+          const weaponDamage = this.arsenal[playerProj.type]?.damage || playerProj.damage;
+          enemy.takeDamage(weaponDamage);
+          playerProj.onHit(enemy); 
+          playerProj.isActive = false;
         }
       });
     });
 
     // ===== ENEMY PROJECTILE vs PLAYER COLLISION =====
-    // If enemy projectiles bypass Jo's food, they can hit Jo directly
     enemyProjectiles.forEach(enemyProj => {
       if (!enemyProj.isActive) return;
       
-      // Check if enemy projectile hits the player
       const dx = this.x + this.width / 2 - enemyProj.x;
       const dy = this.y + this.height / 2 - enemyProj.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const collisionDist = (this.width / 3) + (enemyProj.radius || 8);
       
       if (dist < collisionDist) {
-        // Player takes damage
         const damage = enemyProj.damage || 10;
         this.takeDamage(damage);
-        
-        // Destroy the projectile
         enemyProj.isActive = false;
         
-        console.log(`[Player] Hit by enemy projectile! Damage: ${damage}, HP: ${this.hp}`);
-        
-        // Play hurt sound
-        const hurtSfx = this.game.assetLoader?.audio?.sfx_hurt;
+        const hurtSfx = this.game.assetLoader?.audio?.sfx_jo_damage;
         if (hurtSfx) {
           hurtSfx.currentTime = 0;
           hurtSfx.volume = 0.6;
@@ -546,7 +448,6 @@ this.projectiles.forEach(proj => {
     const weaponData = this.arsenal[this.selectedWeapon];
     const startX = this.x + this.width * 0.7; const startY = this.y + this.height * 0.4;
     
-    // --- ONLY CHANGED THIS BLOCK: Plays the Slingshot sound instead of fmattack! ---
     const audio = this.game.assetLoader?.audio?.sfx_slingshot;
     if (audio) { 
       audio.currentTime = 0; 
@@ -555,10 +456,7 @@ this.projectiles.forEach(proj => {
       if (p && p.catch) p.catch(() => {}); 
     }
 
-    // Fire from pool instead of creating new projectile
     this.projectilePool.fire(startX, startY, vx, vy, this.selectedWeapon, weaponData.damage, weaponData.level);
-    
-    // Update legacy reference
     this.projectiles = this.projectilePool.getActive();
   }
   
@@ -601,21 +499,19 @@ this.projectiles.forEach(proj => {
       ctx.fillStyle = CONSTANTS.COLORS.PLAYER; ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
-    // --- DRAW GARLIC TRAPS ---
     const specSheet = this.game.assetLoader?.images?.specialsSheet;
     this.traps.forEach(trap => {
       if (specSheet && specSheet.complete) {
         const fw = specSheet.width / 5;
         const fh = specSheet.height / 3;
-        const sx = 4 * fw; // Column 4 (final jar)
-        const sy = 2 * fh; // Row 2 (Garlic)
+        const sx = 4 * fw; 
+        const sy = 2 * fh; 
         
         ctx.save();
         if (trap.timer < 3000 && Math.floor(trap.timer / 150) % 2 === 0) {
             ctx.globalAlpha = 0.5;
         }
         
-        // Draw the sprite centered inside the larger hitbox
         const drawSize = 60; 
         const drawX = trap.x + (trap.width - drawSize) / 2;
         const drawY = trap.y + (trap.height - drawSize) / 2;
@@ -625,7 +521,6 @@ this.projectiles.forEach(proj => {
       }
     });
 
-    // Draw projectiles from pool
     this.projectilePool.draw(ctx);
 
     if (this.isDragging && this.game.inputHandler.isDragging) {
@@ -638,7 +533,6 @@ this.projectiles.forEach(proj => {
       ctx.stroke(); ctx.setLineDash([]);
     }
 
-    // --- ENEMY PROJECTILES MUST BE DRAWN OUTSIDE THE DRAG CHECK ---
     if (this.game.enemyProjectiles) {
         this.game.enemyProjectiles.forEach(ep => ep.draw(ctx));
     }

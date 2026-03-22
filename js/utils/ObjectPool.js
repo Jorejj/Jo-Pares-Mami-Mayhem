@@ -567,8 +567,14 @@ const POOLED_ENEMY_TYPES = {
   boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind' },
   newDaga1:   { hp: 150, speed: 0.4, damage: 40, kitaReward: 30, baseWidth: 60, baseHeight: 150, spriteKey: 'newDaga1' },
   ian:        { hp: 150, speed: 0.4, damage: 40, kitaReward: 100, baseWidth: 90, baseHeight: 180, spriteKey: 'ian' },
+  // --- RESTORED MISSING ENEMIES ---
+  blonde:     { hp: 70,  speed: 1.4, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_blonde' },
+  asbula:     { hp: 80,  speed: 1.1, damage: 20, kitaReward: 30, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_asbula' },
+  willie:     { hp: 85,  speed: 1.2, damage: 25, kitaReward: 35, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_willie' },
+  fmbad:      { hp: 65,  speed: 1.5, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmbad' },
+  angryfm:    { hp: 60,  speed: 1.6, damage: 18, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_angryfm' },
+  fmteacher:  { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmteacher' },
 };
-
 class PooledEnemy {
   constructor(game) {
     this.game = game;
@@ -645,13 +651,19 @@ class PooledEnemy {
     this.state = 'walk';
     this.currentFrame = 0;
     this.animationTimer = 0;
+    
+    // --- RESTORED FLAGS & TIMERS ---
     this.alpha = 1;
     this.deathTimer = 0;
     this.footstepTimer = 0;
     this.voiceTimer = 0;
+    this.rewardGiven = false;
 
     this.isAlive = true;
     this.alive = true;
+    this.isRanged = ['fmbad', 'angryfm', 'fmteacher'].includes(this.type);
+    this.isFemale = ['blonde', 'fmbad', 'angryfm', 'fmteacher', 'boss_diwata'].includes(this.type);
+    this.isAnimal = ['cockroach', 'rat', 'newDaga1', 'dog'].includes(this.type);
   }
 
   _playAudioSafe(audioElement) {
@@ -676,7 +688,6 @@ class PooledEnemy {
     this.burnDuration = duration;
     this.burnDamagePerTick = damagePerTick;
     this.lastBurnTick = Date.now();
-    console.log(`[PooledEnemy] Burn applied to ${this.type}, duration: ${duration}ms, damage/tick: ${damagePerTick}`);
   }
 
   updateSpeed() {
@@ -688,7 +699,7 @@ class PooledEnemy {
   }
 
   isNearPlayer() {
-    if (this.state === 'dead') return false;
+    if (this.state === 'dead' || this.state === 'fading') return false;
     return this.x <= CONSTANTS.PLAYER_X + CONSTANTS.PLAYER_WIDTH + CONSTANTS.PLAYER_ATTACK_RANGE;
   }
 
@@ -705,30 +716,26 @@ class PooledEnemy {
   }
 
   takeDamage(damage) {
-    if (this.state === 'dead') return;
+    if (this.state === 'dead' || this.state === 'fading') return;
 
     this.hp -= damage;
 
     if (this.hp <= 0) {
-      this.hp = 0;
-      this.state = 'dead';
+      // --- FIXED: SYNC HACK ---
+      // We set HP to 1 and change state to fading so it stays on screen!
+      this.hp = 1;
+      this.state = 'fading';
       this.currentFrame = 0;
+      this.rewardGiven = false;
 
       if (this.game.assetLoader) {
-        const moneyAudio = this.game.assetLoader.audio?.sfx_money;
-        if (moneyAudio) {
-          moneyAudio.currentTime = 0;
-          moneyAudio.volume = 0.6;
-          this._playAudioSafe(moneyAudio);
-        }
-
-        const isFemale = ['boss_diwata'].includes(this.type);
-        const isAnimal = ['cockroach', 'rat', 'dog', 'newDaga1'].includes(this.type);
         let randomSound = null;
 
-        if (isAnimal) {
-          randomSound = 'sfx_animal_death';
-        } else if (isFemale) {
+        if (this.isAnimal) {
+          if (this.type === 'cockroach') randomSound = 'sfx_animal_cockroach';
+          else if (this.type === 'dog') randomSound = 'sfx_animal_dog';
+          else randomSound = 'sfx_animal_rat';
+        } else if (this.isFemale) {
           const femaleSounds = ['sfx_deathsoundfm', 'sfx_deathsoundfm2', 'sfx_deathsoundfm3'];
           randomSound = femaleSounds[Math.floor(Math.random() * femaleSounds.length)];
         } else {
@@ -744,10 +751,7 @@ class PooledEnemy {
         }
       }
 
-      if (this.game.player) {
-        this.game.player.addKita(this.kitaReward || 20);
-      }
-
+      // We save its draw coordinates, but throw its actual hitbox offscreen so it can't hurt Jo while dying
       this.drawX = this.x;
       this.drawY = this.y;
       this.x = -9999;
@@ -761,7 +765,7 @@ class PooledEnemy {
   update(delta) {
     if (!this.isAlive) return;
 
-    if (this.state !== 'dead') {
+    if (this.state !== 'dead' && this.state !== 'fading') {
       this.drawX = this.x;
       this.drawY = this.y;
     }
@@ -776,7 +780,7 @@ class PooledEnemy {
       }
     }
 
-    if (this.burnActive && this.state !== 'dead') {
+    if (this.burnActive && this.state !== 'dead' && this.state !== 'fading') {
       this.burnDuration -= delta;
       const now = Date.now();
       if (now - this.lastBurnTick >= 100) {
@@ -789,32 +793,45 @@ class PooledEnemy {
     }
 
     // Combat & movement
-    const isAnimal = ['cockroach', 'rat', 'dog', 'newDaga1'].includes(this.type);
-
-    if (this.state !== 'dead' && this.state !== 'hurt') {
+    if (this.state !== 'dead' && this.state !== 'fading' && this.state !== 'hurt') {
       const player = this.game.player;
       const targetX = player.x + player.width / 2;
       const targetY = player.y + player.height / 2;
 
       const dist = Physics.getDistance(this.x + this.width / 2, this.y + this.height / 2, targetX, targetY);
-      const attackRange = CONSTANTS.ENEMY_ATTACK_RANGE + player.width / 2;
+      const attackRange = this.isRanged ? 600 : (CONSTANTS.ENEMY_ATTACK_RANGE + player.width / 2);
 
       if (dist <= attackRange) {
         this.state = 'attack';
-        if (this.canAttack()) {
-          player.takeDamage(this.damage || CONSTANTS.PLAYER_DAMAGE_ON_HIT);
-          this.recordAttack();
-
-          const isFemale = ['boss_diwata'].includes(this.type);
-          if (isFemale && this.game.assetLoader) {
-            const atkSound = Math.random() > 0.5 ? 'sfx_fmattack' : 'sfx_fmattack1';
-            const audio = this.game.assetLoader.audio[atkSound];
-            if (audio) {
-              audio.currentTime = 0;
-              audio.volume = 0.7;
-              this._playAudioSafe(audio);
+        
+        if (this.isRanged) {
+            if (this.canAttack() && this.currentFrame === 2) {
+                this.recordAttack(); 
+                if (this.game.waveManager && this.game.waveManager.enemyProjectilePool) {
+                    const pX = player.x + player.width / 2;
+                    const pY = player.y + player.height / 2;
+                    this.game.waveManager.enemyProjectilePool.fire(this.x, this.y + this.height * 0.2, pX, pY, this.damage, 'vial');
+                }
+                const atkSound = Math.random() > 0.5 ? 'sfx_fmattack' : 'sfx_fmattack1';
+                const audio = this.game.assetLoader?.audio?.[atkSound];
+                if (audio) { audio.currentTime = 0; audio.volume = 0.7; this._playAudioSafe(audio); }
             }
-          }
+        } else {
+            if (this.canAttack() && this.currentFrame === 2) {
+              player.takeDamage(this.damage || CONSTANTS.PLAYER_DAMAGE_ON_HIT);
+              this.recordAttack();
+
+              let attackSfxKey = 'sfx_attack_punch'; 
+              if (['cockroach', 'dog', 'rat'].includes(this.type)) attackSfxKey = 'sfx_attack_bite';
+              else if (this.type === 'gangster') attackSfxKey = 'sfx_attack_slash';
+              else if (['willie', 'rex', 'newDaga1', 'kitboard', 'jbhotdog', 'bikejor'].includes(this.type)) attackSfxKey = 'sfx_attack_blunt';
+              else if (this.type === 'boss_kap') attackSfxKey = 'sfx_attack_drill';
+              else if (this.type === 'asbula') attackSfxKey = 'sfx_attack_shutup';
+              else if (this.isFemale) attackSfxKey = Math.random() > 0.5 ? 'sfx_fmattack' : 'sfx_fmattack1';
+
+              const audio = this.game.assetLoader?.audio?.[attackSfxKey];
+              if (audio) { audio.currentTime = 0; audio.volume = 0.7; this._playAudioSafe(audio); }
+            }
         }
       } else {
         this.state = 'walk';
@@ -826,24 +843,7 @@ class PooledEnemy {
         if (this.footstepTimer > 600) {
           this.footstepTimer = 0;
           const stepAudio = this.game.assetLoader?.audio?.sfx_footstep;
-          if (stepAudio) {
-            stepAudio.currentTime = 0;
-            stepAudio.volume = 0.15;
-            this._playAudioSafe(stepAudio);
-          }
-        }
-      }
-
-      this.voiceTimer += delta;
-      if (this.voiceTimer > 6000) {
-        this.voiceTimer = 0;
-        if (Math.random() > 0.8 && !isAnimal) {
-          const voiceAudio = this.game.assetLoader?.audio?.sfx_enemy_voice;
-          if (voiceAudio) {
-            voiceAudio.currentTime = 0;
-            voiceAudio.volume = 0.5;
-            this._playAudioSafe(voiceAudio);
-          }
+          if (stepAudio) { stepAudio.currentTime = 0; stepAudio.volume = 0.15; this._playAudioSafe(stepAudio); }
         }
       }
     }
@@ -852,122 +852,108 @@ class PooledEnemy {
       this.isAlive = false;
     }
 
-    // Animation
-    const maxFrames = 5;
+    // --- FIXED: RESTORED DEATH FADING AND KITA REWARD ---
     let frameSpeed = 100;
-
-    if (this.state === 'dead') frameSpeed = 150;
-    else if (this.state === 'hurt') frameSpeed = 250;
-    else if (this.state === 'attack') frameSpeed = 120;
+    if (this.state === 'dead' || this.state === 'fading') frameSpeed = 150; 
+    else if (this.state === 'hurt') frameSpeed = 250; 
+    else if (this.state === 'attack') frameSpeed = 120; 
 
     this.animationTimer += delta;
-    if (this.animationTimer >= frameSpeed) {
+
+    if (this.state === 'fading' || this.state === 'dead') {
+        if (this.animationTimer >= frameSpeed) {
+            this.animationTimer = 0;
+            if (this.currentFrame < 4) this.currentFrame++;
+        }
+
+        if (this.currentFrame >= 4) {
+            this.deathTimer += delta;
+            
+            if (this.deathTimer >= 500) { 
+                this.alpha -= 0.1; 
+                
+                if (this.alpha <= 0) {
+                    this.hp = 0; 
+                    this.state = 'dead';
+                    this.isAlive = false; 
+                    
+                    if (!this.rewardGiven) {
+                        this.rewardGiven = true;
+                        if (this.game.player) this.game.player.addKita(this.kitaReward || 20);
+                        
+                        const moneyAudio = this.game.assetLoader?.audio?.sfx_money;
+                        if (moneyAudio) { 
+                            moneyAudio.currentTime = 0; 
+                            moneyAudio.volume = 0.6; 
+                            this._playAudioSafe(moneyAudio); 
+                        }
+                    }
+                }
+            }
+        }
+    } else if (this.animationTimer >= frameSpeed) {
       this.animationTimer = 0;
-
-      if (this.state === 'dead') {
-        if (this.currentFrame < maxFrames - 1) {
-          this.currentFrame++;
-        }
-      } else if (this.state === 'hurt') {
-        this.state = 'walk';
-        this.currentFrame = 0;
+      if (this.state === 'hurt') {
+         this.state = 'walk'; this.currentFrame = 0;
       } else {
-        this.currentFrame = (this.currentFrame + 1) % maxFrames;
-      }
-    }
-
-    // Death fade-out
-    if (this.state === 'dead' && this.currentFrame >= maxFrames - 1) {
-      this.deathTimer += delta;
-      if (this.deathTimer >= 3000) {
-        this.alpha -= 0.05;
-        if (this.alpha <= 0) {
-          this.isAlive = false;
-        }
+         this.currentFrame = (this.currentFrame + 1) % 5; 
       }
     }
   }
 
   draw(ctx) {
     if (!this.isAlive) return;
+    
     ctx.imageSmoothingEnabled = false;
+    
+    // Allows the sprite to actually fade transparent!
     ctx.globalAlpha = Math.max(0, this.alpha);
 
     const sprite = this.game.assetLoader?.images?.[this.spriteKey];
-
+    
     if (sprite && sprite.complete && sprite.width > 0 && sprite.height > 0) {
-      const cols = 5;
-      const rows = 3;
-      const sw = sprite.width / cols;
-      const sh = sprite.height / rows;
+      const cols = 5; const rows = 3;
+      const sw = sprite.width / cols; const sh = sprite.height / rows;
 
-      let row = 0;
-      let frameToDraw = this.currentFrame;
+      let row = 0; let frameToDraw = this.currentFrame;
 
-      if (this.state === 'dead') row = 2;
-      else if (this.state === 'hurt') { row = 2; frameToDraw = 0; }
-      else if (this.state === 'attack') row = 1;
-      else row = 0;
+      if (this.state === 'dead' || this.state === 'fading') { row = 2; } 
+      else if (this.state === 'hurt') { row = 2; frameToDraw = 0; } 
+      else if (this.state === 'attack') { row = 1; } 
+      else { row = 0; }
 
-      const sx = frameToDraw * sw;
-      const sy = row * sh;
-
+      const sx = frameToDraw * sw; const sy = row * sh;
       const scale = this.height / sh;
-      const drawW = sw * scale;
-      const drawH = this.height;
-
+      const drawW = sw * scale; const drawH = this.height;
+      
       ctx.save();
       ctx.translate(this.drawX + this.width / 2, this.drawY + this.height);
       ctx.scale(-1, 1);
-
       ctx.drawImage(sprite, sx, sy, sw, sh, -drawW / 2, -drawH, drawW, drawH);
-
-      // Status effect tints
+      
       if (this.burnActive) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'source-atop';
-        // Stronger, more visible burn effect
-        const flicker = Math.sin(this.game.gameFrame / 2) * 0.3 + 0.6; // Increased intensity
-        ctx.fillStyle = `rgba(255, 80, 0, ${flicker})`;
+        ctx.save(); ctx.globalCompositeOperation = 'source-atop';
+        const flicker = Math.sin(this.game.gameFrame / 3) * 0.2 + 0.4;
+        ctx.fillStyle = `rgba(255, 100, 0, ${flicker})`;
         ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
         ctx.restore();
-
-        // More prominent flame particles
-        if (this.game.gameFrame % 3 === 0) { // More frequent particles
-          ctx.save();
-          for (let i = 0; i < 3; i++) { // More particles
-            const px = (Math.random() - 0.5) * drawW;
-            const py = -Math.random() * drawH;
-            const size = Math.random() * 4 + 2; // Larger particles
-            
-            ctx.fillStyle = `rgba(255, ${100 + Math.random() * 100}, 0, ${0.7 + Math.random() * 0.3})`;
-            ctx.fillRect(px - size/2, py - size/2, size, size);
-          }
-          ctx.restore();
-        }
       } else if (this.slowActive) {
-        ctx.fillStyle = 'rgba(0, 150, 255, 0.4)';
-        ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgba(0, 150, 255, 0.4)'; ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillRect(-drawW / 2, -drawH, drawW, drawH); ctx.globalCompositeOperation = 'source-over';
       }
-
       ctx.restore();
     } else {
-      ctx.fillStyle = CONSTANTS.COLORS.ENEMY;
-      ctx.fillRect(this.drawX, this.drawY, this.width, this.height);
+      ctx.fillStyle = CONSTANTS.COLORS.ENEMY; ctx.fillRect(this.drawX, this.drawY, this.width, this.height);
     }
 
-    ctx.globalAlpha = 1.0;
-
-    // Health bar
-    if (this.state !== 'dead') {
+    ctx.globalAlpha = 1.0; 
+    
+    // Only draw the health bar if they are actively fighting
+    if (this.state !== 'dead' && this.state !== 'fading') {
       ctx.fillStyle = '#00FF00';
       const barWidth = this.width * (this.hp / this.maxHp);
       ctx.fillRect(this.drawX, this.drawY - 12, barWidth, 5);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(this.drawX, this.drawY - 12, this.width, 5);
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1; ctx.strokeRect(this.drawX, this.drawY - 12, this.width, 5);
     }
   }
 }
