@@ -258,7 +258,9 @@ class StageManager {
           { speaker: 'Narrator', text: 'Nalinis ang pangalan ng pamilya ni Jo at muling bumukas ang paresan.', imageKey: 'story_ending_3' },
           { speaker: 'Narrator', text: 'Bumalik ang mga suki, at muling umusok ang sabaw sa kariton.', imageKey: 'story_ending_4' },
           { speaker: 'Jo', text: 'Pa, bawi na tayo. Simula ulit, mas matatag na.', imageKey: 'story_ending_5' },
-          { speaker: 'Narrator', text: 'Wakas ng laban. Simula ng bagong alamat.', imageKey: 'story_ending_6' }
+          { speaker: 'Narrator', text: 'Wakas ng laban. Simula ng bagong alamat.', imageKey: 'story_ending_6' },
+
+          { speaker: '', text: 'Thank you for playing!', imageKey: 'story_thanks' }
         ]
       }
     ];

@@ -121,6 +121,8 @@ class AssetLoader {
       story_ending_5: 'assets/story/Ending/Ending 5.png',
       story_ending_6: 'assets/story/Ending/Ending 6.png',
 
+      story_thanks: 'assets/story/Ending/Thanks.png',
+
       //gifs
       story_boss1_open: 'assets/story/boss1.gif',
       story_manila: 'assets/story/manila.gif',
@@ -156,6 +158,8 @@ const audioSources = {
       bgm_vendors: 'assets/audio/streetvendors.mp3',
       bgm_makati: 'assets/audio/makati.mp3',
       bgm_people: 'assets/audio/peopletalking.mp3',
+
+      bgm_main_menu: 'assets/audio/UI/MainMusic.mp3',
 
       // Jo & UI
       sfx_money: 'assets/audio/moneyget.mp3',

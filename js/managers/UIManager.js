@@ -824,10 +824,6 @@ class UIManager {
         this.prologueFade += delta * 0.002; 
         if (this.prologueFade > 1.0) this.prologueFade = 1.0;
       }
-
-      if (this.prologueTimer > 5000 && this.prologueCharIndex >= fullText.length) { 
-        this._advancePrologue(); 
-      }
     }
   }
 

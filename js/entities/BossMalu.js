@@ -75,8 +75,8 @@ class BossMalu extends Enemy {
     this.ianWasCancelled = false;
 
     this.auraDamageTimer = 0;
-    this.auraTickInterval = 300;
-    this.auraDamagePerTick = config.auraDamage ?? 5;
+    this.auraTickInterval = 2000;
+    this.auraDamagePerTick = config.auraDamage ?? 3;
     this.auraAnimTimer = 0;
     this.auraFrame = 0;
 

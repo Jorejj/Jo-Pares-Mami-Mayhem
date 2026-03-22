@@ -37,6 +37,13 @@ class Game {
     
     this._bindFSMInput();
     this._bindGlobalUI(); 
+
+    document.addEventListener('click', () => {
+        if (this.currentBgmTrack && this.currentBgmTrack.paused) {
+            const p = this.currentBgmTrack.play();
+            if (p && p.catch) p.catch(()=>{});
+        }
+    }, { once: true });
   }
 
   // --- TRUE FRESH START MEMORY WIPE ---
@@ -209,7 +216,7 @@ class Game {
     }
   }
 
-  _advanceStoryCutscene() {
+_advanceStoryCutscene() {
     const hasMore = this.stageManager.advanceDialogue();
     this.uiManager.prologueIndex = this.stageManager.currentDialogueIndex;
     this.uiManager.prologueCharIndex = 0;
@@ -217,8 +224,23 @@ class Game {
     
     if (!hasMore) {
       if (this.isPlayingStoryAfter) {
-        this.currentState = CONSTANTS.STATES.SHOP;
-        this.shopManager.open();
+        // --- FIXED: CHECK IF IT'S THE FINAL LEVEL ---
+        if (this.levelManager.currentLevel >= this.levelManager.maxLevel) {
+            // GAME BEATEN! Go to Main Menu instead of the Shop.
+            this.currentState = CONSTANTS.STATES.MAIN_MENU;
+            this.waveManager.clearAllEnemies();
+            this.player.projectilePool.releaseAll();
+            
+            // Stop the music so the Main Menu BGM can take over
+            if (this.currentBgmTrack) {
+                this.currentBgmTrack.pause();
+                this.currentBgmTrack.currentTime = 0;
+            }
+        } else {
+            // Normal progression: Go to the Shop
+            this.currentState = CONSTANTS.STATES.SHOP;
+            this.shopManager.open();
+        }
       } else {
         this._startLevel();
       }
@@ -325,10 +347,13 @@ class Game {
   }
 
   _updateAudio() {
+    // 1. We added MAIN_MENU and DIFFICULTY_SELECT to the active states
     const isActiveState = (
       this.currentState === CONSTANTS.STATES.PLAYING || 
       this.currentState === CONSTANTS.STATES.SHOP || 
-      this.currentState === CONSTANTS.STATES.ARSENAL_SELECT
+      this.currentState === CONSTANTS.STATES.ARSENAL_SELECT ||
+      this.currentState === CONSTANTS.STATES.MAIN_MENU ||
+      this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT
     );
 
     if (!isActiveState) {
@@ -336,9 +361,16 @@ class Game {
       return;
     }
 
-    const levelData = this.levelManager.getLevelData();
-    const targetBgmKey = levelData.bgm;
+    // 2. Check which track we should be playing
+    let targetBgmKey = null;
+    if (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
+      targetBgmKey = 'bgm_main_menu'; // Play the new menu music!
+    } else {
+      const levelData = this.levelManager.getLevelData();
+      targetBgmKey = levelData.bgm; // Play normal level music
+    }
 
+    // 3. Handle changing the tracks
     if (this.currentBgmKey !== targetBgmKey) {
       if (this.currentBgmTrack) {
         this.currentBgmTrack.pause();
@@ -350,10 +382,15 @@ class Game {
       if (this.currentBgmTrack) {
         this.currentBgmTrack.loop = true;
         this.currentBgmTrack.volume = 0.3; 
+        
         const p = this.currentBgmTrack.play();
-        if (p && p.catch) p.catch(() => {});
+        if (p && p.catch) p.catch(() => {
+            // If the browser blocks autoplay upon opening the tab, don't crash.
+            // Just wait for the user to click something.
+        });
       }
     } else if (this.currentBgmTrack && this.currentBgmTrack.paused) {
+      // If the track is paused (likely blocked by browser), try to play it again
       const p = this.currentBgmTrack.play();
       if (p && p.catch) p.catch(() => {});
     }
