@@ -299,6 +299,9 @@ _advanceStoryCutscene() {
                 winSfx.play().catch(()=>{});
             }
 
+            // --- SHOW GRAND FINALE OVERLAY AFTER CUTSCENE ---
+            this._showOverlay('GAME_COMPLETE', "CONGRATULATIONS!", "for finishing the game :)", 60000);
+            
             this.currentState = CONSTANTS.STATES.MAIN_MENU;
             this.waveManager.clearAllEnemies();
             this.player.projectilePool.releaseAll();
@@ -662,9 +665,9 @@ _advanceStoryCutscene() {
           if (this.currentBgmTrack) this.currentBgmTrack.pause();
           this._stopAllLevelSFX();
 
-          // Show Victory Overlay IMMEDIATELY
+
           if (completedLevel === 15) {
-              this._showOverlay('GAME_COMPLETE', "CONGRATULATIONS!", "YOU SAVED THE FAMILY LEGACY!", 8000);
+              this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "THE FINAL BLOW!", 5000);
           } else {
               this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "YOU ARE THE MASTER OF PARES!", 4500);
           }

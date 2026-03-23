@@ -76,6 +76,10 @@ class UIManager {
       'btn-shop-garlic': () => { this.game.shopManager.handleSelection(6); this._updateShopUI(); },
       'btn-shop-done': () => this._finishShopping(),
       'btn-restart': () => location.reload(),
+      'btn-complete-close': () => {
+        this.game.overlayTimer = 0;
+        this.game.overlayType = null;
+      },
       
       'btn-pause-toggle': () => { this._togglePause(); },
       'btn-resume': () => { this._togglePause(); },
@@ -750,6 +754,7 @@ class UIManager {
     this._showScreen('screen-victory', state === CONSTANTS.STATES.VICTORY && !this.isSettingsOpen);
     this._showScreen('screen-shop', state === CONSTANTS.STATES.SHOP && !this.isSettingsOpen);
     this._showScreen('screen-gameover', state === CONSTANTS.STATES.GAMEOVER && !this.isSettingsOpen);
+    this._showScreen('screen-game-complete', this.game.overlayType === 'GAME_COMPLETE' && this.game.overlayTimer > 0);
     
     // Toggle correct settings screen
     const isHome = state === CONSTANTS.STATES.MAIN_MENU;
