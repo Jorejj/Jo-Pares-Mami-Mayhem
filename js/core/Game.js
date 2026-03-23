@@ -35,6 +35,9 @@ class Game {
     this.lastKeyPressState = {};
     this.enemyProjectiles = [];
     
+    // --- Boss Defeat Delay Tracking ---
+    this.bossDefeatTimer = 0;
+    
     this._bindFSMInput();
     this._bindGlobalUI(); 
 
@@ -140,9 +143,12 @@ class Game {
       }
 
       if (this.currentState === CONSTANTS.STATES.MAIN_MENU) {
-        if (key === "1") this.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
-        else if (key === "2") this.loadSavedGame(); 
-        else if (key === "3") this.quitGame();
+        if (key === "n") this.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
+        else if (key === "l") this.loadSavedGame(); 
+        else if (key === "q") this.quitGame();
+      }
+      else if (this.bossDefeatTimer > 0 && (key === " " || key === "enter")) {
+        this._finishBossDefeatDelay();
       }
       else if (this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
         if (key === "e") { this.startNewGame('easy'); }
@@ -174,15 +180,14 @@ class Game {
         }
       }
       else if (this.currentState === CONSTANTS.STATES.SHOP) {
-        if (key >= "1" && key <= "6") this.shopManager.handleSelection(parseInt(key)); 
-
+        // Keep mouse interaction for shop, but remove number shortcuts to stay consistent.
         if (key === "enter") {
           this._finishShoppingAndStartNextLevel();
         }
       }
       else if (this.currentState === CONSTANTS.STATES.GAMEOVER) {
         if (key === "r") location.reload();
-        else if (key === "2") this.loadSavedGame(); 
+        else if (key === "l") this.loadSavedGame(); 
       }
     });
 
@@ -244,6 +249,36 @@ _advanceStoryCutscene() {
       } else {
         this._startLevel();
       }
+    }
+  }
+
+  _finishBossDefeatDelay() {
+    this.bossDefeatTimer = 0;
+    const completedLevel = this.levelManager.currentLevel;
+
+    // Stop all possible boss defeat SFX
+    const defeatKeys = ['sfx_kap_defeat', 'sfx_ian_defeat', 'sfx_malupiton_defeat'];
+    defeatKeys.forEach(key => {
+        const audio = this.assetLoader?.audio?.[key];
+        if (audio) { audio.pause(); audio.currentTime = 0; }
+    });
+
+    this.levelManager.advance(); 
+    this.waveManager.currentWave = this.levelManager.currentLevel; 
+    
+    this.player.resetAmmo(); 
+    this.saveCurrentState();
+    
+    if (this.stageManager.hasStoryAfter(completedLevel)) {
+      this.stageManager.startStoryAfter(completedLevel);
+      this.isPlayingStoryAfter = true;
+      this.currentState = CONSTANTS.STATES.STORY_CUTSCENE;
+      this.uiManager.prologueIndex = 0;
+      this.uiManager.prologueCharIndex = 0;
+      this.uiManager.prologueFade = 0;
+    } else {
+      this.currentState = CONSTANTS.STATES.SHOP;
+      this.shopManager.open();
     }
   }
 
@@ -409,6 +444,35 @@ _advanceStoryCutscene() {
 
   update(delta) {
     this.gameFrame++;
+    
+    // --- Boss Defeat Delay Handling ---
+    if (this.bossDefeatTimer > 0) {
+        this.bossDefeatTimer -= delta;
+        if (this.currentBgmTrack) this.currentBgmTrack.pause();
+        
+        // Handle Boss Defeat SFX specifically (Stop after 5s)
+        const completedLevel = this.levelManager.currentLevel;
+        let defeatSfx = null;
+        if (completedLevel === 5) defeatSfx = this.assetLoader?.audio?.sfx_kap_defeat;
+        else if (completedLevel === 10) defeatSfx = this.assetLoader?.audio?.sfx_ian_defeat;
+        else if (completedLevel === 15) defeatSfx = this.assetLoader?.audio?.sfx_malupiton_defeat;
+
+        if (this.bossDefeatTimer <= 0) {
+            if (defeatSfx) {
+                defeatSfx.pause();
+                defeatSfx.currentTime = 0;
+            }
+            this._finishBossDefeatDelay();
+            return;
+        }
+        
+        // Still update visuals but pause logic
+        if (this.player) this.player.update(delta);
+        if (this.waveManager) this.waveManager.update(delta);
+        if (this.uiManager) this.uiManager.update(delta);
+        return;
+    }
+
     this._updateAudio();
     if (this.uiManager) this.uiManager.update(delta);
     if ((this.uiManager.showInGameTutorial || this.uiManager.isPaused || this.uiManager.showDynamicTutorial) && this.currentState === CONSTANTS.STATES.PLAYING) return;
@@ -449,8 +513,28 @@ _advanceStoryCutscene() {
     }
 
     if (this.waveManager.isWaveComplete()) {
-      // Get the completed level BEFORE advancing
       const completedLevel = this.levelManager.currentLevel;
+      const isBossLevel = (completedLevel % 5 === 0);
+
+      // Trigger 5-second delay for boss levels
+      if (isBossLevel && this.bossDefeatTimer <= 0) {
+          this.bossDefeatTimer = 5000;
+          if (this.currentBgmTrack) this.currentBgmTrack.pause();
+
+          // Trigger the Defeat Music/Voiceline
+          let defeatSfx = null;
+          if (completedLevel === 5) defeatSfx = this.assetLoader?.audio?.bgm_kap_defeat;
+          else if (completedLevel === 10) defeatSfx = this.assetLoader?.audio?.bgm_ian_defeat;
+          else if (completedLevel === 15) defeatSfx = this.assetLoader?.audio?.bgm_malupiton_defeat;
+
+          if (defeatSfx) {
+              defeatSfx.currentTime = 0;
+              defeatSfx.volume = 0.8;
+              const p = defeatSfx.play();
+              if (p && p.catch) p.catch(()=>{});
+          }
+          return;
+      }
       
       this.levelManager.advance(); 
       this.waveManager.currentWave = this.levelManager.currentLevel; 

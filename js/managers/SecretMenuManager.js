@@ -46,6 +46,19 @@
         handleShortcut() {
             if (!this.game) this.game = window.gameInstance;
 
+            // 1. STATE GUARD: Only allow on Main Menu
+            if (this.game && this.game.currentState !== CONSTANTS.STATES.MAIN_MENU) {
+                console.log("[SecretMenu] Access denied: Must be in Main Menu.");
+                return;
+            }
+
+            // 2. PIN GUARD: Prompt for 004
+            const pin = prompt("ENTER SECRET OVERRIDE PIN:");
+            if (pin !== "004") {
+                alert("ACCESS DENIED.");
+                return;
+            }
+
             // Auto-initialize ONLY if engine not found
             if (!this.game) {
                 const canvas = document.getElementById('gameCanvas');
@@ -197,14 +210,25 @@
             game.player.kita = (this.selectedLevel - 1) * 350; 
             game.player.resetAmmo();
 
-            // Gear Unlocks
+            // === FULL UNLOCKS & GOD MODE (SECRET MENU ONLY) ===
             const arsenal = game.player.arsenal;
             const specials = game.player.specials;
-            if (this.selectedLevel >= 6) arsenal.pares.unlocked = true;
-            if (this.selectedLevel >= 11) arsenal.rice.unlocked = true;
-            if (this.selectedLevel >= 4) specials.calamansi.unlocked = true;
-            if (this.selectedLevel >= 8) specials.chili.unlocked = true;
+            
+            // Unlock all Weapons + SET TO INFINITE + NO COOLDOWN
+            Object.values(arsenal).forEach(weapon => {
+                weapon.unlocked = true;
+                weapon.isInfinite = true; // GOD MODE: No ammo depletion
+                weapon.cooldown = 0;      // GOD MODE: No reload time
+            });
+            
+            // Unlock all Specials + NO COOLDOWN
+            Object.values(specials).forEach(special => {
+                special.unlocked = true;
+                special.cooldown = 0;     // GOD MODE: Instant special reuse
+            });
+
             game.player.selectWeapon('mami');
+            game.player.resetAmmo(); // Apply the infinite setting immediately
 
             // Cleanup World
             game.waveManager.clearAllEnemies();
