@@ -214,7 +214,7 @@ class BossMalu extends Enemy {
       this.isInvincible = false;
       if (!this.auraTauntPlayed) {
         this.auraTauntPlayed = true;
-        this._playRandomSfx(['sfx_malupiton_win', 'sfx_malupiton_win_voiceline'], 0.8);
+        this._playRandomSfx(['sfx_malupiton_win'], 0.8);
       }
     }
   }
@@ -247,10 +247,23 @@ class BossMalu extends Enemy {
         this.deathAnimTimer = 0;
         this.deathHoldTimer = 0;
         this.isInvincible = false;
+
+        // --- STOP AURA SFX & RESTORE BGM ---
+        const winSfx = this.game.assetLoader?.audio?.['sfx_malupiton_win'];
+        if (winSfx) {
+            winSfx.loop = false;
+            winSfx.pause();
+            winSfx.currentTime = 0;
+        }
+        const bgm = this.game.assetLoader?.audio?.['bgm_malupiton_background'];
+        if (bgm && bgm === this.game.currentBgmTrack) {
+            bgm.volume = this.game.uiManager.masterVolume * 0.3; // Restore to default BGM volume
+        }
+
         if (!this.rewardGiven) {
           this.rewardGiven = true;
           if (this.game.player) this.game.player.addKita(this.kitaReward);
-          this._playRandomSfx(['sfx_malupiton_defeat', 'sfx_malupiton_defeat1'], 0.9);
+      
         }
       }
     }
@@ -462,6 +475,24 @@ class BossMalu extends Enemy {
     this.currentRow = 2;
     this.currentFrame = 0;
     this.isInvincible = false;
+
+    // --- LOOP SFX_MALUPITON_WIN & LOWER BGM ---
+    const bgmKey = 'bgm_malupiton_background';
+    const bgm = this.game.assetLoader?.audio?.[bgmKey];
+    const winSfx = this.game.assetLoader?.audio?.['sfx_malupiton_win'];
+    
+    if (bgm && bgm === this.game.currentBgmTrack) {
+        bgm.volume = 0; // Completely mute background during Aura phase
+    }
+
+    if (winSfx) {
+        winSfx.loop = true;
+        if (winSfx.paused) {
+            winSfx.currentTime = 0;
+            winSfx.volume = this.game.uiManager.masterVolume * 0.9;
+            winSfx.play().catch(()=>{});
+        }
+    }
 
     this.auraDamageTimer += delta;
     if (this.auraDamageTimer >= this.auraTickInterval) {

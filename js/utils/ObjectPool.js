@@ -766,7 +766,7 @@ class PooledEnemy {
         const deathAudio = this.game.assetLoader.audio?.[randomSound];
         if (deathAudio) {
           deathAudio.currentTime = 0;
-          deathAudio.volume = 0.8;
+          deathAudio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1);
           this._playAudioSafe(deathAudio);
         }
       }

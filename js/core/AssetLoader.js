@@ -72,6 +72,8 @@ class AssetLoader {
       boss_mastermind: 'assets/animations/boss/boss3_malu.png',
       boss3_proj: 'assets/animations/boss/boss3_proj.png',
       boss3_aura: 'assets/animations/boss/boss3_aura.png',
+      jo_reload: 'assets/animations/jo-reload.png',
+      jo_reload2: 'assets/animations/jo-reload (2).png',
 
       // Story/Prologue Assets
       story1: 'assets/story/story1.png',
@@ -160,6 +162,7 @@ const audioSources = {
       bgm_people: 'assets/audio/peopletalking.mp3',
 
       bgm_main_menu: 'assets/audio/UI/MainMusic.mp3',
+      bgm_cutscene: 'assets/audio/cutscene_bgm.mp3',
 
       // Jo & UI
       sfx_money: 'assets/audio/moneyget.mp3',
@@ -171,10 +174,12 @@ const audioSources = {
       sfx_burn_tick: 'assets/audio/UI/BurningTick.wav',
       sfx_cash_register: 'assets/audio/UI/CashRegister.wav',
       sfx_locked: 'assets/audio/UI/Locked.wav',
+      sfx_warning: 'assets/audio/warning_beep.mp3',
       sfx_pause_menu: 'assets/audio/UI/PauseMenu.wav',
       sfx_button_hover: 'assets/audio/UI/ButtonHover.wav',
       sfx_defeat: 'assets/audio/UI/Defeat.wav', 
       sfx_victory: 'assets/audio/UI/VictoryTriumph.wav',
+      bgm_win_game: 'assets/audio/win_game1.mp3',
       sfx_stun: 'assets/audio/UI/PauseMenu.wav',
       sfx_summon: 'assets/audio/UI/ButtonHover.wav',
 
@@ -257,7 +262,42 @@ const audioSources = {
       sfx_mami_impact: 'assets/audio/Impacts/Mami Impact.wav',
       sfx_rice_sizzle: 'assets/audio/Impacts/Rice Sizzle.wav',
       sfx_sticky: 'assets/audio/ui/stickysound.wav',
+      sfx_click: 'assets/audio/click_buttons.mp3',
+      sfx_loading: 'assets/audio/loading.mp3',
 
+      // --- VOICE PROLOGUES ---
+      v_prologue_1: 'assets/audio/voice_prologue/v_prologue_1.mp3',
+      v_prologue_2: 'assets/audio/voice_prologue/v_prologue_2.mp3',
+      v_prologue_3: 'assets/audio/voice_prologue/v_prologue_3.mp3',
+      v_prologue_4: 'assets/audio/voice_prologue/v_prologue_4.mp3',
+      v_prologue_5: 'assets/audio/voice_prologue/v_prologue_5.mp3',
+      v_prologue_6: 'assets/audio/voice_prologue/v_prologue_6.mp3',
+
+      v_boss1_before_1: 'assets/audio/voice_prologue/v_boss1_before_1.mp3',
+      v_boss1_before_2: 'assets/audio/voice_prologue/v_boss1_before_2.mp3',
+      v_boss1_before_3: 'assets/audio/voice_prologue/v_boss1_before_3.mp3',
+      v_boss1_after_1: 'assets/audio/voice_prologue/v_boss1_after_1.mp3',
+      v_boss1_after_2: 'assets/audio/voice_prologue/v_boss1_after_2.mp3',
+      v_boss1_after_3: 'assets/audio/voice_prologue/v_boss1_after_3.mp3',
+
+      v_boss2_before_1: 'assets/audio/voice_prologue/v_boss2_before_1.mp3',
+      v_boss2_before_2: 'assets/audio/voice_prologue/v_boss2_before_2.mp3',
+      v_boss2_before_3: 'assets/audio/voice_prologue/v_boss2_before_3.mp3',
+      v_boss2_after_1: 'assets/audio/voice_prologue/v_boss2_after_1.mp3',
+      v_boss2_after_2: 'assets/audio/voice_prologue/v_boss2_after_2.mp3',
+      v_boss2_after_3: 'assets/audio/voice_prologue/v_boss2_after_3.mp3',
+
+      v_boss3_before_1: 'assets/audio/voice_prologue/v_boss3_before_1.mp3',
+      v_boss3_before_2: 'assets/audio/voice_prologue/v_boss3_before_2.mp3',
+      v_boss3_before_3: 'assets/audio/voice_prologue/v_boss3_before_3.mp3',
+      
+      v_ending_1: 'assets/audio/voice_prologue/v_ending_1.mp3',
+      v_ending_2: 'assets/audio/voice_prologue/v_ending_2.mp3',
+      v_ending_3: 'assets/audio/voice_prologue/v_ending_3.mp3',
+      v_ending_4: 'assets/audio/voice_prologue/v_ending_4.mp3',
+      v_ending_5: 'assets/audio/voice_prologue/v_ending_5.mp3',
+      v_ending_6: 'assets/audio/voice_prologue/v_ending_6.mp3',
+      v_ending_7: 'assets/audio/voice_prologue/v_ending_7.mp3',
     };
 
     const imageEntries = Object.entries(imageSources);
@@ -302,21 +342,45 @@ const audioSources = {
       this.images[key] = img;
     });
 
-    // --- UPDATED AUDIO LOADING LOGIC ---
+    // --- UPDATED AUDIO LOADING LOGIC (Supports .mp3 / .wav Auto-Fallback) ---
     audioEntries.forEach(([key, src]) => {
       const audio = new Audio();
-      audio.addEventListener('canplaythrough', () => this._onAssetLoaded(), { once: true });
       
-      // Fallback: If audio fails, replace with a dummy object so .play() doesn't crash the game
-      audio.addEventListener('error', () => {
-        console.warn(`[AssetLoader] Missing audio: ${src}. Skipping safely.`);
-        this.audio[key] = { 
-            play: () => {}, 
-            pause: () => {}, 
-            currentTime: 0 
-        };
-        this._onAssetLoaded();
-      }, { once: true });
+      const onCanPlay = () => this._onAssetLoaded();
+      
+      const onError = () => {
+        // If the primary source fails, try the alternative extension (.mp3 <-> .wav)
+        let altSrc = null;
+        if (src.endsWith('.mp3')) altSrc = src.replace('.mp3', '.wav');
+        else if (src.endsWith('.wav')) altSrc = src.replace('.wav', '.mp3');
+
+        if (altSrc) {
+            console.log(`[AssetLoader] Retrying ${key} with alternative format: ${altSrc}`);
+            const altAudio = new Audio();
+            
+            altAudio.addEventListener('canplaythrough', () => {
+                this.audio[key] = altAudio; // Replace the original entry with the working one
+                this._onAssetLoaded();
+            }, { once: true });
+            
+            altAudio.addEventListener('error', () => {
+                // Both formats failed: Use a dummy object to prevent crashes
+                console.warn(`[AssetLoader] Missing audio: ${key} (Tried .mp3 and .wav). Skipping safely.`);
+                this.audio[key] = { play: () => {}, pause: () => {}, currentTime: 0 };
+                this._onAssetLoaded();
+            }, { once: true });
+            
+            altAudio.src = altSrc;
+        } else {
+            // No alternative extension to try
+            console.warn(`[AssetLoader] Missing audio: ${src}. Skipping safely.`);
+            this.audio[key] = { play: () => {}, pause: () => {}, currentTime: 0 };
+            this._onAssetLoaded();
+        }
+      };
+
+      audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+      audio.addEventListener('error', onError, { once: true });
 
       audio.src = src;
       this.audio[key] = audio;

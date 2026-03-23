@@ -35,6 +35,18 @@ class Game {
     this.lastKeyPressState = {};
     this.enemyProjectiles = [];
     
+    // --- Overlay / Cinematic Tracking ---
+    this.overlayTimer = 0;
+    this.overlayType = null; // 'WAVE_START', 'BOSS_WARNING', 'LEVEL_COMPLETE'
+    this.overlayText = "";
+    this.overlaySubtext = "";
+    
+    // --- Story Voice Tracking ---
+    this.currentVoiceTrack = null;
+    
+    // --- Boss Defeat Delay Tracking ---
+    this.bossDefeatTimer = 0;
+    
     this._bindFSMInput();
     this._bindGlobalUI(); 
 
@@ -99,6 +111,12 @@ class Game {
   }
 
   saveCurrentState() {
+    // === BLOCK AUTO-SAVE IN GOD MODE ===
+    if (window.isSecretMenuJumped) {
+        console.log("[SaveManager] Auto-save blocked: Secret Menu / God Mode active.");
+        return;
+    }
+
     const state = this.saveManager.state;
     state.kita = this.player.kita;
     state.currentLevel = this.waveManager.currentWave;
@@ -139,10 +157,24 @@ class Game {
         return;
       }
 
+      if (key === 'escape') {
+          if (this.currentState === CONSTANTS.STATES.PLAYING || this.currentState === CONSTANTS.STATES.SHOP) {
+              if (this.uiManager.isSettingsOpen) {
+                  this.uiManager._closeSettings();
+              } else {
+                  this.uiManager._openSettings();
+              }
+              return;
+          }
+      }
+
       if (this.currentState === CONSTANTS.STATES.MAIN_MENU) {
-        if (key === "1") this.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
-        else if (key === "2") this.loadSavedGame(); 
-        else if (key === "3") this.quitGame();
+        if (key === "n") this.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
+        else if (key === "l") this.loadSavedGame(); 
+        else if (key === "q") this.quitGame();
+      }
+      else if (this.bossDefeatTimer > 0 && (key === " " || key === "enter")) {
+        this._finishBossDefeatDelay();
       }
       else if (this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
         if (key === "e") { this.startNewGame('easy'); }
@@ -174,15 +206,14 @@ class Game {
         }
       }
       else if (this.currentState === CONSTANTS.STATES.SHOP) {
-        if (key >= "1" && key <= "6") this.shopManager.handleSelection(parseInt(key)); 
-
+        // Keep mouse interaction for shop, but remove number shortcuts to stay consistent.
         if (key === "enter") {
           this._finishShoppingAndStartNextLevel();
         }
       }
       else if (this.currentState === CONSTANTS.STATES.GAMEOVER) {
         if (key === "r") location.reload();
-        else if (key === "2") this.loadSavedGame(); 
+        else if (key === "l") this.loadSavedGame(); 
       }
     });
 
@@ -191,9 +222,32 @@ class Game {
     });
   }
 
+  _stopVoice() {
+    if (this.currentVoiceTrack) {
+      this.currentVoiceTrack.pause();
+      this.currentVoiceTrack.currentTime = 0;
+      this.currentVoiceTrack = null;
+    }
+  }
+
+  _playVoice(audioKey) {
+    this._stopVoice();
+    if (!audioKey) return;
+    
+    const voice = this.assetLoader?.audio?.[audioKey];
+    if (voice) {
+      this.currentVoiceTrack = voice;
+      // Increase voice volume to be more prominent (100% of master)
+      voice.volume = this.uiManager.masterVolume;
+      const p = voice.play();
+      if (p && p.catch) p.catch(()=>{});
+    }
+  }
+
   _startStoryOrLevel() {
     const currentLevel = this.levelManager.currentLevel;
-    const shouldPlayGlobalPrologue = currentLevel === 1 && !this.saveManager.state.hasSeenPrologue;
+    // --- ALWAYS PLAY PROLOGUE ON LEVEL 1 ---
+    const shouldPlayGlobalPrologue = currentLevel === 1;
 
     if (shouldPlayGlobalPrologue) {
       this.stageManager.startGlobalPrologue();
@@ -203,6 +257,11 @@ class Game {
       this.uiManager.prologueIndex = 0;
       this.uiManager.prologueCharIndex = 0;
       this.uiManager.prologueFade = 0;
+      
+      // Play first voice line
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
+      
       this.saveCurrentState();
     } else if (this.stageManager.hasStoryBefore(currentLevel)) {
       this.stageManager.startStoryBefore(currentLevel);
@@ -211,6 +270,10 @@ class Game {
       this.uiManager.prologueIndex = 0;
       this.uiManager.prologueCharIndex = 0;
       this.uiManager.prologueFade = 0;
+      
+      // Play first voice line
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
     } else {
       this._startLevel();
     }
@@ -223,15 +286,26 @@ _advanceStoryCutscene() {
     this.uiManager.prologueFade = 0;
     
     if (!hasMore) {
+      this._stopVoice(); // Stop voice when cutscene ends
       if (this.isPlayingStoryAfter) {
         // --- FIXED: CHECK IF IT'S THE FINAL LEVEL ---
         if (this.levelManager.currentLevel >= this.levelManager.maxLevel) {
-            // GAME BEATEN! Go to Main Menu instead of the Shop.
+            // Play Final Win Audio
+            const winSfx = this.assetLoader?.audio?.bgm_win_game;
+            if (winSfx) {
+                if (this.currentBgmTrack) this.currentBgmTrack.pause();
+                winSfx.currentTime = 0;
+                winSfx.volume = 0.8;
+                winSfx.play().catch(()=>{});
+            }
+
+            // --- SHOW GRAND FINALE OVERLAY AFTER CUTSCENE ---
+            this._showOverlay('GAME_COMPLETE', "CONGRATULATIONS!", "for finishing the game :)", 60000);
+            
             this.currentState = CONSTANTS.STATES.MAIN_MENU;
             this.waveManager.clearAllEnemies();
             this.player.projectilePool.releaseAll();
             
-            // Stop the music so the Main Menu BGM can take over
             if (this.currentBgmTrack) {
                 this.currentBgmTrack.pause();
                 this.currentBgmTrack.currentTime = 0;
@@ -240,18 +314,87 @@ _advanceStoryCutscene() {
             // Normal progression: Go to the Shop
             this.currentState = CONSTANTS.STATES.SHOP;
             this.shopManager.open();
+            if (this.uiManager) this.uiManager._updateShopUI();
         }
       } else {
         this._startLevel();
       }
+    } else {
+      // Play next voice line
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
+    }
+  }
+
+  _finishBossDefeatDelay() {
+    this.bossDefeatTimer = 0;
+    const completedLevel = this.levelManager.currentLevel;
+
+    // Stop all possible boss defeat SFX
+    const defeatKeys = ['sfx_kap_defeat', 'sfx_ian_defeat', 'sfx_malupiton_defeat'];
+    defeatKeys.forEach(key => {
+        const audio = this.assetLoader?.audio?.[key];
+        if (audio) { audio.pause(); audio.currentTime = 0; }
+    });
+    
+    // Stop any remaining level SFX (stirring, attacks, etc) before leaving
+    this._stopAllLevelSFX();
+
+    this.levelManager.advance(); 
+    this.waveManager.currentWave = this.levelManager.currentLevel; 
+    
+    this.player.resetAmmo(); 
+    this.saveCurrentState();
+    
+    if (this.stageManager.hasStoryAfter(completedLevel)) {
+      this.stageManager.startStoryAfter(completedLevel);
+      this.isPlayingStoryAfter = true;
+      this.currentState = CONSTANTS.STATES.STORY_CUTSCENE;
+      this.uiManager.prologueIndex = 0;
+      this.uiManager.prologueCharIndex = 0;
+      this.uiManager.prologueFade = 0;
+      
+      // Play first voice line of aftermath
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
+    } else {
+      this.currentState = CONSTANTS.STATES.SHOP;
+      this.shopManager.open();
+      if (this.uiManager) this.uiManager._updateShopUI();
+    }
+  }
+
+  _showOverlay(type, text, subtext = "", duration = 2500) {
+    this.overlayType = type;
+    this.overlayText = text;
+    this.overlaySubtext = subtext;
+    this.overlayTimer = duration;
+
+    // Trigger Warning SFX for bosses
+    if (type === 'BOSS_WARNING') {
+        const sfx = this.assetLoader?.audio?.sfx_warning; // Use the beep sound
+        if (sfx) { sfx.currentTime = 0; sfx.volume = 0.8; sfx.play().catch(()=>{}); }
     }
   }
 
   _startLevel() {
     this.currentState = CONSTANTS.STATES.PLAYING;
-    const waveEnemies = this.stageManager.getWaveEnemies(this.levelManager.currentLevel);
+    const currentLevel = this.levelManager.currentLevel;
+    const waveEnemies = this.stageManager.getWaveEnemies(currentLevel);
     this.waveManager.startWave(waveEnemies);
     this.player.resetAmmo();
+
+    // Show Level Start Overlay
+    const isBoss = currentLevel % 5 === 0;
+    if (isBoss) {
+        let bossName = "UNKNOWN BOSS";
+        if (currentLevel === 5) bossName = "INSPECTOR KAP NIÑO";
+        else if (currentLevel === 10) bossName = "VLOGGER IAN";
+        else if (currentLevel === 15) bossName = "THE MASTERMIND";
+        this._showOverlay('BOSS_WARNING', "WARNING!", `BOSS DETECTED: ${bossName}`, 3500);
+    } else {
+        this._showOverlay('WAVE_START', `LEVEL ${currentLevel}`, "READY? DEFEND THE CART!", 2000);
+    }
   }
 
   _finishShoppingAndStartNextLevel() {
@@ -265,6 +408,10 @@ _advanceStoryCutscene() {
       this.uiManager.prologueIndex = 0;
       this.uiManager.prologueCharIndex = 0;
       this.uiManager.prologueFade = 0;
+
+      // Play first voice line
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
     } else {
       this._startLevel();
     }
@@ -275,8 +422,41 @@ _advanceStoryCutscene() {
   }
 
   startWithLoadingScreen(onProgress, onComplete) {
+    // Get loading audio from DOM
+    this.loadingAudio = document.getElementById('audio-loading');
+    if (this.loadingAudio) {
+      this.loadingAudio.volume = 0.5;
+      this.loadingAudio.muted = false;
+    }
+
+    const playLoadingAudio = () => {
+      if (this.loadingAudio && this.loadingAudio.paused) {
+        this.loadingAudio.play().catch(() => {});
+      }
+    };
+
+    // Attempt to play immediately (often blocked, but worth a try)
+    playLoadingAudio();
+
+    // Interaction triggers to bypass autoplay blocks
+    window.addEventListener('click', playLoadingAudio, { once: true });
+    window.addEventListener('mousedown', playLoadingAudio, { once: true });
+    window.addEventListener('keydown', playLoadingAudio, { once: true });
+    window.addEventListener('touchstart', playLoadingAudio, { once: true });
+
     this.assetLoader.loadAll(
       () => {
+        // Cleanup interaction listeners
+        window.removeEventListener('click', playLoadingAudio);
+        window.removeEventListener('mousedown', playLoadingAudio);
+        window.removeEventListener('keydown', playLoadingAudio);
+        window.removeEventListener('touchstart', playLoadingAudio);
+
+        if (this.loadingAudio) {
+          this.loadingAudio.pause();
+          this.loadingAudio.currentTime = 0;
+        }
+
         this.saveManager.load();
         this.levelManager.init();
         
@@ -302,6 +482,9 @@ _advanceStoryCutscene() {
   }
 
   loadSavedGame() {
+    // Reset jump flag to ensure this session's progress can be auto-saved.
+    window.isSecretMenuJumped = false;
+
     this.saveManager.load();
     const state = this.saveManager.state;
     
@@ -314,6 +497,8 @@ _advanceStoryCutscene() {
     this.currentDifficultyKey = savedDifficultyKey;
     this.currentDifficulty = CONSTANTS.DIFFICULTY[savedDifficultyKey] || CONSTANTS.DIFFICULTY.medium;
     this.levelManager.currentDifficulty = this.currentDifficulty;
+    
+    // syncWithSave cleans up stats and removes God Mode overrides.
     this.player.syncWithSave(state);
     
     this.player.hp = this.player.maxHp;
@@ -347,13 +532,22 @@ _advanceStoryCutscene() {
   }
 
   _updateAudio() {
-    // 1. We added MAIN_MENU and DIFFICULTY_SELECT to the active states
+    // 1. Check if Secret Menu is open - if so, silence everything and return
+    if ((window.secretMenu && window.secretMenu.isMenuOpen)) {
+      if (this.currentBgmTrack) this.currentBgmTrack.pause();
+      return;
+    }
+
+    // 2. Determine active state
+    const isCutscene = this.currentState === CONSTANTS.STATES.STORY_CUTSCENE || this.currentState === CONSTANTS.STATES.PROLOGUE;
+    
     const isActiveState = (
       this.currentState === CONSTANTS.STATES.PLAYING || 
       this.currentState === CONSTANTS.STATES.SHOP || 
       this.currentState === CONSTANTS.STATES.ARSENAL_SELECT ||
       this.currentState === CONSTANTS.STATES.MAIN_MENU ||
-      this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT
+      this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT ||
+      isCutscene
     );
 
     if (!isActiveState) {
@@ -361,43 +555,91 @@ _advanceStoryCutscene() {
       return;
     }
 
-    // 2. Check which track we should be playing
+    // 3. Check which track we should be playing
     let targetBgmKey = null;
-    if (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
-      targetBgmKey = 'bgm_main_menu'; // Play the new menu music!
-    } else {
+    let targetVolume = 0.3; // Default BGM volume
+    
+    if (isCutscene) {
+        targetBgmKey = 'bgm_cutscene';
+        targetVolume = 0.2; // cutscene_bgm volume
+    } else if (window.isSecretMenuJumped && (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT)) {
+        targetBgmKey = null; 
+    } else if (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
+      targetBgmKey = 'bgm_main_menu'; 
+    } else if (this.currentState === CONSTANTS.STATES.PLAYING || this.currentState === CONSTANTS.STATES.ARSENAL_SELECT) {
       const levelData = this.levelManager.getLevelData();
-      targetBgmKey = levelData.bgm; // Play normal level music
+      targetBgmKey = levelData.bgm; 
     }
 
-    // 3. Handle changing the tracks
+    // 4. Handle changing the tracks
     if (this.currentBgmKey !== targetBgmKey) {
       if (this.currentBgmTrack) {
         this.currentBgmTrack.pause();
         this.currentBgmTrack.currentTime = 0; 
       }
+      
       this.currentBgmKey = targetBgmKey;
-      this.currentBgmTrack = this.assetLoader?.audio?.[targetBgmKey];
+      this.currentBgmTrack = targetBgmKey ? this.assetLoader?.audio?.[targetBgmKey] : null;
 
       if (this.currentBgmTrack) {
         this.currentBgmTrack.loop = true;
-        this.currentBgmTrack.volume = 0.3; 
+        this.currentBgmTrack.volume = this.uiManager.masterVolume * targetVolume; 
         
         const p = this.currentBgmTrack.play();
-        if (p && p.catch) p.catch(() => {
-            // If the browser blocks autoplay upon opening the tab, don't crash.
-            // Just wait for the user to click something.
-        });
+        if (p && p.catch) p.catch(() => {});
       }
-    } else if (this.currentBgmTrack && this.currentBgmTrack.paused) {
-      // If the track is paused (likely blocked by browser), try to play it again
-      const p = this.currentBgmTrack.play();
-      if (p && p.catch) p.catch(() => {});
+    } else if (this.currentBgmTrack) {
+      // Ensure volume is always synced even if track hasn't changed
+      this.currentBgmTrack.volume = this.uiManager.masterVolume * targetVolume;
+      if (this.currentBgmTrack.paused) {
+        const p = this.currentBgmTrack.play();
+        if (p && p.catch) p.catch(() => {});
+      }
     }
   }
 
   update(delta) {
     this.gameFrame++;
+    this._updateAudio();
+    
+    // --- Cinematic Overlay Timing ---
+    if (this.overlayTimer > 0) {
+        this.overlayTimer -= delta;
+        if (this.overlayTimer <= 0) {
+            this.overlayType = null;
+            // If it was the final victory, we might want to stay on the win screen 
+            // but the drawing logic will handle that.
+        }
+    }
+
+    // --- Boss Defeat Delay Handling ---
+    if (this.bossDefeatTimer > 0) {
+        this.bossDefeatTimer -= delta;
+        if (this.currentBgmTrack) this.currentBgmTrack.pause();
+        
+        // Handle Boss Defeat SFX specifically (Stop after 5s)
+        const completedLevel = this.levelManager.currentLevel;
+        let defeatSfx = null;
+        if (completedLevel === 5) defeatSfx = this.assetLoader?.audio?.sfx_kap_defeat;
+        else if (completedLevel === 10) defeatSfx = this.assetLoader?.audio?.sfx_ian_defeat;
+        else if (completedLevel === 15) defeatSfx = this.assetLoader?.audio?.sfx_malupiton_defeat;
+
+        if (this.bossDefeatTimer <= 0) {
+            if (defeatSfx) {
+                defeatSfx.pause();
+                defeatSfx.currentTime = 0;
+            }
+            this._finishBossDefeatDelay();
+            return;
+        }
+        
+        // Still update visuals but pause logic
+        if (this.player) this.player.update(delta);
+        if (this.waveManager) this.waveManager.update(delta);
+        if (this.uiManager) this.uiManager.update(delta);
+        return;
+    }
+
     this._updateAudio();
     if (this.uiManager) this.uiManager.update(delta);
     if ((this.uiManager.showInGameTutorial || this.uiManager.isPaused || this.uiManager.showDynamicTutorial) && this.currentState === CONSTANTS.STATES.PLAYING) return;
@@ -410,23 +652,32 @@ _advanceStoryCutscene() {
     if (this.currentState === CONSTANTS.STATES.PLAYING) {
         this._updatePlaying();
     }
+  }
+
+  _stopAllLevelSFX() {
+    if (!this.assetLoader || !this.assetLoader.audio) return;
     
-    // --- FAST AUTO-TRANSITION TO SHOP! ---
-    if (this.currentState === CONSTANTS.STATES.VICTORY) {
-        if (this.victoryTimer === undefined) this.victoryTimer = 0;
-        this.victoryTimer += delta;
-        
-        if (this.victoryTimer > 1500) {
-            this.victoryTimer = 0; 
-            this.currentState = CONSTANTS.STATES.SHOP;
-            this.shopManager.open();
-        }
-    }
+    // UI/BGM/Voice sounds that should be allowed to play anywhere or manage themselves
+    const keepPlaying = [
+      'sfx_victory', 'sfx_defeat', 'sfx_click', 'sfx_cash_register', 
+      'sfx_locked', 'sfx_button_hover', 'sfx_pause_menu'
+    ];
+    
+    Object.entries(this.assetLoader.audio).forEach(([key, audio]) => {
+      if (key.startsWith('bgm_') || key.startsWith('v_')) return; 
+      if (keepPlaying.includes(key)) return;
+      if (key.endsWith('_defeat')) return; // Allow boss defeat sounds to play during delay
+      
+      if (audio instanceof Audio && !audio.paused) {
+        audio.pause();
+      }
+    });
   }
 
   _updatePlaying() {
     if (this.player.isDead()) {
       this.currentState = CONSTANTS.STATES.GAMEOVER;
+      this._stopAllLevelSFX();
       const sfx = this.assetLoader?.audio?.sfx_defeat;
       if (sfx) { 
           sfx.currentTime = 0; 
@@ -438,8 +689,45 @@ _advanceStoryCutscene() {
     }
 
     if (this.waveManager.isWaveComplete()) {
-      // Get the completed level BEFORE advancing
       const completedLevel = this.levelManager.currentLevel;
+      const isBossLevel = (completedLevel % 5 === 0);
+
+      // Trigger 5-second delay for boss levels
+      if (isBossLevel && this.bossDefeatTimer <= 0) {
+          this.bossDefeatTimer = 5000;
+          if (this.currentBgmTrack) this.currentBgmTrack.pause();
+          this._stopAllLevelSFX();
+
+
+          if (completedLevel === 15) {
+              this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "THE FINAL BLOW!", 5000);
+          } else {
+              this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "YOU ARE THE MASTER OF PARES!", 4500);
+          }
+
+          // Trigger the Defeat Music/Voiceline
+          let defeatSfx = null;
+          if (completedLevel === 5) defeatSfx = this.assetLoader?.audio?.sfx_kap_defeat;
+          else if (completedLevel === 10) defeatSfx = this.assetLoader?.audio?.sfx_ian_defeat;
+          else if (completedLevel === 15) defeatSfx = this.assetLoader?.audio?.sfx_malupiton_defeat;
+
+          if (defeatSfx) {
+              defeatSfx.currentTime = 0;
+              defeatSfx.volume = (this.uiManager.masterVolume || 1) * (this.uiManager.sfxVolume || 1) * 1.0;
+              const p = defeatSfx.play();
+              if (p && p.catch) p.catch(()=>{});
+          }
+
+          // Trigger General Boss Win Audio
+          const winSfx = this.assetLoader?.audio?.bgm_win_game;
+          if (winSfx) {
+              winSfx.currentTime = 0;
+              winSfx.volume = (this.uiManager.masterVolume || 1) * (this.uiManager.sfxVolume || 1) * 0.8;
+              const p = winSfx.play();
+              if (p && p.catch) p.catch(()=>{});
+          }
+          return;
+      }
       
       this.levelManager.advance(); 
       this.waveManager.currentWave = this.levelManager.currentLevel; 

@@ -34,11 +34,25 @@ class UIManager {
     this.isConfirmingHome = false;
     this.confirmHomeSource = null;
     this.confirmAction = null; // 'quit-home' | 'new-game-overwrite'
+    this.toastTimeout = null;
     
     this._setupHtmlButtons();
   }
 
   _setupHtmlButtons() {
+    // === NEW: GLOBAL BUTTON CLICK SOUND ===
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('button')) {
+        const sfx = this.game.assetLoader?.audio?.sfx_click;
+        if (sfx) {
+          sfx.currentTime = 0;
+          // Set to 100% relative to master volume
+          sfx.volume = this.masterVolume; 
+          sfx.play().catch(()=>{});
+        }
+      }
+    });
+
     const actions = {
       'btn-new-game': () => this._handleNewGameClick(),
       'btn-confirm-overlay-yes': () => this._handleOverlayConfirmYes(),
@@ -49,7 +63,11 @@ class UIManager {
       'btn-diff-medium': () => this._startNewGame('medium'),
       'btn-diff-hard': () => this._startNewGame('hard'),
       'btn-tut-next': () => this._advanceTutorial(),
-      'btn-visit-shop': () => { this.game.currentState = CONSTANTS.STATES.SHOP; this.game.shopManager.open(); },
+      'btn-visit-shop': () => { 
+        this.game.currentState = CONSTANTS.STATES.SHOP; 
+        this.game.shopManager.open(); 
+        this._updateShopUI();
+      },
       'btn-shop-mami': () => { this.game.shopManager.handleSelection(1); this._updateShopUI(); },
       'btn-shop-pares': () => { this.game.shopManager.handleSelection(2); this._updateShopUI(); },
       'btn-shop-rice': () => { this.game.shopManager.handleSelection(3); this._updateShopUI(); },
@@ -58,6 +76,10 @@ class UIManager {
       'btn-shop-garlic': () => { this.game.shopManager.handleSelection(6); this._updateShopUI(); },
       'btn-shop-done': () => this._finishShopping(),
       'btn-restart': () => location.reload(),
+      'btn-complete-close': () => {
+        this.game.overlayTimer = 0;
+        this.game.overlayType = null;
+      },
       
       'btn-pause-toggle': () => { this._togglePause(); },
       'btn-resume': () => { this._togglePause(); },
@@ -83,6 +105,9 @@ class UIManager {
           this.isPaused = false;
         }
         this.wasPausedBeforeSettings = false;
+      },
+      'btn-settings-x-home': () => {
+        this.isSettingsOpen = false;
       },
       'btn-back-home': () => { 
         this.isSettingsOpen = false;
@@ -125,7 +150,8 @@ class UIManager {
         this.confirmAction = 'quit-home';
       },
       'btn-dynamic-tut-next': () => this._advanceDynamicTutorial(),
-      'btn-dynamic-tut-gotit': () => this._closeDynamicTutorial()
+      'btn-dynamic-tut-gotit': () => this._closeDynamicTutorial(),
+      'btn-custom-alert-ok': () => this.hideCustomAlert()
     };
 
     for (const [id, action] of Object.entries(actions)) {
@@ -154,29 +180,24 @@ class UIManager {
     }
     
     // NEW: Separate volume sliders
-    const masterSlider = document.getElementById('slider-volume-master');
-    if (masterSlider) {
-      masterSlider.oninput = (e) => {
-        this.masterVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
-    
-    const bgmSlider = document.getElementById('slider-volume-bgm');
-    if (bgmSlider) {
-      bgmSlider.oninput = (e) => {
-        this.bgmVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
-    
-    const sfxSlider = document.getElementById('slider-volume-sfx');
-    if (sfxSlider) {
-      sfxSlider.oninput = (e) => {
-        this.sfxVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
+    const setupSliders = (ids, targetVar) => {
+      ids.forEach(id => {
+        const slider = document.getElementById(id);
+        if (slider) {
+          slider.oninput = (e) => {
+            const val = parseFloat(e.target.value);
+            this[targetVar] = val;
+            // Sync all sliders of the same type
+            document.querySelectorAll(`.${slider.className}`).forEach(s => s.value = val);
+            this._updateAllVolumes();
+          };
+        }
+      });
+    };
+
+    setupSliders(['slider-volume-master', 'slider-volume-master-home'], 'masterVolume');
+    setupSliders(['slider-volume-bgm', 'slider-volume-bgm-home'], 'bgmVolume');
+    setupSliders(['slider-volume-sfx', 'slider-volume-sfx-home'], 'sfxVolume');
 
     this.game.canvas.addEventListener('click', (e) => {
       // Resume instantly when pause screen is clicked
@@ -636,11 +657,15 @@ class UIManager {
   }
 
   _skipPrologue() {
+    // Stop any active voice track
+    this.game._stopVoice();
+
     // Skip entire cutscene and start level
     if (this.game.isPlayingStoryAfter) {
       // If skipping after-level story, go to shop
       this.game.currentState = CONSTANTS.STATES.SHOP;
       this.game.shopManager.open();
+      this._updateShopUI();
     } else {
       // If skipping before-level story, start level
       this.game._startLevel();
@@ -729,7 +754,13 @@ class UIManager {
     this._showScreen('screen-victory', state === CONSTANTS.STATES.VICTORY && !this.isSettingsOpen);
     this._showScreen('screen-shop', state === CONSTANTS.STATES.SHOP && !this.isSettingsOpen);
     this._showScreen('screen-gameover', state === CONSTANTS.STATES.GAMEOVER && !this.isSettingsOpen);
-    this._showScreen('screen-settings', this.isSettingsOpen && !this.isConfirmingHome);
+    this._showScreen('screen-game-complete', this.game.overlayType === 'GAME_COMPLETE' && this.game.overlayTimer > 0);
+    
+    // Toggle correct settings screen
+    const isHome = state === CONSTANTS.STATES.MAIN_MENU;
+    this._showScreen('screen-settings-home', this.isSettingsOpen && isHome);
+    this._showScreen('screen-settings', this.isSettingsOpen && !isHome && !this.isConfirmingHome);
+
     this._showScreen(
       'newgame-confirm-overlay',
       this.confirmAction === 'new-game-overwrite' || this.confirmAction === 'quit-home'
@@ -790,7 +821,6 @@ class UIManager {
       }
     }
 
-    if (state === CONSTANTS.STATES.SHOP) this._updateShopUI();
     if (state === CONSTANTS.STATES.VICTORY) {
         const stats = document.getElementById('victory-stats');
         if (stats) stats.innerText = `KITA EARNED: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`;
@@ -835,6 +865,40 @@ class UIManager {
     }
   }
 
+  showCustomAlert(title, message) {
+    const titleEl = document.getElementById('custom-alert-title');
+    const messageEl = document.getElementById('custom-alert-message');
+    if (titleEl) titleEl.innerText = title;
+    if (messageEl) messageEl.innerText = message;
+    this._showScreen('custom-alert-overlay', true);
+  }
+
+  hideCustomAlert() {
+    this._showScreen('custom-alert-overlay', false);
+  }
+
+  showToast(title, message) {
+    const titleEl = document.getElementById('toast-alert-title');
+    const messageEl = document.getElementById('toast-alert-message');
+    if (titleEl) titleEl.innerText = title;
+    if (messageEl) messageEl.innerText = message;
+    
+    this._showScreen('toast-alert-overlay', true);
+
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      this.hideToast();
+    }, 1500);
+  }
+
+  hideToast() {
+    this._showScreen('toast-alert-overlay', false);
+    if (this.toastTimeout) {
+      clearTimeout(this.toastTimeout);
+      this.toastTimeout = null;
+    }
+  }
+
   _updateShopUI() {
     const player = this.game.player;
     const shop = this.game.shopManager;
@@ -849,16 +913,16 @@ class UIManager {
       const upgradeCost = shop.getUpgradeCost(w);
       const isMax = weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL;
 
-      let content = `<span class="item-name">[${index + 1}] ${w.toUpperCase()}</span>`;
+      let content = `<span class="item-name" style="pointer-events:none;">[${index + 1}] ${w.toUpperCase()}</span>`;
       if (!weapon.unlocked) {
-        content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}</span>`;
-        btn.disabled = player.kita < weapon.baseCost;
+        content += `<span class="item-price" style="pointer-events:none;">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}</span>`;
+        btn.disabled = player.kita < weapon.baseCost; 
       } else if (isMax) {
-        content += `<span class="item-price">LVL: ${weapon.level} (MAX)</span>`;
-        btn.disabled = true;
+        content += `<span class="item-price" style="pointer-events:none;">LVL: ${weapon.level} (MAX)</span>`;
+        btn.disabled = true; 
       } else {
-        content += `<span class="item-price">LVL: ${weapon.level} ➔ ${weapon.level + 1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
-        btn.disabled = player.kita < upgradeCost;
+        content += `<span class="item-price" style="pointer-events:none;">LVL: ${weapon.level} ➔ ${weapon.level + 1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
+        btn.disabled = player.kita < upgradeCost; 
       }
       btn.innerHTML = content;
     });
@@ -866,18 +930,18 @@ class UIManager {
     // --- NEW: Update Specials [4, 5, 6] ---
     ['calamansi', 'chili', 'garlic'].forEach((s, index) => {
       const btn = document.getElementById(`btn-shop-${s}`);
-      if (!btn) return; // Note: Ensure you add <button id="btn-shop-garlic"> to your HTML!
+      if (!btn) return; 
       const special = player.specials[s];
       const cost = special.baseCost;
       const keyMap = ['4', '5', '6'];
 
-      let content = `<span class="item-name">[${keyMap[index]}] ${s.toUpperCase()}</span>`;
+      let content = `<span class="item-name" style="pointer-events:none;">[${keyMap[index]}] ${s.toUpperCase()}</span>`;
       if (!special.unlocked) {
-        content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
-        btn.disabled = player.kita < cost;
+        content += `<span class="item-price" style="pointer-events:none;">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
+        btn.disabled = player.kita < cost; 
       } else {
-        content += `<span class="item-price" style="color:#f39c12">UNLOCKED!</span>`;
-        btn.disabled = true;
+        content += `<span class="item-price" style="pointer-events:none; color:#f39c12">UNLOCKED!</span>`;
+        btn.disabled = true; 
       }
       btn.innerHTML = content;
     });
@@ -908,8 +972,74 @@ class UIManager {
     // Draw arrow BEFORE confirmation modal so it's visible
     this._drawTutorialArrow(ctx);
     
+    // NEW: DRAW CINEMATIC OVERLAYS (Start/Finish/Boss)
+    this._drawCinematicOverlay(ctx);
+    
     // Draw confirmation modal LAST (highest z-index)
     this._drawConfirmationModal(ctx);
+  }
+
+  _drawCinematicOverlay(ctx) {
+    if (!this.game.overlayType || this.game.overlayTimer <= 0) return;
+
+    const timer = this.game.overlayTimer;
+    const type = this.game.overlayType;
+    const text = this.game.overlayText;
+    const subtext = this.game.overlaySubtext;
+
+    ctx.save();
+
+    // 1. Draw Background Bar (Pixel/Bitmap Style)
+    const barHeight = 180;
+    const barY = (this.game.canvas.height - barHeight) / 2;
+    
+    // Entry/Exit Animation (Sliding from sides)
+    let offsetX = 0;
+    if (timer > 2000) offsetX = (timer - 2000) * 2; // Slide in
+    else if (timer < 500) offsetX = (500 - timer) * 2; // Slide out
+
+    // Dark Semi-transparent background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, barY, this.game.canvas.width, barHeight);
+
+    // Pixelated Borders
+    ctx.strokeStyle = (type === 'BOSS_WARNING') ? '#e74c3c' : '#f1c40f';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(0, barY, this.game.canvas.width, barHeight);
+    
+    // Extra decorative pixel stripes
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fillRect(0, barY - 10, this.game.canvas.width, 4);
+    ctx.fillRect(0, barY + barHeight + 6, this.game.canvas.width, 4);
+
+    // 2. Draw Text
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Main Header
+    const mainSize = (type === 'BOSS_WARNING') ? 80 : 64;
+    ctx.font = `900 ${mainSize}px "Comic Sans MS", sans-serif`;
+    
+    // Pulsing effect for Boss
+    if (type === 'BOSS_WARNING') {
+        const pulse = Math.sin(Date.now() * 0.015) * 10;
+        ctx.font = `900 ${mainSize + pulse}px "Comic Sans MS", sans-serif`;
+    }
+
+    // Shadow
+    ctx.fillStyle = '#000';
+    ctx.fillText(text, this.game.canvas.width / 2 + 4 + offsetX, barY + barHeight / 2 - 20 + 4);
+    
+    // Foreground Color
+    ctx.fillStyle = (type === 'BOSS_WARNING') ? '#e74c3c' : '#fff';
+    ctx.fillText(text, this.game.canvas.width / 2 + offsetX, barY + barHeight / 2 - 20);
+
+    // Subtext
+    ctx.font = `bold 28px "Comic Sans MS", sans-serif`;
+    ctx.fillStyle = (type === 'BOSS_WARNING') ? '#fff' : '#f1c40f';
+    ctx.fillText(subtext, this.game.canvas.width / 2 - offsetX, barY + barHeight / 2 + 40);
+
+    ctx.restore();
   }
 
   _drawTutorialArrow(ctx) {
@@ -1465,8 +1595,19 @@ _drawPlayingHUD(ctx) {
   _togglePause() {
     if (this.game.currentState !== CONSTANTS.STATES.PLAYING) return;
     this.isPaused = !this.isPaused;
-    const btn = document.getElementById('btn-pause-toggle');
-    if (btn) btn.innerText = this.isPaused ? '▶️' : '⏸️';
+    
+    const pauseShape = document.querySelector('#btn-pause-toggle .pause-shape');
+    const playShape = document.querySelector('#btn-pause-toggle .play-shape');
+    
+    if (pauseShape && playShape) {
+      if (this.isPaused) {
+        pauseShape.classList.add('hidden');
+        playShape.classList.remove('hidden');
+      } else {
+        pauseShape.classList.remove('hidden');
+        playShape.classList.add('hidden');
+      }
+    }
   }
 
   _drawShop(ctx) { }

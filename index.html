@@ -22,11 +22,18 @@
       </p>
     </div>
     
+    <audio id="audio-loading" src="assets/audio/loading.mp3" loop></audio>
+    
     <canvas id="gameCanvas" width="1280" height="720"></canvas>
     
     <div id="ui-layer">
       <div id="settings-btn-container" class="hidden">
-        <button id="btn-pause-toggle" class="pause-btn">⏸️</button>
+        <button id="btn-pause-toggle" class="pause-btn">
+          <div class="pause-icon-container">
+            <div class="pause-shape"></div>
+            <div class="play-shape hidden"></div>
+          </div>
+        </button>
         <button id="btn-settings-open" class="settings-btn">⚙️</button>
       </div>
 
@@ -138,32 +145,81 @@
           
           <div class="volume-container">
             <label class="volume-label">MASTER VOLUME</label>
-            <input type="range" id="slider-volume-master" min="0" max="1" step="0.01" value="0.5">
+            <input type="range" id="slider-volume-master" class="slider-master" min="0" max="1" step="0.01" value="0.5">
           </div>
           
           <div class="volume-container">
             <label class="volume-label">BGM VOLUME</label>
-            <input type="range" id="slider-volume-bgm" min="0" max="1" step="0.01" value="0.5">
+            <input type="range" id="slider-volume-bgm" class="slider-bgm" min="0" max="1" step="0.01" value="0.5">
           </div>
           
           <div class="volume-container">
             <label class="volume-label">SFX VOLUME</label>
-            <input type="range" id="slider-volume-sfx" min="0" max="1" step="0.01" value="0.5">
+            <input type="range" id="slider-volume-sfx" class="slider-sfx" min="0" max="1" step="0.01" value="0.5">
           </div>
           
-          <!-- Context-aware button containers -->
-          <div id="settings-home-buttons">
-            <button id="btn-reset-audio-defaults" class="menu-btn full-width">RESET TO DEFAULT</button>
-            <button id="btn-settings-close-home" class="menu-btn green full-width">CLOSE</button>
-          </div>
-          
-          <div id="settings-playing-buttons" class="hidden">
+          <div id="settings-playing-buttons">
             <button id="btn-save-game" class="menu-btn yellow full-width">SAVE GAME</button>
             <button id="btn-clear-save" class="menu-btn red full-width">CLEAR SAVE</button>
             <button id="btn-howtoplay-settings" class="menu-btn full-width">HOW TO PLAY</button>
             <button id="btn-settings-quit-home" class="menu-btn red full-width">QUIT TO HOME</button>
             <button id="btn-settings-close" class="menu-btn green full-width">BACK TO GAME</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Context-aware Home Settings -->
+      <div id="screen-settings-home" class="ui-screen hidden">
+        <div class="comic-box settings home">
+          <button id="btn-settings-x-home" class="close-x">X</button>
+          <h1 class="comic-title settings">SETTINGS</h1>
+          
+          <div class="volume-container">
+            <label class="volume-label">MASTER VOLUME</label>
+            <input type="range" id="slider-volume-master-home" class="slider-master" min="0" max="1" step="0.01" value="0.5">
+          </div>
+          
+          <div class="volume-container">
+            <label class="volume-label">BGM VOLUME</label>
+            <input type="range" id="slider-volume-bgm-home" class="slider-bgm" min="0" max="1" step="0.01" value="0.5">
+          </div>
+          
+          <div class="volume-container">
+            <label class="volume-label">SFX VOLUME</label>
+            <input type="range" id="slider-volume-sfx-home" class="slider-sfx" min="0" max="1" step="0.01" value="0.5">
+          </div>
+          
+          <div id="settings-home-buttons">
+            <button id="btn-reset-audio-defaults" class="menu-btn full-width">RESET TO DEFAULT</button>
+            <button id="btn-settings-close-home" class="menu-btn green full-width">CLOSE</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Alert Modal -->
+      <div id="custom-alert-overlay" class="ui-screen hidden" style="z-index: 300000;">
+        <div class="comic-box confirm-overlay-box">
+          <h1 id="custom-alert-title" class="comic-title red small">SYSTEM MESSAGE</h1>
+          <p id="custom-alert-message" class="confirm-text">Alert message goes here.</p>
+          <div class="confirm-actions">
+            <button id="btn-custom-alert-ok" class="menu-btn green">OK</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast Alert Overlay -->
+      <div id="toast-alert-overlay" class="ui-screen hidden" style="z-index: 400000; pointer-events: none; background: none;">
+        <div class="comic-box toast-box" style="position: absolute; bottom: 20px; left: 20px; width: auto; min-width: 300px; text-align: left; height: auto; padding: 10px;">
+          <h1 id="toast-alert-title" class="comic-title red mini" style="font-size: 20px; margin: 0;">ALERT</h1>
+          <p id="toast-alert-message" class="confirm-text mini" style="font-size: 16px; margin: 5px 0 0 0;">Message</p>
+        </div>
+      </div>
+
+      <div id="screen-game-complete" class="ui-screen hidden" style="z-index: 500000; background: rgba(0,0,0,0.85);">
+        <div class="comic-box" style="border-color: #f1c40f; box-shadow: 10px 10px 0px #f1c40f;">
+          <button id="btn-complete-close" class="close-x">X</button>
+          <h1 class="comic-title yellow" style="font-size: 48px; margin-bottom: 20px;">CONGRATULATIONS<br>for finishing the game :)</h1>
+          <p class="confirm-text" style="color: #333; margin-bottom: 30px;">YOU SAVED THE FAMILY LEGACY!</p>
         </div>
       </div>
 
@@ -204,7 +260,11 @@
   <script src="js/managers/ShopManager.js"></script>
   <script src="js/managers/StageManager.js"></script>
   <script src="js/managers/UIManager.js"></script>
+
   <script src="js/core/Game.js"></script>
+  <script src="js/managers/SecretMenuManager.js"></script>
   <script src="js/main.js"></script>
+
+
 </body>
 </html>

@@ -94,19 +94,32 @@ class Player {
       if (this.game.currentState !== CONSTANTS.STATES.PLAYING) return;
       const key = e.key.toLowerCase();
       if (key === '1') this.selectWeapon('mami');
-      else if (key === '2' && this.arsenal['pares'].unlocked) this.selectWeapon('pares');
-      else if (key === '3' && this.arsenal['rice'].unlocked) this.selectWeapon('rice');
-      else if (key === '4' && this.canUseSpecial('calamansi')) this.activateSpecial('calamansi');
-      else if (key === '5' && this.canUseSpecial('chili')) this.activateSpecial('chili');
-      else if (key === '6' && this.canUseSpecial('garlic')) this.activateSpecial('garlic');
+      else if (key === '2') this.selectWeapon('pares');
+      else if (key === '3') this.selectWeapon('rice');
+      else if (key === '4') this.activateSpecial('calamansi');
+      else if (key === '5') this.activateSpecial('chili');
+      else if (key === '6') this.activateSpecial('garlic');
     });
   }
 
   selectWeapon(weaponName) {
-    if (this.arsenal[weaponName] && this.arsenal[weaponName].unlocked) {
-      this.selectedWeapon = weaponName; return true;
+    const weapon = this.arsenal[weaponName];
+    if (!weapon) return false;
+
+    if (!weapon.unlocked) {
+        this.game.uiManager.showToast("ITEM LOCKED", `HINDI PA ITO BUKAS! BILIHIN ITO SA SHOP PARA GAMITIN.`);
+        this._playUI('sfx_locked');
+        return false;
     }
-    return false;
+
+    if (!weapon.isInfinite && weapon.usesLeft <= 0) {
+        this.game.uiManager.showToast("UBOS NA!", `WALA NA ITONG LAMAN! BILIHIN ANG UPGRADE SA SHOP PARA MADAGDAGAN.`);
+        this._playUI('sfx_locked');
+        return false;
+    }
+
+    this.selectedWeapon = weaponName; 
+    return true;
   }
 
   canFireWeapon() {
@@ -131,8 +144,22 @@ class Player {
 
  // --- UPDATED ActivateSpecial in js/entities/Player.js ---
   activateSpecial(specialName) {
-    if (!this.canUseSpecial(specialName)) return;
     const special = this.specials[specialName];
+    if (!special) return;
+
+    if (!special.unlocked) {
+        this.game.uiManager.showToast("SAWSAWAN LOCKED", "HINDI PA ITO BUKAS! BILIHIN ITO SA SHOP PARA GAMITIN.");
+        this._playUI('sfx_locked');
+        return;
+    }
+
+    if (special.timeSinceLastFire < special.cooldown) {
+        const secondsLeft = Math.ceil((special.cooldown - special.timeSinceLastFire) / 1000);
+        this.game.uiManager.showToast("COOLDOWN PA!", `MAG-ANTAY NG ${secondsLeft} SEGUNDO PARA GAMITIN MULI ANG SAWSAWAN NA ITO!`);
+        this._playUI('sfx_locked');
+        return;
+    }
+
     special.timeSinceLastFire = 0; 
     
     // --- NEW: CUSTOM SOUNDS FOR SPECIALS ---
@@ -149,7 +176,7 @@ class Player {
     const audio = this.game.assetLoader?.audio?.[sfxKey];
     if (audio) { 
         audio.currentTime = 0; 
-        audio.volume = 0.8; 
+        audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
         const p = audio.play(); 
         if(p && p.catch) p.catch(()=>{}); 
     }
@@ -221,7 +248,7 @@ class Player {
       const audio = this.game.assetLoader?.audio?.[sfxKey];
       if (audio) { 
           audio.currentTime = 0; 
-          audio.volume = 0.6; 
+          audio.volume = 0.6 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
           const p = audio.play(); 
           if (p && p.catch) p.catch(()=>{}); 
       }
@@ -229,7 +256,13 @@ class Player {
 
   unlockWeapon(weaponName) {
     const weapon = this.arsenal[weaponName];
-    if (!weapon || weapon.unlocked || this.kita < weapon.baseCost) {
+    if (!weapon) return false;
+    if (weapon.unlocked) {
+        this.game.uiManager.showCustomAlert("ITEM UNLOCKED", "YOU ALREADY HAVE THIS ULAM!");
+        return false;
+    }
+    if (this.kita < weapon.baseCost) {
+        this.game.uiManager.showCustomAlert("NOT ENOUGH KITA", `KAILANGAN MO PA NG ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost - this.kita} PARA DITO!`);
         this._playUI('sfx_locked'); 
         return false;
     }
@@ -243,7 +276,13 @@ class Player {
 
   unlockSpecial(specialName) {
     const special = this.specials[specialName];
-    if (!special || special.unlocked || this.kita < special.baseCost) {
+    if (!special) return false;
+    if (special.unlocked) {
+        this.game.uiManager.showCustomAlert("SPECIAL UNLOCKED", "ALREADY HAVE THIS SAWSAWAN!");
+        return false;
+    }
+    if (this.kita < special.baseCost) {
+        this.game.uiManager.showCustomAlert("NOT ENOUGH KITA", `KAILANGAN MO PA NG ${CONSTANTS.CURRENCY_SYMBOL}${special.baseCost - this.kita} PARA DITO!`);
         this._playUI('sfx_locked');
         return false;
     }
@@ -256,14 +295,19 @@ class Player {
 
   upgradeWeapon(weaponName) {
     const weapon = this.arsenal[weaponName];
-    if (!weapon || !weapon.unlocked || weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL) {
+    if (!weapon || !weapon.unlocked) return false;
+    
+    if (weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL) {
+        this.game.uiManager.showCustomAlert("MAX LEVEL", "SAGAD NA ANG UPGRADE NITO!");
         this._playUI('sfx_locked');
         return false;
     }
+
     const costMultiplier = Math.pow(CONSTANTS.WEAPON_UPGRADE_COST_MULTIPLIER, weapon.level);
     const upgradeCost = Math.ceil(50 * costMultiplier);
     
     if (this.kita < upgradeCost) {
+        this.game.uiManager.showCustomAlert("NOT ENOUGH KITA", `KAILANGAN MO PA NG ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost - this.kita} PARA SA UPGRADE!`);
         this._playUI('sfx_locked');
         return false;
     }
@@ -277,14 +321,18 @@ class Player {
     return true;
   }
 
-  addKita(amount) { this.kita += amount; }
+  addKita(amount) { 
+    if (this.game.bossDefeatTimer > 0) return;
+    this.kita += amount; 
+  }
   takeDamage(amount) { 
+    if (this.game.bossDefeatTimer > 0) return;
     this.hp = Math.max(0, this.hp - amount); 
     
     const audio = this.game.assetLoader?.audio?.sfx_jo_damage;
     if (audio) { 
         audio.currentTime = 0; 
-        audio.volume = 0.8; 
+        audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
         const p = audio.play(); 
         if (p && p.catch) p.catch(()=>{}); 
     }
@@ -344,7 +392,7 @@ class Player {
     if (stirAudio) {
       if (this.game.currentState === CONSTANTS.STATES.PLAYING && !this.isDragging && !this.isFiring && !this.isDead()) {
         if (stirAudio.paused) {
-          stirAudio.loop = true; stirAudio.volume = 0.5; 
+          stirAudio.loop = true; stirAudio.volume = 0.5 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
           const p = stirAudio.play(); if (p && p.catch) p.catch(() => {});
         }
       } else { stirAudio.pause(); }
@@ -356,14 +404,23 @@ class Player {
 
     const { mouse } = this.game.inputHandler;
 
-    if (mouse.isDown && !this.isDragging && !this.isFiring) {
+    // --- RELOAD STATE CHECK ---
+    const weapon = this.arsenal[this.selectedWeapon];
+    const isReloading = weapon && weapon.timeSinceLastFire < weapon.cooldown;
+
+    if (mouse.isDown && !this.isDragging && !this.isFiring && !isReloading) {
       this.isDragging = true; this.dragStart = { x: mouse.x, y: mouse.y }; this.currentFrame = 0; 
     }
 
     if (this.isDragging) {
-      this.dragCurrent = { x: mouse.x, y: mouse.y };
-      const { vx, vy } = this.game.inputHandler.getDragVector();
-      if (vx !== 0 || vy !== 0) this.aimAngle = Math.atan2(vy, vx);
+      if (isReloading) {
+        // Cancel dragging if we somehow enter reload state (e.g. switch weapon)
+        this.isDragging = false;
+      } else {
+        this.dragCurrent = { x: mouse.x, y: mouse.y };
+        const { vx, vy } = this.game.inputHandler.getDragVector();
+        if (vx !== 0 || vy !== 0) this.aimAngle = Math.atan2(vy, vx);
+      }
     }
 
     if (!mouse.isDown && this.isDragging) {
@@ -465,7 +522,7 @@ class Player {
           const hitSfx = this.game.assetLoader?.audio?.sfx_hit;
           if (hitSfx) {
             hitSfx.currentTime = 0;
-            hitSfx.volume = 0.4;
+            hitSfx.volume = 0.4 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1);
             const p = hitSfx.play();
             if (p && p.catch) p.catch(() => {});
           }
@@ -546,7 +603,7 @@ class Player {
     const audio = this.game.assetLoader?.audio?.sfx_slingshot;
     if (audio) { 
       audio.currentTime = 0; 
-      audio.volume = 0.8; 
+      audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
       const p = audio.play(); 
       if (p && p.catch) p.catch(() => {}); 
     }
@@ -557,14 +614,25 @@ class Player {
   
   draw(ctx) {
     const sprite = this.game.assetLoader?.images?.player; 
+    const reload1 = this.game.assetLoader?.images?.jo_reload;
+    const reload2 = this.game.assetLoader?.images?.jo_reload2;
+
+    const weapon = this.arsenal[this.selectedWeapon];
+    const isReloading = weapon && weapon.timeSinceLastFire < weapon.cooldown;
+
     if (sprite && sprite.complete) {
       const cols = 5; const rows = 3;
       const sw = sprite.width / cols; const sh = sprite.height / rows;
       let row = 0; let frame = 0;
       const state = this.game.currentState;
 
-      if (state === CONSTANTS.STATES.VICTORY || state === CONSTANTS.STATES.SHOP) { row = 0; frame = 3 + (this.currentFrame % 2); } 
-      else if (state === CONSTANTS.STATES.GAMEOVER) { row = 2; frame = Math.min(4, this.currentFrame); }
+      // Determine Animation State
+      if (state === CONSTANTS.STATES.VICTORY || state === CONSTANTS.STATES.SHOP) { 
+        row = 0; frame = 3 + (this.currentFrame % 2); 
+      } 
+      else if (state === CONSTANTS.STATES.GAMEOVER) { 
+        row = 2; frame = Math.min(4, this.currentFrame); 
+      }
       else if (this.isFiring) { row = 1; frame = this.currentFrame; }
       else if (this.isDragging) {
         row = 1; 
@@ -590,6 +658,20 @@ class Player {
 
       const sackImg = this.game.assetLoader?.images?.sack;
       if (sackImg && sackImg.complete) ctx.drawImage(sackImg, 0, this.game.canvas.height - 140, 350, 140);
+
+      // --- NEW: RELOADING OVERLAY (Text Only) ---
+      if (isReloading) {
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 20px "Comic Sans MS", sans-serif';
+        ctx.textAlign = 'center';
+        const bounce = Math.sin(Date.now() / 150) * 5;
+        ctx.strokeText("RELOADING...", this.x + this.width/2, this.y - 20 + bounce);
+        ctx.fillText("RELOADING...", this.x + this.width/2, this.y - 20 + bounce);
+        ctx.restore();
+      }
     } else {
       ctx.fillStyle = CONSTANTS.COLORS.PLAYER; ctx.fillRect(this.x, this.y, this.width, this.height);
     }
