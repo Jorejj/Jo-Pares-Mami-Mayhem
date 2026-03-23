@@ -589,18 +589,6 @@ _advanceStoryCutscene() {
     if (this.currentState === CONSTANTS.STATES.PLAYING) {
         this._updatePlaying();
     }
-    
-    // --- FAST AUTO-TRANSITION TO SHOP! ---
-    if (this.currentState === CONSTANTS.STATES.VICTORY) {
-        if (this.victoryTimer === undefined) this.victoryTimer = 0;
-        this.victoryTimer += delta;
-        
-        if (this.victoryTimer > 1500) {
-            this.victoryTimer = 0; 
-            this.currentState = CONSTANTS.STATES.SHOP;
-            this.shopManager.open();
-        }
-    }
   }
 
   _updatePlaying() {

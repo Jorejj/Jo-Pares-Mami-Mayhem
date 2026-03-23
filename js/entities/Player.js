@@ -229,7 +229,13 @@ class Player {
 
   unlockWeapon(weaponName) {
     const weapon = this.arsenal[weaponName];
-    if (!weapon || weapon.unlocked || this.kita < weapon.baseCost) {
+    if (!weapon) return false;
+    if (weapon.unlocked) {
+        this.game.uiManager.showCustomAlert("ITEM UNLOCKED", "YOU ALREADY HAVE THIS ULAM!");
+        return false;
+    }
+    if (this.kita < weapon.baseCost) {
+        this.game.uiManager.showCustomAlert("NOT ENOUGH KITA", `KAILANGAN MO PA NG ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost - this.kita} PARA DITO!`);
         this._playUI('sfx_locked'); 
         return false;
     }
@@ -243,7 +249,13 @@ class Player {
 
   unlockSpecial(specialName) {
     const special = this.specials[specialName];
-    if (!special || special.unlocked || this.kita < special.baseCost) {
+    if (!special) return false;
+    if (special.unlocked) {
+        this.game.uiManager.showCustomAlert("SPECIAL UNLOCKED", "ALREADY HAVE THIS SAWSAWAN!");
+        return false;
+    }
+    if (this.kita < special.baseCost) {
+        this.game.uiManager.showCustomAlert("NOT ENOUGH KITA", `KAILANGAN MO PA NG ${CONSTANTS.CURRENCY_SYMBOL}${special.baseCost - this.kita} PARA DITO!`);
         this._playUI('sfx_locked');
         return false;
     }
@@ -256,14 +268,19 @@ class Player {
 
   upgradeWeapon(weaponName) {
     const weapon = this.arsenal[weaponName];
-    if (!weapon || !weapon.unlocked || weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL) {
+    if (!weapon || !weapon.unlocked) return false;
+    
+    if (weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL) {
+        this.game.uiManager.showCustomAlert("MAX LEVEL", "SAGAD NA ANG UPGRADE NITO!");
         this._playUI('sfx_locked');
         return false;
     }
+
     const costMultiplier = Math.pow(CONSTANTS.WEAPON_UPGRADE_COST_MULTIPLIER, weapon.level);
     const upgradeCost = Math.ceil(50 * costMultiplier);
     
     if (this.kita < upgradeCost) {
+        this.game.uiManager.showCustomAlert("NOT ENOUGH KITA", `KAILANGAN MO PA NG ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost - this.kita} PARA SA UPGRADE!`);
         this._playUI('sfx_locked');
         return false;
     }

@@ -125,7 +125,8 @@ class UIManager {
         this.confirmAction = 'quit-home';
       },
       'btn-dynamic-tut-next': () => this._advanceDynamicTutorial(),
-      'btn-dynamic-tut-gotit': () => this._closeDynamicTutorial()
+      'btn-dynamic-tut-gotit': () => this._closeDynamicTutorial(),
+      'btn-custom-alert-ok': () => this.hideCustomAlert()
     };
 
     for (const [id, action] of Object.entries(actions)) {
@@ -838,6 +839,18 @@ class UIManager {
     }
   }
 
+  showCustomAlert(title, message) {
+    const titleEl = document.getElementById('custom-alert-title');
+    const messageEl = document.getElementById('custom-alert-message');
+    if (titleEl) titleEl.innerText = title;
+    if (messageEl) messageEl.innerText = message;
+    this._showScreen('custom-alert-overlay', true);
+  }
+
+  hideCustomAlert() {
+    this._showScreen('custom-alert-overlay', false);
+  }
+
   _updateShopUI() {
     const player = this.game.player;
     const shop = this.game.shopManager;
@@ -855,13 +868,13 @@ class UIManager {
       let content = `<span class="item-name">[${index + 1}] ${w.toUpperCase()}</span>`;
       if (!weapon.unlocked) {
         content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}</span>`;
-        btn.disabled = player.kita < weapon.baseCost;
+        btn.disabled = player.kita < weapon.baseCost; 
       } else if (isMax) {
         content += `<span class="item-price">LVL: ${weapon.level} (MAX)</span>`;
-        btn.disabled = true;
+        btn.disabled = true; 
       } else {
         content += `<span class="item-price">LVL: ${weapon.level} ➔ ${weapon.level + 1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
-        btn.disabled = player.kita < upgradeCost;
+        btn.disabled = player.kita < upgradeCost; 
       }
       btn.innerHTML = content;
     });
@@ -869,7 +882,7 @@ class UIManager {
     // --- NEW: Update Specials [4, 5, 6] ---
     ['calamansi', 'chili', 'garlic'].forEach((s, index) => {
       const btn = document.getElementById(`btn-shop-${s}`);
-      if (!btn) return; // Note: Ensure you add <button id="btn-shop-garlic"> to your HTML!
+      if (!btn) return; 
       const special = player.specials[s];
       const cost = special.baseCost;
       const keyMap = ['4', '5', '6'];
@@ -877,10 +890,10 @@ class UIManager {
       let content = `<span class="item-name">[${keyMap[index]}] ${s.toUpperCase()}</span>`;
       if (!special.unlocked) {
         content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
-        btn.disabled = player.kita < cost;
+        btn.disabled = player.kita < cost; 
       } else {
         content += `<span class="item-price" style="color:#f39c12">UNLOCKED!</span>`;
-        btn.disabled = true;
+        btn.disabled = true; 
       }
       btn.innerHTML = content;
     });
