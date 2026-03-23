@@ -330,6 +330,9 @@ _advanceStoryCutscene() {
         const audio = this.assetLoader?.audio?.[key];
         if (audio) { audio.pause(); audio.currentTime = 0; }
     });
+    
+    // Stop any remaining level SFX (stirring, attacks, etc) before leaving
+    this._stopAllLevelSFX();
 
     this.levelManager.advance(); 
     this.waveManager.currentWave = this.levelManager.currentLevel; 
@@ -604,9 +607,30 @@ _advanceStoryCutscene() {
     }
   }
 
+  _stopAllLevelSFX() {
+    if (!this.assetLoader || !this.assetLoader.audio) return;
+    
+    // UI/BGM/Voice sounds that should be allowed to play anywhere or manage themselves
+    const keepPlaying = [
+      'sfx_victory', 'sfx_defeat', 'sfx_click', 'sfx_cash_register', 
+      'sfx_locked', 'sfx_button_hover', 'sfx_pause_menu'
+    ];
+    
+    Object.entries(this.assetLoader.audio).forEach(([key, audio]) => {
+      if (key.startsWith('bgm_') || key.startsWith('v_')) return; 
+      if (keepPlaying.includes(key)) return;
+      if (key.endsWith('_defeat')) return; // Allow boss defeat sounds to play during delay
+      
+      if (audio instanceof Audio && !audio.paused) {
+        audio.pause();
+      }
+    });
+  }
+
   _updatePlaying() {
     if (this.player.isDead()) {
       this.currentState = CONSTANTS.STATES.GAMEOVER;
+      this._stopAllLevelSFX();
       const sfx = this.assetLoader?.audio?.sfx_defeat;
       if (sfx) { 
           sfx.currentTime = 0; 
@@ -625,6 +649,7 @@ _advanceStoryCutscene() {
       if (isBossLevel && this.bossDefeatTimer <= 0) {
           this.bossDefeatTimer = 5000;
           if (this.currentBgmTrack) this.currentBgmTrack.pause();
+          this._stopAllLevelSFX();
 
           // Show Victory Overlay IMMEDIATELY
           if (completedLevel === 15) {
@@ -635,13 +660,13 @@ _advanceStoryCutscene() {
 
           // Trigger the Defeat Music/Voiceline
           let defeatSfx = null;
-          if (completedLevel === 5) defeatSfx = this.assetLoader?.audio?.bgm_kap_defeat;
-          else if (completedLevel === 10) defeatSfx = this.assetLoader?.audio?.bgm_ian_defeat;
-          else if (completedLevel === 15) defeatSfx = this.assetLoader?.audio?.bgm_malupiton_defeat;
+          if (completedLevel === 5) defeatSfx = this.assetLoader?.audio?.sfx_kap_defeat;
+          else if (completedLevel === 10) defeatSfx = this.assetLoader?.audio?.sfx_ian_defeat;
+          else if (completedLevel === 15) defeatSfx = this.assetLoader?.audio?.sfx_malupiton_defeat;
 
           if (defeatSfx) {
               defeatSfx.currentTime = 0;
-              defeatSfx.volume = 0.8;
+              defeatSfx.volume = (this.uiManager.masterVolume || 1) * (this.uiManager.sfxVolume || 1) * 1.0;
               const p = defeatSfx.play();
               if (p && p.catch) p.catch(()=>{});
           }

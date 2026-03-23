@@ -45,7 +45,8 @@ class UIManager {
         const sfx = this.game.assetLoader?.audio?.sfx_click;
         if (sfx) {
           sfx.currentTime = 0;
-          sfx.volume = this.masterVolume * this.sfxVolume;
+          // Set to 100% relative to master volume
+          sfx.volume = this.masterVolume; 
           sfx.play().catch(()=>{});
         }
       }

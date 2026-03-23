@@ -166,7 +166,7 @@ class Projectile {
         const missAudio = this.game.assetLoader?.audio?.sfx_miss_ground;
         if (missAudio) { 
           missAudio.currentTime = 0; 
-          missAudio.volume = 0.4; 
+          missAudio.volume = 0.4 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
           const p = missAudio.play(); 
           if (p && p.catch) p.catch(()=>{}); 
         }

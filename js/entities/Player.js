@@ -149,7 +149,7 @@ class Player {
     const audio = this.game.assetLoader?.audio?.[sfxKey];
     if (audio) { 
         audio.currentTime = 0; 
-        audio.volume = 0.8; 
+        audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
         const p = audio.play(); 
         if(p && p.catch) p.catch(()=>{}); 
     }
@@ -221,7 +221,7 @@ class Player {
       const audio = this.game.assetLoader?.audio?.[sfxKey];
       if (audio) { 
           audio.currentTime = 0; 
-          audio.volume = 0.6; 
+          audio.volume = 0.6 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
           const p = audio.play(); 
           if (p && p.catch) p.catch(()=>{}); 
       }
@@ -301,7 +301,7 @@ class Player {
     const audio = this.game.assetLoader?.audio?.sfx_jo_damage;
     if (audio) { 
         audio.currentTime = 0; 
-        audio.volume = 0.8; 
+        audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
         const p = audio.play(); 
         if (p && p.catch) p.catch(()=>{}); 
     }
@@ -361,7 +361,7 @@ class Player {
     if (stirAudio) {
       if (this.game.currentState === CONSTANTS.STATES.PLAYING && !this.isDragging && !this.isFiring && !this.isDead()) {
         if (stirAudio.paused) {
-          stirAudio.loop = true; stirAudio.volume = 0.5; 
+          stirAudio.loop = true; stirAudio.volume = 0.5 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
           const p = stirAudio.play(); if (p && p.catch) p.catch(() => {});
         }
       } else { stirAudio.pause(); }
@@ -482,7 +482,7 @@ class Player {
           const hitSfx = this.game.assetLoader?.audio?.sfx_hit;
           if (hitSfx) {
             hitSfx.currentTime = 0;
-            hitSfx.volume = 0.4;
+            hitSfx.volume = 0.4 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1);
             const p = hitSfx.play();
             if (p && p.catch) p.catch(() => {});
           }
@@ -563,7 +563,7 @@ class Player {
     const audio = this.game.assetLoader?.audio?.sfx_slingshot;
     if (audio) { 
       audio.currentTime = 0; 
-      audio.volume = 0.8; 
+      audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
       const p = audio.play(); 
       if (p && p.catch) p.catch(() => {}); 
     }
