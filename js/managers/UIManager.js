@@ -34,6 +34,7 @@ class UIManager {
     this.isConfirmingHome = false;
     this.confirmHomeSource = null;
     this.confirmAction = null; // 'quit-home' | 'new-game-overwrite'
+    this.toastTimeout = null;
     
     this._setupHtmlButtons();
   }
@@ -869,6 +870,28 @@ class UIManager {
 
   hideCustomAlert() {
     this._showScreen('custom-alert-overlay', false);
+  }
+
+  showToast(title, message) {
+    const titleEl = document.getElementById('toast-alert-title');
+    const messageEl = document.getElementById('toast-alert-message');
+    if (titleEl) titleEl.innerText = title;
+    if (messageEl) messageEl.innerText = message;
+    
+    this._showScreen('toast-alert-overlay', true);
+
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      this.hideToast();
+    }, 1500);
+  }
+
+  hideToast() {
+    this._showScreen('toast-alert-overlay', false);
+    if (this.toastTimeout) {
+      clearTimeout(this.toastTimeout);
+      this.toastTimeout = null;
+    }
   }
 
   _updateShopUI() {

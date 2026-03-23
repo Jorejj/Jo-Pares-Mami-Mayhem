@@ -94,19 +94,32 @@ class Player {
       if (this.game.currentState !== CONSTANTS.STATES.PLAYING) return;
       const key = e.key.toLowerCase();
       if (key === '1') this.selectWeapon('mami');
-      else if (key === '2' && this.arsenal['pares'].unlocked) this.selectWeapon('pares');
-      else if (key === '3' && this.arsenal['rice'].unlocked) this.selectWeapon('rice');
-      else if (key === '4' && this.canUseSpecial('calamansi')) this.activateSpecial('calamansi');
-      else if (key === '5' && this.canUseSpecial('chili')) this.activateSpecial('chili');
-      else if (key === '6' && this.canUseSpecial('garlic')) this.activateSpecial('garlic');
+      else if (key === '2') this.selectWeapon('pares');
+      else if (key === '3') this.selectWeapon('rice');
+      else if (key === '4') this.activateSpecial('calamansi');
+      else if (key === '5') this.activateSpecial('chili');
+      else if (key === '6') this.activateSpecial('garlic');
     });
   }
 
   selectWeapon(weaponName) {
-    if (this.arsenal[weaponName] && this.arsenal[weaponName].unlocked) {
-      this.selectedWeapon = weaponName; return true;
+    const weapon = this.arsenal[weaponName];
+    if (!weapon) return false;
+
+    if (!weapon.unlocked) {
+        this.game.uiManager.showToast("ITEM LOCKED", `HINDI PA ITO BUKAS! BILIHIN ITO SA SHOP PARA GAMITIN.`);
+        this._playUI('sfx_locked');
+        return false;
     }
-    return false;
+
+    if (!weapon.isInfinite && weapon.usesLeft <= 0) {
+        this.game.uiManager.showToast("UBOS NA!", `WALA NA ITONG LAMAN! BILIHIN ANG UPGRADE SA SHOP PARA MADAGDAGAN.`);
+        this._playUI('sfx_locked');
+        return false;
+    }
+
+    this.selectedWeapon = weaponName; 
+    return true;
   }
 
   canFireWeapon() {
@@ -131,8 +144,22 @@ class Player {
 
  // --- UPDATED ActivateSpecial in js/entities/Player.js ---
   activateSpecial(specialName) {
-    if (!this.canUseSpecial(specialName)) return;
     const special = this.specials[specialName];
+    if (!special) return;
+
+    if (!special.unlocked) {
+        this.game.uiManager.showToast("SAWSAWAN LOCKED", "HINDI PA ITO BUKAS! BILIHIN ITO SA SHOP PARA GAMITIN.");
+        this._playUI('sfx_locked');
+        return;
+    }
+
+    if (special.timeSinceLastFire < special.cooldown) {
+        const secondsLeft = Math.ceil((special.cooldown - special.timeSinceLastFire) / 1000);
+        this.game.uiManager.showToast("COOLDOWN PA!", `MAG-ANTAY NG ${secondsLeft} SEGUNDO PARA GAMITIN MULI ANG SAWSAWAN NA ITO!`);
+        this._playUI('sfx_locked');
+        return;
+    }
+
     special.timeSinceLastFire = 0; 
     
     // --- NEW: CUSTOM SOUNDS FOR SPECIALS ---
@@ -606,43 +633,6 @@ class Player {
       else if (state === CONSTANTS.STATES.GAMEOVER) { 
         row = 2; frame = Math.min(4, this.currentFrame); 
       }
-      else if (isReloading) {
-        // Draw reload special sprites if available
-        const reloadSprite = (Math.floor(Date.now() / 200) % 2 === 0) ? reload1 : reload2;
-        if (reloadSprite && reloadSprite.complete) {
-            ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + this.height);
-            const cartImg = this.game.assetLoader?.images?.jo_cart;
-            if (cartImg && cartImg.complete) ctx.drawImage(cartImg, -this.width * 2.2, -300 -15, 550, 300);
-            
-            // Reload sprites might have different dimensions, but let's draw them in character space
-            ctx.drawImage(reloadSprite, -this.width / 2, -this.height, this.width, this.height);
-            
-            const tableImg = this.game.assetLoader?.images?.table;
-            const chairImg = this.game.assetLoader?.images?.chair;
-            if (tableImg && tableImg.complete) ctx.drawImage(tableImg, 76, -90 + 60, 100, 90);
-            if (chairImg && chairImg.complete) { ctx.drawImage(chairImg, 150, -50 + 55, 60, 50); ctx.drawImage(chairImg, 56, -50 + 60, 60, 50); }
-            ctx.restore();
-
-            // Draw "RELOADING" text above Jo
-            ctx.save();
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 3;
-            ctx.font = 'bold 20px "Comic Sans MS", sans-serif';
-            ctx.textAlign = 'center';
-            const bounce = Math.sin(Date.now() / 150) * 5;
-            ctx.strokeText("RELOADING...", this.x + this.width/2, this.y - 20 + bounce);
-            ctx.fillText("RELOADING...", this.x + this.width/2, this.y - 20 + bounce);
-            ctx.restore();
-
-            const sackImg = this.game.assetLoader?.images?.sack;
-            if (sackImg && sackImg.complete) ctx.drawImage(sackImg, 0, this.game.canvas.height - 140, 350, 140);
-            return; // Exit draw early for reloading
-        }
-        // Fallback to normal if reload sprites missing
-        row = 0; frame = 0;
-      }
       else if (this.isFiring) { row = 1; frame = this.currentFrame; }
       else if (this.isDragging) {
         row = 1; 
@@ -668,6 +658,20 @@ class Player {
 
       const sackImg = this.game.assetLoader?.images?.sack;
       if (sackImg && sackImg.complete) ctx.drawImage(sackImg, 0, this.game.canvas.height - 140, 350, 140);
+
+      // --- NEW: RELOADING OVERLAY (Text Only) ---
+      if (isReloading) {
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 20px "Comic Sans MS", sans-serif';
+        ctx.textAlign = 'center';
+        const bounce = Math.sin(Date.now() / 150) * 5;
+        ctx.strokeText("RELOADING...", this.x + this.width/2, this.y - 20 + bounce);
+        ctx.fillText("RELOADING...", this.x + this.width/2, this.y - 20 + bounce);
+        ctx.restore();
+      }
     } else {
       ctx.fillStyle = CONSTANTS.COLORS.PLAYER; ctx.fillRect(this.x, this.y, this.width, this.height);
     }

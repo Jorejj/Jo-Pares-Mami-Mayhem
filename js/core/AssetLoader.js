@@ -173,6 +173,7 @@ const audioSources = {
       sfx_burn_tick: 'assets/audio/UI/BurningTick.wav',
       sfx_cash_register: 'assets/audio/UI/CashRegister.wav',
       sfx_locked: 'assets/audio/UI/Locked.wav',
+      sfx_warning: 'assets/audio/warning_beep.mp3',
       sfx_pause_menu: 'assets/audio/UI/PauseMenu.wav',
       sfx_button_hover: 'assets/audio/UI/ButtonHover.wav',
       sfx_defeat: 'assets/audio/UI/Defeat.wav', 

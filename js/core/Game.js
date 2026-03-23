@@ -367,7 +367,7 @@ _advanceStoryCutscene() {
 
     // Trigger Warning SFX for bosses
     if (type === 'BOSS_WARNING') {
-        const sfx = this.assetLoader?.audio?.sfx_locked; // Use a 'warning' style sound
+        const sfx = this.assetLoader?.audio?.sfx_warning; // Use the beep sound
         if (sfx) { sfx.currentTime = 0; sfx.volume = 0.8; sfx.play().catch(()=>{}); }
     }
   }
