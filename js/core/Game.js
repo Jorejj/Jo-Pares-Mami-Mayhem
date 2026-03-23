@@ -525,7 +525,7 @@ _advanceStoryCutscene() {
     
     if (isCutscene) {
         targetBgmKey = 'bgm_cutscene';
-        targetVolume = 0.1; // cutscene_bgm volume
+        targetVolume = 0.2; // cutscene_bgm volume
     } else if (window.isSecretMenuJumped && (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT)) {
         targetBgmKey = null; 
     } else if (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
