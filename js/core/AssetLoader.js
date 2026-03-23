@@ -175,6 +175,7 @@ const audioSources = {
       sfx_button_hover: 'assets/audio/UI/ButtonHover.wav',
       sfx_defeat: 'assets/audio/UI/Defeat.wav', 
       sfx_victory: 'assets/audio/UI/VictoryTriumph.wav',
+      bgm_win_game: 'assets/audio/win_game1.mp3',
       sfx_stun: 'assets/audio/UI/PauseMenu.wav',
       sfx_summon: 'assets/audio/UI/ButtonHover.wav',
 

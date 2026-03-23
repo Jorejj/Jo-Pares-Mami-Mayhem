@@ -35,6 +35,12 @@ class Game {
     this.lastKeyPressState = {};
     this.enemyProjectiles = [];
     
+    // --- Overlay / Cinematic Tracking ---
+    this.overlayTimer = 0;
+    this.overlayType = null; // 'WAVE_START', 'BOSS_WARNING', 'LEVEL_COMPLETE'
+    this.overlayText = "";
+    this.overlaySubtext = "";
+    
     // --- Story Voice Tracking ---
     this.currentVoiceTrack = null;
     
@@ -271,12 +277,22 @@ _advanceStoryCutscene() {
       if (this.isPlayingStoryAfter) {
         // --- FIXED: CHECK IF IT'S THE FINAL LEVEL ---
         if (this.levelManager.currentLevel >= this.levelManager.maxLevel) {
-            // GAME BEATEN! Go to Main Menu instead of the Shop.
+            // GAME BEATEN! Show Win Overlay + Special Audio
+            this._showOverlay('GAME_COMPLETE', "CONGRATULATIONS!", "YOU SAVED THE FAMILY LEGACY!", 8000);
+            
+            // Play Final Win Audio
+            const winSfx = this.assetLoader?.audio?.bgm_win_game;
+            if (winSfx) {
+                if (this.currentBgmTrack) this.currentBgmTrack.pause();
+                winSfx.currentTime = 0;
+                winSfx.volume = 0.8;
+                winSfx.play().catch(()=>{});
+            }
+
             this.currentState = CONSTANTS.STATES.MAIN_MENU;
             this.waveManager.clearAllEnemies();
             this.player.projectilePool.releaseAll();
             
-            // Stop the music so the Main Menu BGM can take over
             if (this.currentBgmTrack) {
                 this.currentBgmTrack.pause();
                 this.currentBgmTrack.currentTime = 0;
@@ -330,11 +346,37 @@ _advanceStoryCutscene() {
     }
   }
 
+  _showOverlay(type, text, subtext = "", duration = 2500) {
+    this.overlayType = type;
+    this.overlayText = text;
+    this.overlaySubtext = subtext;
+    this.overlayTimer = duration;
+
+    // Trigger Warning SFX for bosses
+    if (type === 'BOSS_WARNING') {
+        const sfx = this.assetLoader?.audio?.sfx_locked; // Use a 'warning' style sound
+        if (sfx) { sfx.currentTime = 0; sfx.volume = 0.8; sfx.play().catch(()=>{}); }
+    }
+  }
+
   _startLevel() {
     this.currentState = CONSTANTS.STATES.PLAYING;
-    const waveEnemies = this.stageManager.getWaveEnemies(this.levelManager.currentLevel);
+    const currentLevel = this.levelManager.currentLevel;
+    const waveEnemies = this.stageManager.getWaveEnemies(currentLevel);
     this.waveManager.startWave(waveEnemies);
     this.player.resetAmmo();
+
+    // Show Level Start Overlay
+    const isBoss = currentLevel % 5 === 0;
+    if (isBoss) {
+        let bossName = "UNKNOWN BOSS";
+        if (currentLevel === 5) bossName = "INSPECTOR KAP NIÑO";
+        else if (currentLevel === 10) bossName = "VLOGGER IAN";
+        else if (currentLevel === 15) bossName = "THE MASTERMIND";
+        this._showOverlay('BOSS_WARNING', "WARNING!", `BOSS DETECTED: ${bossName}`, 3500);
+    } else {
+        this._showOverlay('WAVE_START', `LEVEL ${currentLevel}`, "READY? DEFEND THE CART!", 2000);
+    }
   }
 
   _finishShoppingAndStartNextLevel() {
@@ -497,6 +539,16 @@ _advanceStoryCutscene() {
   update(delta) {
     this.gameFrame++;
     
+    // --- Cinematic Overlay Timing ---
+    if (this.overlayTimer > 0) {
+        this.overlayTimer -= delta;
+        if (this.overlayTimer <= 0) {
+            this.overlayType = null;
+            // If it was the final victory, we might want to stay on the win screen 
+            // but the drawing logic will handle that.
+        }
+    }
+
     // --- Boss Defeat Delay Handling ---
     if (this.bossDefeatTimer > 0) {
         this.bossDefeatTimer -= delta;

@@ -911,8 +911,74 @@ class UIManager {
     // Draw arrow BEFORE confirmation modal so it's visible
     this._drawTutorialArrow(ctx);
     
+    // NEW: DRAW CINEMATIC OVERLAYS (Start/Finish/Boss)
+    this._drawCinematicOverlay(ctx);
+    
     // Draw confirmation modal LAST (highest z-index)
     this._drawConfirmationModal(ctx);
+  }
+
+  _drawCinematicOverlay(ctx) {
+    if (!this.game.overlayType || this.game.overlayTimer <= 0) return;
+
+    const timer = this.game.overlayTimer;
+    const type = this.game.overlayType;
+    const text = this.game.overlayText;
+    const subtext = this.game.overlaySubtext;
+
+    ctx.save();
+
+    // 1. Draw Background Bar (Pixel/Bitmap Style)
+    const barHeight = 180;
+    const barY = (this.game.canvas.height - barHeight) / 2;
+    
+    // Entry/Exit Animation (Sliding from sides)
+    let offsetX = 0;
+    if (timer > 2000) offsetX = (timer - 2000) * 2; // Slide in
+    else if (timer < 500) offsetX = (500 - timer) * 2; // Slide out
+
+    // Dark Semi-transparent background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, barY, this.game.canvas.width, barHeight);
+
+    // Pixelated Borders
+    ctx.strokeStyle = (type === 'BOSS_WARNING') ? '#e74c3c' : '#f1c40f';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(0, barY, this.game.canvas.width, barHeight);
+    
+    // Extra decorative pixel stripes
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fillRect(0, barY - 10, this.game.canvas.width, 4);
+    ctx.fillRect(0, barY + barHeight + 6, this.game.canvas.width, 4);
+
+    // 2. Draw Text
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Main Header
+    const mainSize = (type === 'BOSS_WARNING') ? 80 : 64;
+    ctx.font = `900 ${mainSize}px "Comic Sans MS", sans-serif`;
+    
+    // Pulsing effect for Boss
+    if (type === 'BOSS_WARNING') {
+        const pulse = Math.sin(Date.now() * 0.015) * 10;
+        ctx.font = `900 ${mainSize + pulse}px "Comic Sans MS", sans-serif`;
+    }
+
+    // Shadow
+    ctx.fillStyle = '#000';
+    ctx.fillText(text, this.game.canvas.width / 2 + 4 + offsetX, barY + barHeight / 2 - 20 + 4);
+    
+    // Foreground Color
+    ctx.fillStyle = (type === 'BOSS_WARNING') ? '#e74c3c' : '#fff';
+    ctx.fillText(text, this.game.canvas.width / 2 + offsetX, barY + barHeight / 2 - 20);
+
+    // Subtext
+    ctx.font = `bold 28px "Comic Sans MS", sans-serif`;
+    ctx.fillStyle = (type === 'BOSS_WARNING') ? '#fff' : '#f1c40f';
+    ctx.fillText(subtext, this.game.canvas.width / 2 - offsetX, barY + barHeight / 2 + 40);
+
+    ctx.restore();
   }
 
   _drawTutorialArrow(ctx) {
