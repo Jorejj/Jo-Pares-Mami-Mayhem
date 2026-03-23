@@ -309,6 +309,7 @@ _advanceStoryCutscene() {
             // Normal progression: Go to the Shop
             this.currentState = CONSTANTS.STATES.SHOP;
             this.shopManager.open();
+            if (this.uiManager) this.uiManager._updateShopUI();
         }
       } else {
         this._startLevel();
@@ -354,6 +355,7 @@ _advanceStoryCutscene() {
     } else {
       this.currentState = CONSTANTS.STATES.SHOP;
       this.shopManager.open();
+      if (this.uiManager) this.uiManager._updateShopUI();
     }
   }
 

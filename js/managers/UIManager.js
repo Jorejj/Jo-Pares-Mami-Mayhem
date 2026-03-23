@@ -660,6 +660,7 @@ class UIManager {
       // If skipping after-level story, go to shop
       this.game.currentState = CONSTANTS.STATES.SHOP;
       this.game.shopManager.open();
+      this._updateShopUI();
     } else {
       // If skipping before-level story, start level
       this.game._startLevel();

@@ -294,8 +294,12 @@ class Player {
     return true;
   }
 
-  addKita(amount) { this.kita += amount; }
+  addKita(amount) { 
+    if (this.game.bossDefeatTimer > 0) return;
+    this.kita += amount; 
+  }
   takeDamage(amount) { 
+    if (this.game.bossDefeatTimer > 0) return;
     this.hp = Math.max(0, this.hp - amount); 
     
     const audio = this.game.assetLoader?.audio?.sfx_jo_damage;

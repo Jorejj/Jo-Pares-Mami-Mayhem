@@ -38,6 +38,8 @@ class BossKap extends Enemy {
     this.deathHoldDuration = 900;
     this.walkSfxTimer = 0;
     this.introPlayed = false;
+    this.kitaReward = 1000;
+    this.rewardGiven = false;
   }
 
   _playSfx(key, volume = 0.7) {
@@ -296,6 +298,12 @@ class BossKap extends Enemy {
       this.currentFrame = 2; 
       this.deathHoldTimer = 0;
       this.deathAnimationDone = false;
+      
+      if (!this.rewardGiven) {
+        this.rewardGiven = true;
+        if (this.game.player) this.game.player.addKita(this.kitaReward);
+      }
+      
       this._playSfx('sfx_kap_defeat', 0.8);
     } else {
       this._playSfx('sfx_kap_pain', 0.55);
