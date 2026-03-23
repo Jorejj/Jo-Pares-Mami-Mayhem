@@ -422,8 +422,41 @@ _advanceStoryCutscene() {
   }
 
   startWithLoadingScreen(onProgress, onComplete) {
+    // Get loading audio from DOM
+    this.loadingAudio = document.getElementById('audio-loading');
+    if (this.loadingAudio) {
+      this.loadingAudio.volume = 0.5;
+      this.loadingAudio.muted = false;
+    }
+
+    const playLoadingAudio = () => {
+      if (this.loadingAudio && this.loadingAudio.paused) {
+        this.loadingAudio.play().catch(() => {});
+      }
+    };
+
+    // Attempt to play immediately (often blocked, but worth a try)
+    playLoadingAudio();
+
+    // Interaction triggers to bypass autoplay blocks
+    window.addEventListener('click', playLoadingAudio, { once: true });
+    window.addEventListener('mousedown', playLoadingAudio, { once: true });
+    window.addEventListener('keydown', playLoadingAudio, { once: true });
+    window.addEventListener('touchstart', playLoadingAudio, { once: true });
+
     this.assetLoader.loadAll(
       () => {
+        // Cleanup interaction listeners
+        window.removeEventListener('click', playLoadingAudio);
+        window.removeEventListener('mousedown', playLoadingAudio);
+        window.removeEventListener('keydown', playLoadingAudio);
+        window.removeEventListener('touchstart', playLoadingAudio);
+
+        if (this.loadingAudio) {
+          this.loadingAudio.pause();
+          this.loadingAudio.currentTime = 0;
+        }
+
         this.saveManager.load();
         this.levelManager.init();
         

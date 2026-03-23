@@ -263,6 +263,7 @@ const audioSources = {
       sfx_rice_sizzle: 'assets/audio/Impacts/Rice Sizzle.wav',
       sfx_sticky: 'assets/audio/ui/stickysound.wav',
       sfx_click: 'assets/audio/click_buttons.mp3',
+      sfx_loading: 'assets/audio/loading.mp3',
 
       // --- VOICE PROLOGUES ---
       v_prologue_1: 'assets/audio/voice_prologue/v_prologue_1.mp3',
