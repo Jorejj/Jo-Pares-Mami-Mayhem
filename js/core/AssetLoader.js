@@ -162,6 +162,7 @@ const audioSources = {
       bgm_people: 'assets/audio/peopletalking.mp3',
 
       bgm_main_menu: 'assets/audio/UI/MainMusic.mp3',
+      bgm_cutscene: 'assets/audio/cutscene_bgm.mp3',
 
       // Jo & UI
       sfx_money: 'assets/audio/moneyget.mp3',

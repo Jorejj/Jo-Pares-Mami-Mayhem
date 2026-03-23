@@ -237,7 +237,8 @@ class Game {
     const voice = this.assetLoader?.audio?.[audioKey];
     if (voice) {
       this.currentVoiceTrack = voice;
-      voice.volume = this.uiManager.masterVolume * this.uiManager.sfxVolume;
+      // Increase voice volume to be more prominent (100% of master)
+      voice.volume = this.uiManager.masterVolume;
       const p = voice.play();
       if (p && p.catch) p.catch(()=>{});
     }
@@ -245,7 +246,8 @@ class Game {
 
   _startStoryOrLevel() {
     const currentLevel = this.levelManager.currentLevel;
-    const shouldPlayGlobalPrologue = currentLevel === 1 && !this.saveManager.state.hasSeenPrologue;
+    // --- ALWAYS PLAY PROLOGUE ON LEVEL 1 ---
+    const shouldPlayGlobalPrologue = currentLevel === 1;
 
     if (shouldPlayGlobalPrologue) {
       this.stageManager.startGlobalPrologue();
@@ -494,19 +496,22 @@ _advanceStoryCutscene() {
   }
 
   _updateAudio() {
-    // 1. Check if Secret Menu is open or Story Cutscene is playing - if so, silence everything and return
-    if ((window.secretMenu && window.secretMenu.isMenuOpen) || this.currentState === CONSTANTS.STATES.STORY_CUTSCENE) {
+    // 1. Check if Secret Menu is open - if so, silence everything and return
+    if ((window.secretMenu && window.secretMenu.isMenuOpen)) {
       if (this.currentBgmTrack) this.currentBgmTrack.pause();
       return;
     }
 
-    // 2. We added MAIN_MENU and DIFFICULTY_SELECT to the active states
+    // 2. Determine active state
+    const isCutscene = this.currentState === CONSTANTS.STATES.STORY_CUTSCENE || this.currentState === CONSTANTS.STATES.PROLOGUE;
+    
     const isActiveState = (
       this.currentState === CONSTANTS.STATES.PLAYING || 
       this.currentState === CONSTANTS.STATES.SHOP || 
       this.currentState === CONSTANTS.STATES.ARSENAL_SELECT ||
       this.currentState === CONSTANTS.STATES.MAIN_MENU ||
-      this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT
+      this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT ||
+      isCutscene
     );
 
     if (!isActiveState) {
@@ -516,19 +521,18 @@ _advanceStoryCutscene() {
 
     // 3. Check which track we should be playing
     let targetBgmKey = null;
+    let targetVolume = 0.3; // Default BGM volume
     
-    // Block main menu music if we've jumped
-    if (window.isSecretMenuJumped && (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT)) {
+    if (isCutscene) {
+        targetBgmKey = 'bgm_cutscene';
+        targetVolume = 0.1; // cutscene_bgm volume
+    } else if (window.isSecretMenuJumped && (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT)) {
         targetBgmKey = null; 
     } else if (this.currentState === CONSTANTS.STATES.MAIN_MENU || this.currentState === CONSTANTS.STATES.DIFFICULTY_SELECT) {
       targetBgmKey = 'bgm_main_menu'; 
     } else if (this.currentState === CONSTANTS.STATES.PLAYING || this.currentState === CONSTANTS.STATES.ARSENAL_SELECT) {
-      // MISSION MUSIC: Only play when actually inside the stage or selecting gear
       const levelData = this.levelManager.getLevelData();
       targetBgmKey = levelData.bgm; 
-    } else {
-      // For SHOP, VICTORY, etc. - stay silent or maintain current track pause
-      targetBgmKey = null;
     }
 
     // 4. Handle changing the tracks
@@ -543,19 +547,24 @@ _advanceStoryCutscene() {
 
       if (this.currentBgmTrack) {
         this.currentBgmTrack.loop = true;
-        this.currentBgmTrack.volume = 0.3; 
+        this.currentBgmTrack.volume = this.uiManager.masterVolume * targetVolume; 
         
         const p = this.currentBgmTrack.play();
         if (p && p.catch) p.catch(() => {});
       }
-    } else if (this.currentBgmTrack && this.currentBgmTrack.paused) {
-      const p = this.currentBgmTrack.play();
-      if (p && p.catch) p.catch(() => {});
+    } else if (this.currentBgmTrack) {
+      // Ensure volume is always synced even if track hasn't changed
+      this.currentBgmTrack.volume = this.uiManager.masterVolume * targetVolume;
+      if (this.currentBgmTrack.paused) {
+        const p = this.currentBgmTrack.play();
+        if (p && p.catch) p.catch(() => {});
+      }
     }
   }
 
   update(delta) {
     this.gameFrame++;
+    this._updateAudio();
     
     // --- Cinematic Overlay Timing ---
     if (this.overlayTimer > 0) {
@@ -670,6 +679,15 @@ _advanceStoryCutscene() {
               defeatSfx.currentTime = 0;
               defeatSfx.volume = (this.uiManager.masterVolume || 1) * (this.uiManager.sfxVolume || 1) * 1.0;
               const p = defeatSfx.play();
+              if (p && p.catch) p.catch(()=>{});
+          }
+
+          // Trigger General Boss Win Audio
+          const winSfx = this.assetLoader?.audio?.bgm_win_game;
+          if (winSfx) {
+              winSfx.currentTime = 0;
+              winSfx.volume = (this.uiManager.masterVolume || 1) * (this.uiManager.sfxVolume || 1) * 0.8;
+              const p = winSfx.play();
               if (p && p.catch) p.catch(()=>{});
           }
           return;
