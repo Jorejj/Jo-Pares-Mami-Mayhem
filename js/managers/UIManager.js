@@ -636,6 +636,9 @@ class UIManager {
   }
 
   _skipPrologue() {
+    // Stop any active voice track
+    this.game._stopVoice();
+
     // Skip entire cutscene and start level
     if (this.game.isPlayingStoryAfter) {
       // If skipping after-level story, go to shop

@@ -258,6 +258,39 @@ const audioSources = {
       sfx_rice_sizzle: 'assets/audio/Impacts/Rice Sizzle.wav',
       sfx_sticky: 'assets/audio/ui/stickysound.wav',
 
+      // --- VOICE PROLOGUES ---
+      v_prologue_1: 'assets/audio/voice_prologue/v_prologue_1.mp3',
+      v_prologue_2: 'assets/audio/voice_prologue/v_prologue_2.mp3',
+      v_prologue_3: 'assets/audio/voice_prologue/v_prologue_3.mp3',
+      v_prologue_4: 'assets/audio/voice_prologue/v_prologue_4.mp3',
+      v_prologue_5: 'assets/audio/voice_prologue/v_prologue_5.mp3',
+      v_prologue_6: 'assets/audio/voice_prologue/v_prologue_6.mp3',
+
+      v_boss1_before_1: 'assets/audio/voice_prologue/v_boss1_before_1.mp3',
+      v_boss1_before_2: 'assets/audio/voice_prologue/v_boss1_before_2.mp3',
+      v_boss1_before_3: 'assets/audio/voice_prologue/v_boss1_before_3.mp3',
+      v_boss1_after_1: 'assets/audio/voice_prologue/v_boss1_after_1.mp3',
+      v_boss1_after_2: 'assets/audio/voice_prologue/v_boss1_after_2.mp3',
+      v_boss1_after_3: 'assets/audio/voice_prologue/v_boss1_after_3.mp3',
+
+      v_boss2_before_1: 'assets/audio/voice_prologue/v_boss2_before_1.mp3',
+      v_boss2_before_2: 'assets/audio/voice_prologue/v_boss2_before_2.mp3',
+      v_boss2_before_3: 'assets/audio/voice_prologue/v_boss2_before_3.mp3',
+      v_boss2_after_1: 'assets/audio/voice_prologue/v_boss2_after_1.mp3',
+      v_boss2_after_2: 'assets/audio/voice_prologue/v_boss2_after_2.mp3',
+      v_boss2_after_3: 'assets/audio/voice_prologue/v_boss2_after_3.mp3',
+
+      v_boss3_before_1: 'assets/audio/voice_prologue/v_boss3_before_1.mp3',
+      v_boss3_before_2: 'assets/audio/voice_prologue/v_boss3_before_2.mp3',
+      v_boss3_before_3: 'assets/audio/voice_prologue/v_boss3_before_3.mp3',
+      
+      v_ending_1: 'assets/audio/voice_prologue/v_ending_1.mp3',
+      v_ending_2: 'assets/audio/voice_prologue/v_ending_2.mp3',
+      v_ending_3: 'assets/audio/voice_prologue/v_ending_3.mp3',
+      v_ending_4: 'assets/audio/voice_prologue/v_ending_4.mp3',
+      v_ending_5: 'assets/audio/voice_prologue/v_ending_5.mp3',
+      v_ending_6: 'assets/audio/voice_prologue/v_ending_6.mp3',
+      v_ending_7: 'assets/audio/voice_prologue/v_ending_7.mp3',
     };
 
     const imageEntries = Object.entries(imageSources);
@@ -302,21 +335,45 @@ const audioSources = {
       this.images[key] = img;
     });
 
-    // --- UPDATED AUDIO LOADING LOGIC ---
+    // --- UPDATED AUDIO LOADING LOGIC (Supports .mp3 / .wav Auto-Fallback) ---
     audioEntries.forEach(([key, src]) => {
       const audio = new Audio();
-      audio.addEventListener('canplaythrough', () => this._onAssetLoaded(), { once: true });
       
-      // Fallback: If audio fails, replace with a dummy object so .play() doesn't crash the game
-      audio.addEventListener('error', () => {
-        console.warn(`[AssetLoader] Missing audio: ${src}. Skipping safely.`);
-        this.audio[key] = { 
-            play: () => {}, 
-            pause: () => {}, 
-            currentTime: 0 
-        };
-        this._onAssetLoaded();
-      }, { once: true });
+      const onCanPlay = () => this._onAssetLoaded();
+      
+      const onError = () => {
+        // If the primary source fails, try the alternative extension (.mp3 <-> .wav)
+        let altSrc = null;
+        if (src.endsWith('.mp3')) altSrc = src.replace('.mp3', '.wav');
+        else if (src.endsWith('.wav')) altSrc = src.replace('.wav', '.mp3');
+
+        if (altSrc) {
+            console.log(`[AssetLoader] Retrying ${key} with alternative format: ${altSrc}`);
+            const altAudio = new Audio();
+            
+            altAudio.addEventListener('canplaythrough', () => {
+                this.audio[key] = altAudio; // Replace the original entry with the working one
+                this._onAssetLoaded();
+            }, { once: true });
+            
+            altAudio.addEventListener('error', () => {
+                // Both formats failed: Use a dummy object to prevent crashes
+                console.warn(`[AssetLoader] Missing audio: ${key} (Tried .mp3 and .wav). Skipping safely.`);
+                this.audio[key] = { play: () => {}, pause: () => {}, currentTime: 0 };
+                this._onAssetLoaded();
+            }, { once: true });
+            
+            altAudio.src = altSrc;
+        } else {
+            // No alternative extension to try
+            console.warn(`[AssetLoader] Missing audio: ${src}. Skipping safely.`);
+            this.audio[key] = { play: () => {}, pause: () => {}, currentTime: 0 };
+            this._onAssetLoaded();
+        }
+      };
+
+      audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+      audio.addEventListener('error', onError, { once: true });
 
       audio.src = src;
       this.audio[key] = audio;

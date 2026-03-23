@@ -86,14 +86,14 @@ class StageManager {
           boss: 'boss_kap'
         },
         storyBefore: [
-          { speaker: 'Kap Nino', text: 'So ikaw pala yung batang pasaway sa distrito ko.', imageKey: 'story_boss1_open_1' },
-          { speaker: 'Kap Nino', text: 'Isang utos ko lang, tiklop ang kariton mo. Walang makakalusot sa akin.', imageKey: 'story_boss1_open_2' },
-          { speaker: 'Jo', text: 'Hindi ako hihinto. Para ito kay Papa at sa pangalan namin.', imageKey: 'story_boss1_open_3' }
+          { speaker: 'Kap Nino', text: 'So ikaw pala yung batang pasaway sa distrito ko.', imageKey: 'story_boss1_open_1', audioKey: 'v_boss1_before_1' },
+          { speaker: 'Kap Nino', text: 'Isang utos ko lang, tiklop ang kariton mo. Walang makakalusot sa akin.', imageKey: 'story_boss1_open_2', audioKey: 'v_boss1_before_2' },
+          { speaker: 'Jo', text: 'Hindi ako hihinto. Para ito kay Papa at sa pangalan namin.', imageKey: 'story_boss1_open_3', audioKey: 'v_boss1_before_3' }
         ],
         storyAfter: [
-          { speaker: 'Jo', text: 'Isa na lang. Sa Maynila ko haharapin ang vlogger na sumira sa amin.', imageKey: 'story_manila_1' },
-          { speaker: 'Narrator', text: 'Sa gitna ng ingay ng lungsod, kumalat ang balitang dumarating si Jo.', imageKey: 'story_manila_2' },
-          { speaker: 'Narrator', text: 'At sa bawat kanto ng Maynila, papalapit ang susunod na banggaan.', imageKey: 'story_manila_3' }
+          { speaker: 'Jo', text: 'Isa na lang. Sa Maynila ko haharapin ang vlogger na sumira sa amin.', imageKey: 'story_manila_1', audioKey: 'v_boss1_after_1' },
+          { speaker: 'Narrator', text: 'Sa gitna ng ingay ng lungsod, kumalat ang balitang dumarating si Jo.', imageKey: 'story_manila_2', audioKey: 'v_boss1_after_2' },
+          { speaker: 'Narrator', text: 'At sa bawat kanto ng Maynila, papalapit ang susunod na banggaan.', imageKey: 'story_manila_3', audioKey: 'v_boss1_after_3' }
         ]
       },
 
@@ -167,14 +167,14 @@ class StageManager {
             boss: 'boss_ian'
         },
         storyBefore: [
-          { speaker: 'Vlogger Ian', text: 'Perfect timing! Live na live tayo, mga beshie!', imageKey: 'story_boss2_open_1' },
-          { speaker: 'Jo', text: 'Hindi content ang kasinungalingan mo. Buhay namin ang sinira mo.', imageKey: 'story_boss2_open_2' },
-          { speaker: 'Vlogger Ian', text: 'Then survive this stream. Followers, salubungin n\'yo siya!', imageKey: 'story_boss2_open_3' }
+          { speaker: 'Vlogger Ian', text: 'Perfect timing! Live na live tayo, mga beshie!', imageKey: 'story_boss2_open_1', audioKey: 'v_boss2_before_1' },
+          { speaker: 'Jo', text: 'Hindi content ang kasinungalingan mo. Buhay namin ang sinira mo.', imageKey: 'story_boss2_open_2', audioKey: 'v_boss2_before_2' },
+          { speaker: 'Vlogger Ian', text: 'Then survive this stream. Followers, salubungin n\'yo siya!', imageKey: 'story_boss2_open_3', audioKey: 'v_boss2_before_3' }
         ],
         storyAfter: [
-          { speaker: 'Vlogger Ian', text: 'Teka! May mas mataas pa sa akin... nasa Makati ang nag-utos!', imageKey: 'story_makati_1' },
-          { speaker: 'Jo', text: 'Kung siya ang utak nito, doon ko ito tatapusin.', imageKey: 'story_makati_2' },
-          { speaker: 'Narrator', text: 'Sa mga tore ng Makati, naghihintay ang pinakamatinding laban.', imageKey: 'story_makati_3' }
+          { speaker: 'Vlogger Ian', text: 'Teka! May mas mataas pa sa akin... nasa Makati ang nag-utos!', imageKey: 'story_makati_1', audioKey: 'v_boss2_after_1' },
+          { speaker: 'Jo', text: 'Kung siya ang utak nito, doon ko ito tatapusin.', imageKey: 'story_makati_2', audioKey: 'v_boss2_after_2' },
+          { speaker: 'Narrator', text: 'Sa mga tore ng Makati, naghihintay ang pinakamatinding laban.', imageKey: 'story_makati_3', audioKey: 'v_boss2_after_3' }
         ]
       },
 
@@ -248,19 +248,19 @@ class StageManager {
           boss: 'boss_final'
         },
         storyBefore: [
-          { speaker: 'Mastermind', text: 'Sa wakas, nandito ka na. Ako ang pumatay sa negosyo ng ama mo.', imageKey: 'story_boss3_open_1' },
-          { speaker: 'Mastermind', text: 'Masyadong masarap ang pares ninyo. Delikado sa imperyo ko.', imageKey: 'story_boss3_open_2' },
-          { speaker: 'Jo', text: 'Ginawa mo \'yon dahil sa pera? Dito na matatapos ang lahat.', imageKey: 'story_boss3_open_3' }
+          { speaker: 'Mastermind', text: 'Sa wakas, nandito ka na. Ako ang pumatay sa negosyo ng ama mo.', imageKey: 'story_boss3_open_1', audioKey: 'v_boss3_before_1' },
+          { speaker: 'Mastermind', text: 'Masyadong masarap ang pares ninyo. Delikado sa imperyo ko.', imageKey: 'story_boss3_open_2', audioKey: 'v_boss3_before_2' },
+          { speaker: 'Jo', text: 'Ginawa mo \'yon dahil sa pera? Dito na matatapos ang lahat.', imageKey: 'story_boss3_open_3', audioKey: 'v_boss3_before_3' }
         ],
         storyAfter: [
-          { speaker: 'Narrator', text: 'Pagbagsak ng Mastermind, lumabas ang buong katotohanan.', imageKey: 'story_ending_1' },
-          { speaker: 'Narrator', text: 'Isa-isang tumigil ang kasinungalingan nang makita ng lahat ang ebidensya.', imageKey: 'story_ending_2' },
-          { speaker: 'Narrator', text: 'Nalinis ang pangalan ng pamilya ni Jo at muling bumukas ang paresan.', imageKey: 'story_ending_3' },
-          { speaker: 'Narrator', text: 'Bumalik ang mga suki, at muling umusok ang sabaw sa kariton.', imageKey: 'story_ending_4' },
-          { speaker: 'Jo', text: 'Pa, bawi na tayo. Simula ulit, mas matatag na.', imageKey: 'story_ending_5' },
-          { speaker: 'Narrator', text: 'Wakas ng laban. Simula ng bagong alamat.', imageKey: 'story_ending_6' },
+          { speaker: 'Narrator', text: 'Pagbagsak ng Mastermind, lumabas ang buong katotohanan.', imageKey: 'story_ending_1', audioKey: 'v_ending_1' },
+          { speaker: 'Narrator', text: 'Isa-isang tumigil ang kasinungalingan nang makita ng lahat ang ebidensya.', imageKey: 'story_ending_2', audioKey: 'v_ending_2' },
+          { speaker: 'Narrator', text: 'Nalinis ang pangalan ng pamilya ni Jo at muling bumukas ang paresan.', imageKey: 'story_ending_3', audioKey: 'v_ending_3' },
+          { speaker: 'Narrator', text: 'Bumalik ang mga suki, at muling umusok ang sabaw sa kariton.', imageKey: 'story_ending_4', audioKey: 'v_ending_4' },
+          { speaker: 'Jo', text: 'Pa, bawi na tayo. Simula ulit, mas matatag na.', imageKey: 'story_ending_5', audioKey: 'v_ending_5' },
+          { speaker: 'Narrator', text: 'Wakas ng laban. Simula ng bagong alamat.', imageKey: 'story_ending_6', audioKey: 'v_ending_6' },
 
-          { speaker: '', text: 'Thank you for playing!', imageKey: 'story_thanks' }
+          { speaker: '', text: 'Thank you for playing!', imageKey: 'story_thanks', audioKey: 'v_ending_7' }
         ]
       }
     ];
@@ -318,12 +318,12 @@ class StageManager {
 
   startGlobalPrologue() {
     this.currentDialogueArray = [
-      { speaker: 'Narrator', text: 'Habang papalapit ang laban, bumalik sa isip ni Jo ang simula ng lahat.', imageKey: 'story_prologue_1' },
-      { speaker: 'Narrator', text: 'Masaya pa noon ang paresan at buo ang pangarap nilang mag-ama.', imageKey: 'story_prologue_2' },
-      { speaker: 'Narrator', text: 'Isang pekeng kwento ang sumira sa pangalan ng pamilya nila.', imageKey: 'story_prologue_3' },
-      { speaker: 'Narrator', text: 'Nang mapasara ang puwesto, halos sumuko na ang lahat.', imageKey: 'story_prologue_4' },
-      { speaker: 'Narrator', text: 'Pero hindi pumayag si Jo na matapos doon ang pangarap nila.', imageKey: 'story_prologue_5' },
-      { speaker: 'Jo', text: 'Para sa pamilya namin, lalaban ako hanggang dulo.', imageKey: 'story_prologue_6' }
+      { speaker: 'Narrator', text: 'Habang papalapit ang laban, bumalik sa isip ni Jo ang simula ng lahat.', imageKey: 'story_prologue_1', audioKey: 'v_prologue_1' },
+      { speaker: 'Narrator', text: 'Masaya pa noon ang paresan at buo ang pangarap nilang mag-ama.', imageKey: 'story_prologue_2', audioKey: 'v_prologue_2' },
+      { speaker: 'Narrator', text: 'Isang pekeng kwento ang sumira sa pangalan ng pamilya nila.', imageKey: 'story_prologue_3', audioKey: 'v_prologue_3' },
+      { speaker: 'Narrator', text: 'Nang mapasara ang puwesto, halos sumuko na ang lahat.', imageKey: 'story_prologue_4', audioKey: 'v_prologue_4' },
+      { speaker: 'Narrator', text: 'Pero hindi pumayag si Jo na matapos doon ang pangarap nila.', imageKey: 'story_prologue_5', audioKey: 'v_prologue_5' },
+      { speaker: 'Jo', text: 'Para sa pamilya namin, lalaban ako hanggang dulo.', imageKey: 'story_prologue_6', audioKey: 'v_prologue_6' }
     ];
     this.currentDialogueIndex = 0;
     this.isPlayingStoryBefore = true;

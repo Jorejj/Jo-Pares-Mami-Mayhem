@@ -35,6 +35,9 @@ class Game {
     this.lastKeyPressState = {};
     this.enemyProjectiles = [];
     
+    // --- Story Voice Tracking ---
+    this.currentVoiceTrack = null;
+    
     // --- Boss Defeat Delay Tracking ---
     this.bossDefeatTimer = 0;
     
@@ -196,6 +199,27 @@ class Game {
     });
   }
 
+  _stopVoice() {
+    if (this.currentVoiceTrack) {
+      this.currentVoiceTrack.pause();
+      this.currentVoiceTrack.currentTime = 0;
+      this.currentVoiceTrack = null;
+    }
+  }
+
+  _playVoice(audioKey) {
+    this._stopVoice();
+    if (!audioKey) return;
+    
+    const voice = this.assetLoader?.audio?.[audioKey];
+    if (voice) {
+      this.currentVoiceTrack = voice;
+      voice.volume = this.uiManager.masterVolume * this.uiManager.sfxVolume;
+      const p = voice.play();
+      if (p && p.catch) p.catch(()=>{});
+    }
+  }
+
   _startStoryOrLevel() {
     const currentLevel = this.levelManager.currentLevel;
     const shouldPlayGlobalPrologue = currentLevel === 1 && !this.saveManager.state.hasSeenPrologue;
@@ -208,6 +232,11 @@ class Game {
       this.uiManager.prologueIndex = 0;
       this.uiManager.prologueCharIndex = 0;
       this.uiManager.prologueFade = 0;
+      
+      // Play first voice line
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
+      
       this.saveCurrentState();
     } else if (this.stageManager.hasStoryBefore(currentLevel)) {
       this.stageManager.startStoryBefore(currentLevel);
@@ -216,6 +245,10 @@ class Game {
       this.uiManager.prologueIndex = 0;
       this.uiManager.prologueCharIndex = 0;
       this.uiManager.prologueFade = 0;
+      
+      // Play first voice line
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
     } else {
       this._startLevel();
     }
@@ -228,6 +261,7 @@ _advanceStoryCutscene() {
     this.uiManager.prologueFade = 0;
     
     if (!hasMore) {
+      this._stopVoice(); // Stop voice when cutscene ends
       if (this.isPlayingStoryAfter) {
         // --- FIXED: CHECK IF IT'S THE FINAL LEVEL ---
         if (this.levelManager.currentLevel >= this.levelManager.maxLevel) {
@@ -249,6 +283,10 @@ _advanceStoryCutscene() {
       } else {
         this._startLevel();
       }
+    } else {
+      // Play next voice line
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
     }
   }
 
@@ -276,6 +314,10 @@ _advanceStoryCutscene() {
       this.uiManager.prologueIndex = 0;
       this.uiManager.prologueCharIndex = 0;
       this.uiManager.prologueFade = 0;
+      
+      // Play first voice line of aftermath
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
     } else {
       this.currentState = CONSTANTS.STATES.SHOP;
       this.shopManager.open();
@@ -300,6 +342,10 @@ _advanceStoryCutscene() {
       this.uiManager.prologueIndex = 0;
       this.uiManager.prologueCharIndex = 0;
       this.uiManager.prologueFade = 0;
+
+      // Play first voice line
+      const dialogue = this.stageManager.getCurrentDialogue();
+      if (dialogue) this._playVoice(dialogue.audioKey);
     } else {
       this._startLevel();
     }
