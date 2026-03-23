@@ -72,6 +72,8 @@ class AssetLoader {
       boss_mastermind: 'assets/animations/boss/boss3_malu.png',
       boss3_proj: 'assets/animations/boss/boss3_proj.png',
       boss3_aura: 'assets/animations/boss/boss3_aura.png',
+      jo_reload: 'assets/animations/jo-reload.png',
+      jo_reload2: 'assets/animations/jo-reload (2).png',
 
       // Story/Prologue Assets
       story1: 'assets/story/story1.png',

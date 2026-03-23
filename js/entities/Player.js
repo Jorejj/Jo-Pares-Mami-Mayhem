@@ -377,14 +377,23 @@ class Player {
 
     const { mouse } = this.game.inputHandler;
 
-    if (mouse.isDown && !this.isDragging && !this.isFiring) {
+    // --- RELOAD STATE CHECK ---
+    const weapon = this.arsenal[this.selectedWeapon];
+    const isReloading = weapon && weapon.timeSinceLastFire < weapon.cooldown;
+
+    if (mouse.isDown && !this.isDragging && !this.isFiring && !isReloading) {
       this.isDragging = true; this.dragStart = { x: mouse.x, y: mouse.y }; this.currentFrame = 0; 
     }
 
     if (this.isDragging) {
-      this.dragCurrent = { x: mouse.x, y: mouse.y };
-      const { vx, vy } = this.game.inputHandler.getDragVector();
-      if (vx !== 0 || vy !== 0) this.aimAngle = Math.atan2(vy, vx);
+      if (isReloading) {
+        // Cancel dragging if we somehow enter reload state (e.g. switch weapon)
+        this.isDragging = false;
+      } else {
+        this.dragCurrent = { x: mouse.x, y: mouse.y };
+        const { vx, vy } = this.game.inputHandler.getDragVector();
+        if (vx !== 0 || vy !== 0) this.aimAngle = Math.atan2(vy, vx);
+      }
     }
 
     if (!mouse.isDown && this.isDragging) {
@@ -578,14 +587,62 @@ class Player {
   
   draw(ctx) {
     const sprite = this.game.assetLoader?.images?.player; 
+    const reload1 = this.game.assetLoader?.images?.jo_reload;
+    const reload2 = this.game.assetLoader?.images?.jo_reload2;
+
+    const weapon = this.arsenal[this.selectedWeapon];
+    const isReloading = weapon && weapon.timeSinceLastFire < weapon.cooldown;
+
     if (sprite && sprite.complete) {
       const cols = 5; const rows = 3;
       const sw = sprite.width / cols; const sh = sprite.height / rows;
       let row = 0; let frame = 0;
       const state = this.game.currentState;
 
-      if (state === CONSTANTS.STATES.VICTORY || state === CONSTANTS.STATES.SHOP) { row = 0; frame = 3 + (this.currentFrame % 2); } 
-      else if (state === CONSTANTS.STATES.GAMEOVER) { row = 2; frame = Math.min(4, this.currentFrame); }
+      // Determine Animation State
+      if (state === CONSTANTS.STATES.VICTORY || state === CONSTANTS.STATES.SHOP) { 
+        row = 0; frame = 3 + (this.currentFrame % 2); 
+      } 
+      else if (state === CONSTANTS.STATES.GAMEOVER) { 
+        row = 2; frame = Math.min(4, this.currentFrame); 
+      }
+      else if (isReloading) {
+        // Draw reload special sprites if available
+        const reloadSprite = (Math.floor(Date.now() / 200) % 2 === 0) ? reload1 : reload2;
+        if (reloadSprite && reloadSprite.complete) {
+            ctx.save();
+            ctx.translate(this.x + this.width / 2, this.y + this.height);
+            const cartImg = this.game.assetLoader?.images?.jo_cart;
+            if (cartImg && cartImg.complete) ctx.drawImage(cartImg, -this.width * 2.2, -300 -15, 550, 300);
+            
+            // Reload sprites might have different dimensions, but let's draw them in character space
+            ctx.drawImage(reloadSprite, -this.width / 2, -this.height, this.width, this.height);
+            
+            const tableImg = this.game.assetLoader?.images?.table;
+            const chairImg = this.game.assetLoader?.images?.chair;
+            if (tableImg && tableImg.complete) ctx.drawImage(tableImg, 76, -90 + 60, 100, 90);
+            if (chairImg && chairImg.complete) { ctx.drawImage(chairImg, 150, -50 + 55, 60, 50); ctx.drawImage(chairImg, 56, -50 + 60, 60, 50); }
+            ctx.restore();
+
+            // Draw "RELOADING" text above Jo
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.font = 'bold 20px "Comic Sans MS", sans-serif';
+            ctx.textAlign = 'center';
+            const bounce = Math.sin(Date.now() / 150) * 5;
+            ctx.strokeText("RELOADING...", this.x + this.width/2, this.y - 20 + bounce);
+            ctx.fillText("RELOADING...", this.x + this.width/2, this.y - 20 + bounce);
+            ctx.restore();
+
+            const sackImg = this.game.assetLoader?.images?.sack;
+            if (sackImg && sackImg.complete) ctx.drawImage(sackImg, 0, this.game.canvas.height - 140, 350, 140);
+            return; // Exit draw early for reloading
+        }
+        // Fallback to normal if reload sprites missing
+        row = 0; frame = 0;
+      }
       else if (this.isFiring) { row = 1; frame = this.currentFrame; }
       else if (this.isDragging) {
         row = 1; 
