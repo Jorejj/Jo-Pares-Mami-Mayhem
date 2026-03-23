@@ -105,6 +105,12 @@ class Game {
   }
 
   saveCurrentState() {
+    // === BLOCK AUTO-SAVE IN GOD MODE ===
+    if (window.isSecretMenuJumped) {
+        console.log("[SaveManager] Auto-save blocked: Secret Menu / God Mode active.");
+        return;
+    }
+
     const state = this.saveManager.state;
     state.kita = this.player.kita;
     state.currentLevel = this.waveManager.currentWave;
