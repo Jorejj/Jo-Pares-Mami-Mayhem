@@ -39,6 +39,18 @@ class UIManager {
   }
 
   _setupHtmlButtons() {
+    // === NEW: GLOBAL BUTTON CLICK SOUND ===
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('button')) {
+        const sfx = this.game.assetLoader?.audio?.sfx_click;
+        if (sfx) {
+          sfx.currentTime = 0;
+          sfx.volume = this.masterVolume * this.sfxVolume;
+          sfx.play().catch(()=>{});
+        }
+      }
+    });
+
     const actions = {
       'btn-new-game': () => this._handleNewGameClick(),
       'btn-confirm-overlay-yes': () => this._handleOverlayConfirmYes(),
@@ -49,7 +61,11 @@ class UIManager {
       'btn-diff-medium': () => this._startNewGame('medium'),
       'btn-diff-hard': () => this._startNewGame('hard'),
       'btn-tut-next': () => this._advanceTutorial(),
-      'btn-visit-shop': () => { this.game.currentState = CONSTANTS.STATES.SHOP; this.game.shopManager.open(); },
+      'btn-visit-shop': () => { 
+        this.game.currentState = CONSTANTS.STATES.SHOP; 
+        this.game.shopManager.open(); 
+        this._updateShopUI();
+      },
       'btn-shop-mami': () => { this.game.shopManager.handleSelection(1); this._updateShopUI(); },
       'btn-shop-pares': () => { this.game.shopManager.handleSelection(2); this._updateShopUI(); },
       'btn-shop-rice': () => { this.game.shopManager.handleSelection(3); this._updateShopUI(); },
@@ -83,6 +99,9 @@ class UIManager {
           this.isPaused = false;
         }
         this.wasPausedBeforeSettings = false;
+      },
+      'btn-settings-x-home': () => {
+        this.isSettingsOpen = false;
       },
       'btn-back-home': () => { 
         this.isSettingsOpen = false;
@@ -155,29 +174,24 @@ class UIManager {
     }
     
     // NEW: Separate volume sliders
-    const masterSlider = document.getElementById('slider-volume-master');
-    if (masterSlider) {
-      masterSlider.oninput = (e) => {
-        this.masterVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
-    
-    const bgmSlider = document.getElementById('slider-volume-bgm');
-    if (bgmSlider) {
-      bgmSlider.oninput = (e) => {
-        this.bgmVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
-    
-    const sfxSlider = document.getElementById('slider-volume-sfx');
-    if (sfxSlider) {
-      sfxSlider.oninput = (e) => {
-        this.sfxVolume = parseFloat(e.target.value);
-        this._updateAllVolumes();
-      };
-    }
+    const setupSliders = (ids, targetVar) => {
+      ids.forEach(id => {
+        const slider = document.getElementById(id);
+        if (slider) {
+          slider.oninput = (e) => {
+            const val = parseFloat(e.target.value);
+            this[targetVar] = val;
+            // Sync all sliders of the same type
+            document.querySelectorAll(`.${slider.className}`).forEach(s => s.value = val);
+            this._updateAllVolumes();
+          };
+        }
+      });
+    };
+
+    setupSliders(['slider-volume-master', 'slider-volume-master-home'], 'masterVolume');
+    setupSliders(['slider-volume-bgm', 'slider-volume-bgm-home'], 'bgmVolume');
+    setupSliders(['slider-volume-sfx', 'slider-volume-sfx-home'], 'sfxVolume');
 
     this.game.canvas.addEventListener('click', (e) => {
       // Resume instantly when pause screen is clicked
@@ -733,7 +747,12 @@ class UIManager {
     this._showScreen('screen-victory', state === CONSTANTS.STATES.VICTORY && !this.isSettingsOpen);
     this._showScreen('screen-shop', state === CONSTANTS.STATES.SHOP && !this.isSettingsOpen);
     this._showScreen('screen-gameover', state === CONSTANTS.STATES.GAMEOVER && !this.isSettingsOpen);
-    this._showScreen('screen-settings', this.isSettingsOpen && !this.isConfirmingHome);
+    
+    // Toggle correct settings screen
+    const isHome = state === CONSTANTS.STATES.MAIN_MENU;
+    this._showScreen('screen-settings-home', this.isSettingsOpen && isHome);
+    this._showScreen('screen-settings', this.isSettingsOpen && !isHome && !this.isConfirmingHome);
+
     this._showScreen(
       'newgame-confirm-overlay',
       this.confirmAction === 'new-game-overwrite' || this.confirmAction === 'quit-home'
@@ -794,7 +813,6 @@ class UIManager {
       }
     }
 
-    if (state === CONSTANTS.STATES.SHOP) this._updateShopUI();
     if (state === CONSTANTS.STATES.VICTORY) {
         const stats = document.getElementById('victory-stats');
         if (stats) stats.innerText = `KITA EARNED: ${CONSTANTS.CURRENCY_SYMBOL}${this.game.player.kita}`;
@@ -865,15 +883,15 @@ class UIManager {
       const upgradeCost = shop.getUpgradeCost(w);
       const isMax = weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL;
 
-      let content = `<span class="item-name">[${index + 1}] ${w.toUpperCase()}</span>`;
+      let content = `<span class="item-name" style="pointer-events:none;">[${index + 1}] ${w.toUpperCase()}</span>`;
       if (!weapon.unlocked) {
-        content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}</span>`;
+        content += `<span class="item-price" style="pointer-events:none;">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}</span>`;
         btn.disabled = player.kita < weapon.baseCost; 
       } else if (isMax) {
-        content += `<span class="item-price">LVL: ${weapon.level} (MAX)</span>`;
+        content += `<span class="item-price" style="pointer-events:none;">LVL: ${weapon.level} (MAX)</span>`;
         btn.disabled = true; 
       } else {
-        content += `<span class="item-price">LVL: ${weapon.level} ➔ ${weapon.level + 1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
+        content += `<span class="item-price" style="pointer-events:none;">LVL: ${weapon.level} ➔ ${weapon.level + 1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
         btn.disabled = player.kita < upgradeCost; 
       }
       btn.innerHTML = content;
@@ -887,12 +905,12 @@ class UIManager {
       const cost = special.baseCost;
       const keyMap = ['4', '5', '6'];
 
-      let content = `<span class="item-name">[${keyMap[index]}] ${s.toUpperCase()}</span>`;
+      let content = `<span class="item-name" style="pointer-events:none;">[${keyMap[index]}] ${s.toUpperCase()}</span>`;
       if (!special.unlocked) {
-        content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
+        content += `<span class="item-price" style="pointer-events:none;">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
         btn.disabled = player.kita < cost; 
       } else {
-        content += `<span class="item-price" style="color:#f39c12">UNLOCKED!</span>`;
+        content += `<span class="item-price" style="pointer-events:none; color:#f39c12">UNLOCKED!</span>`;
         btn.disabled = true; 
       }
       btn.innerHTML = content;
@@ -1547,8 +1565,19 @@ _drawPlayingHUD(ctx) {
   _togglePause() {
     if (this.game.currentState !== CONSTANTS.STATES.PLAYING) return;
     this.isPaused = !this.isPaused;
-    const btn = document.getElementById('btn-pause-toggle');
-    if (btn) btn.innerText = this.isPaused ? '▶️' : '⏸️';
+    
+    const pauseShape = document.querySelector('#btn-pause-toggle .pause-shape');
+    const playShape = document.querySelector('#btn-pause-toggle .play-shape');
+    
+    if (pauseShape && playShape) {
+      if (this.isPaused) {
+        pauseShape.classList.add('hidden');
+        playShape.classList.remove('hidden');
+      } else {
+        pauseShape.classList.remove('hidden');
+        playShape.classList.add('hidden');
+      }
+    }
   }
 
   _drawShop(ctx) { }

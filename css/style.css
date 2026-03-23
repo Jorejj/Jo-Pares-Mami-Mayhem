@@ -248,9 +248,47 @@ input[type=range] { width: 100%; cursor: pointer; }
 /* MODIFIERS & UTILITIES */
 .comic-title.yellow { color: #f1c40f; }
 .comic-title.green { color: #2ecc71; }
-.comic-title.settings { font-size: 48px; color: #34495e; margin-bottom: 20px; }
+.comic-title.settings { font-size: 36px; color: #34495e; margin-bottom: 10px; }
 
-.comic-box.settings { width: 450px; }
+.comic-box.settings { 
+  width: 500px; 
+  height: 95%; 
+  padding: 25px 30px; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  overflow: hidden;
+}
+
+.comic-box.settings.home {
+  height: auto;
+  min-height: 500px;
+}
+
+.comic-box.settings .volume-container {
+  margin-bottom: 8px;
+  padding: 8px;
+}
+
+.comic-box.settings .volume-label {
+  font-size: 15px;
+}
+
+.comic-box.settings .menu-btn {
+  width: 320px;
+  padding: 10px;
+  margin: 8px;
+  font-size: 20px;
+}
+
+.comic-box.settings .close-x {
+  top: 10px;
+  right: 10px;
+  width: 35px;
+  height: 35px;
+  font-size: 20px;
+}
 .menu-btn.full-width { width: 100%; }
 .menu-btn.small-text { font-size: 18px; }
 
@@ -479,4 +517,39 @@ input[type=range] { width: 100%; cursor: pointer; }
     transform: translateY(-8px) scale(1.02); 
     filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
   }
+}
+
+/* ===== PAUSE ICON SHAPES ===== */
+.pause-icon-container {
+  width: 30px;
+  height: 30px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pause-shape {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+}
+
+.pause-shape::before, .pause-shape::after {
+  content: "";
+  width: 6px;
+  height: 100%;
+  background: #000;
+  border-radius: 2px;
+}
+
+.play-shape {
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-left: 20px solid #000;
+  margin-left: 5px;
 }

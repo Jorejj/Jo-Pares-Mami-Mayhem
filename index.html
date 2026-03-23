@@ -26,7 +26,12 @@
     
     <div id="ui-layer">
       <div id="settings-btn-container" class="hidden">
-        <button id="btn-pause-toggle" class="pause-btn">⏸️</button>
+        <button id="btn-pause-toggle" class="pause-btn">
+          <div class="pause-icon-container">
+            <div class="pause-shape"></div>
+            <div class="play-shape hidden"></div>
+          </div>
+        </button>
         <button id="btn-settings-open" class="settings-btn">⚙️</button>
       </div>
 
@@ -138,31 +143,53 @@
           
           <div class="volume-container">
             <label class="volume-label">MASTER VOLUME</label>
-            <input type="range" id="slider-volume-master" min="0" max="1" step="0.01" value="0.5">
+            <input type="range" id="slider-volume-master" class="slider-master" min="0" max="1" step="0.01" value="0.5">
           </div>
           
           <div class="volume-container">
             <label class="volume-label">BGM VOLUME</label>
-            <input type="range" id="slider-volume-bgm" min="0" max="1" step="0.01" value="0.5">
+            <input type="range" id="slider-volume-bgm" class="slider-bgm" min="0" max="1" step="0.01" value="0.5">
           </div>
           
           <div class="volume-container">
             <label class="volume-label">SFX VOLUME</label>
-            <input type="range" id="slider-volume-sfx" min="0" max="1" step="0.01" value="0.5">
+            <input type="range" id="slider-volume-sfx" class="slider-sfx" min="0" max="1" step="0.01" value="0.5">
           </div>
           
-          <!-- Context-aware button containers -->
-          <div id="settings-home-buttons">
-            <button id="btn-reset-audio-defaults" class="menu-btn full-width">RESET TO DEFAULT</button>
-            <button id="btn-settings-close-home" class="menu-btn green full-width">CLOSE</button>
-          </div>
-          
-          <div id="settings-playing-buttons" class="hidden">
+          <div id="settings-playing-buttons">
             <button id="btn-save-game" class="menu-btn yellow full-width">SAVE GAME</button>
             <button id="btn-clear-save" class="menu-btn red full-width">CLEAR SAVE</button>
             <button id="btn-howtoplay-settings" class="menu-btn full-width">HOW TO PLAY</button>
             <button id="btn-settings-quit-home" class="menu-btn red full-width">QUIT TO HOME</button>
             <button id="btn-settings-close" class="menu-btn green full-width">BACK TO GAME</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Context-aware Home Settings -->
+      <div id="screen-settings-home" class="ui-screen hidden">
+        <div class="comic-box settings home">
+          <button id="btn-settings-x-home" class="close-x">X</button>
+          <h1 class="comic-title settings">SETTINGS</h1>
+          
+          <div class="volume-container">
+            <label class="volume-label">MASTER VOLUME</label>
+            <input type="range" id="slider-volume-master-home" class="slider-master" min="0" max="1" step="0.01" value="0.5">
+          </div>
+          
+          <div class="volume-container">
+            <label class="volume-label">BGM VOLUME</label>
+            <input type="range" id="slider-volume-bgm-home" class="slider-bgm" min="0" max="1" step="0.01" value="0.5">
+          </div>
+          
+          <div class="volume-container">
+            <label class="volume-label">SFX VOLUME</label>
+            <input type="range" id="slider-volume-sfx-home" class="slider-sfx" min="0" max="1" step="0.01" value="0.5">
+          </div>
+          
+          <div id="settings-home-buttons">
+            <button id="btn-reset-audio-defaults" class="menu-btn full-width">RESET TO DEFAULT</button>
+            <button id="btn-settings-close-home" class="menu-btn green full-width">CLOSE</button>
           </div>
         </div>
       </div>

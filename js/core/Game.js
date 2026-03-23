@@ -157,6 +157,17 @@ class Game {
         return;
       }
 
+      if (key === 'escape') {
+          if (this.currentState === CONSTANTS.STATES.PLAYING || this.currentState === CONSTANTS.STATES.SHOP) {
+              if (this.uiManager.isSettingsOpen) {
+                  this.uiManager._closeSettings();
+              } else {
+                  this.uiManager._openSettings();
+              }
+              return;
+          }
+      }
+
       if (this.currentState === CONSTANTS.STATES.MAIN_MENU) {
         if (key === "n") this.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
         else if (key === "l") this.loadSavedGame(); 
@@ -277,9 +288,6 @@ _advanceStoryCutscene() {
       if (this.isPlayingStoryAfter) {
         // --- FIXED: CHECK IF IT'S THE FINAL LEVEL ---
         if (this.levelManager.currentLevel >= this.levelManager.maxLevel) {
-            // GAME BEATEN! Show Win Overlay + Special Audio
-            this._showOverlay('GAME_COMPLETE', "CONGRATULATIONS!", "YOU SAVED THE FAMILY LEGACY!", 8000);
-            
             // Play Final Win Audio
             const winSfx = this.assetLoader?.audio?.bgm_win_game;
             if (winSfx) {
@@ -431,6 +439,9 @@ _advanceStoryCutscene() {
   }
 
   loadSavedGame() {
+    // Reset jump flag to ensure this session's progress can be auto-saved.
+    window.isSecretMenuJumped = false;
+
     this.saveManager.load();
     const state = this.saveManager.state;
     
@@ -443,6 +454,8 @@ _advanceStoryCutscene() {
     this.currentDifficultyKey = savedDifficultyKey;
     this.currentDifficulty = CONSTANTS.DIFFICULTY[savedDifficultyKey] || CONSTANTS.DIFFICULTY.medium;
     this.levelManager.currentDifficulty = this.currentDifficulty;
+    
+    // syncWithSave cleans up stats and removes God Mode overrides.
     this.player.syncWithSave(state);
     
     this.player.hp = this.player.maxHp;
@@ -612,6 +625,13 @@ _advanceStoryCutscene() {
       if (isBossLevel && this.bossDefeatTimer <= 0) {
           this.bossDefeatTimer = 5000;
           if (this.currentBgmTrack) this.currentBgmTrack.pause();
+
+          // Show Victory Overlay IMMEDIATELY
+          if (completedLevel === 15) {
+              this._showOverlay('GAME_COMPLETE', "CONGRATULATIONS!", "YOU SAVED THE FAMILY LEGACY!", 8000);
+          } else {
+              this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "YOU ARE THE MASTER OF PARES!", 4500);
+          }
 
           // Trigger the Defeat Music/Voiceline
           let defeatSfx = null;

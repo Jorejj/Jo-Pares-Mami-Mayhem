@@ -44,8 +44,10 @@ class LevelManager {
   advance() {
     if (this.currentLevel < this.maxLevel) {
       this.currentLevel++;
-      this.game.saveManager.state.currentLevel = this.currentLevel;
-      this.game.saveManager.save();
+      if (!window.isSecretMenuJumped) {
+        this.game.saveManager.state.currentLevel = this.currentLevel;
+        this.game.saveManager.save();
+      }
     }
   }
 
