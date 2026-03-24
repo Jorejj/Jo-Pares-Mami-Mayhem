@@ -82,7 +82,7 @@ class Game {
                 const audio = this.assetLoader?.audio?.sfx_button_hover;
                 if (audio) { 
                     audio.currentTime = 0; 
-                    audio.volume = 0.3; 
+                    audio.volume = (this.uiManager?.masterVolume || 1) * (this.uiManager?.sfxVolume || 1) * 0.3; 
                     const p = audio.play(); 
                     if (p && p.catch) p.catch(()=>{}); 
                 }
@@ -98,7 +98,7 @@ class Game {
             const sfx = this.assetLoader?.audio?.sfx_pause_menu;
             if (sfx) { 
                 sfx.currentTime = 0; 
-                sfx.volume = 0.8; 
+                sfx.volume = (this.uiManager?.masterVolume || 1) * (this.uiManager?.sfxVolume || 1); 
                 const p = sfx.play(); 
                 if (p && p.catch) p.catch(()=>{}); 
             }
@@ -202,7 +202,7 @@ class Game {
         if (key === 'p') {
             this.uiManager._togglePause();
             const sfx = this.assetLoader?.audio?.sfx_pause_menu;
-            if (sfx) { sfx.currentTime = 0; sfx.volume = 0.8; sfx.play().catch(()=>{}); }
+            if (sfx) { sfx.currentTime = 0; sfx.volume = (this.uiManager?.masterVolume || 1) * (this.uiManager?.sfxVolume || 1); sfx.play().catch(()=>{}); }
         }
       }
       else if (this.currentState === CONSTANTS.STATES.SHOP) {
@@ -373,7 +373,7 @@ _advanceStoryCutscene() {
     // Trigger Warning SFX for bosses
     if (type === 'BOSS_WARNING') {
         const sfx = this.assetLoader?.audio?.sfx_warning; // Use the beep sound
-        if (sfx) { sfx.currentTime = 0; sfx.volume = 0.8; sfx.play().catch(()=>{}); }
+        if (sfx) { sfx.currentTime = 0; sfx.volume = (this.uiManager?.masterVolume || 1) * (this.uiManager?.sfxVolume || 1); sfx.play().catch(()=>{}); }
     }
   }
 
@@ -458,6 +458,7 @@ _advanceStoryCutscene() {
         }
 
         this.saveManager.load();
+        this.uiManager.initAudioFromSave();
         this.levelManager.init();
         
         // --- CHECK IF WE ARE RECOVERING FROM A NEW GAME WIPE ---
@@ -583,14 +584,14 @@ _advanceStoryCutscene() {
 
       if (this.currentBgmTrack) {
         this.currentBgmTrack.loop = true;
-        this.currentBgmTrack.volume = this.uiManager.masterVolume * targetVolume; 
+        this.currentBgmTrack.volume = this.uiManager.masterVolume * this.uiManager.bgmVolume * targetVolume; 
         
         const p = this.currentBgmTrack.play();
         if (p && p.catch) p.catch(() => {});
       }
     } else if (this.currentBgmTrack) {
       // Ensure volume is always synced even if track hasn't changed
-      this.currentBgmTrack.volume = this.uiManager.masterVolume * targetVolume;
+      this.currentBgmTrack.volume = this.uiManager.masterVolume * this.uiManager.bgmVolume * targetVolume;
       if (this.currentBgmTrack.paused) {
         const p = this.currentBgmTrack.play();
         if (p && p.catch) p.catch(() => {});
@@ -692,17 +693,16 @@ _advanceStoryCutscene() {
       const completedLevel = this.levelManager.currentLevel;
       const isBossLevel = (completedLevel % 5 === 0);
 
-      // Trigger 5-second delay for boss levels
+      // Trigger 8-second delay for boss levels
       if (isBossLevel && this.bossDefeatTimer <= 0) {
-          this.bossDefeatTimer = 5000;
+          this.bossDefeatTimer = 8000;
           if (this.currentBgmTrack) this.currentBgmTrack.pause();
           this._stopAllLevelSFX();
 
-
           if (completedLevel === 15) {
-              this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "THE FINAL BLOW!", 5000);
+              this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "THE FINAL BLOW!", 8000);
           } else {
-              this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "YOU ARE THE MASTER OF PARES!", 4500);
+              this._showOverlay('LEVEL_COMPLETE', "BOSS DEFEATED!", "YOU ARE THE MASTER OF PARES!", 7500);
           }
 
           // Trigger the Defeat Music/Voiceline

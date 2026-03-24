@@ -108,6 +108,7 @@ class WaveManager {
       } else if (boss.type === 'boss_malu' || boss.type === 'boss_final') {
         this.bossMaluPool.release(boss);
       }
+      // BossKap is not pooled, but we still need to splice it from this.bosses (handled by the common splice below)
       this.bosses.splice(i, 1);
     }
     

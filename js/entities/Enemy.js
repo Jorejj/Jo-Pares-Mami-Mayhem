@@ -118,7 +118,11 @@ class Enemy {
         }
         
         const deathAudio = this.game.assetLoader.audio?.[randomSound];
-        if (deathAudio) { deathAudio.currentTime = 0; deathAudio.volume = 0.8; this._playAudioSafe(deathAudio); }
+        if (deathAudio) { 
+          deathAudio.currentTime = 0; 
+          deathAudio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
+          this._playAudioSafe(deathAudio); 
+        }
       }
 
       this.drawX = this.x; this.drawY = this.y;
@@ -240,7 +244,7 @@ class Enemy {
                     
                     const atkSound = Math.random() > 0.5 ? 'sfx_fmattack' : 'sfx_fmattack1';
                     const audio = this.game.assetLoader?.audio?.[atkSound];
-                    if (audio) { audio.currentTime = 0; audio.volume = 0.7; this._playAudioSafe(audio); }
+                    if (audio) { audio.currentTime = 0; audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * 0.7; this._playAudioSafe(audio); }
                 }
             } else {
                 this.currentFrame = 0; 
@@ -269,7 +273,7 @@ class Enemy {
                  const audio = this.game.assetLoader?.audio?.[attackSfxKey];
                  if (audio) { 
                      audio.currentTime = 0; 
-                     audio.volume = 0.7; 
+                     audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * 0.7; 
                      this._playAudioSafe(audio); 
                  }
             }
