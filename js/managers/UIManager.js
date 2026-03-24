@@ -57,7 +57,11 @@ class UIManager {
       'btn-confirm-overlay-yes': () => this._handleOverlayConfirmYes(),
       'btn-confirm-overlay-no': () => this._handleOverlayConfirmNo(),
       'btn-load-game': () => { this.game.loadSavedGame(); },
-      'btn-quit': () => location.reload(),
+      'btn-quit': () => {
+        if (confirm("Are you sure to quit?")) {
+          this.game.quitGame();
+        }
+      },
       'btn-diff-easy': () => this._startNewGame('easy'),
       'btn-diff-medium': () => this._startNewGame('medium'),
       'btn-diff-hard': () => this._startNewGame('hard'),
@@ -613,6 +617,8 @@ class UIManager {
       this._confirmStartNewGame();
     } else if (this.confirmAction === 'quit-home') {
       this._confirmQuitToHome();
+    } else if (this.confirmAction === 'quit-game') {
+      this.game.quitGame();
     }
   }
 

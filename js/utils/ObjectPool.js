@@ -568,30 +568,31 @@ class EnemyPool {
 // ============================================================
 
 const POOLED_ENEMY_TYPES = {
-  gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_gangster' },
-  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach' },
-  jbhotdog:   { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 55, baseHeight: 160, spriteKey: 'enemy_jbhotdog' },
-  bikejor:    { hp: 25,  speed: 2.2, damage: 10, kitaReward: 15, baseWidth: 70, baseHeight: 190, spriteKey: 'enemy_bikejor' },
-  kitboard:   { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard' },
-  rex:        { hp: 50,  speed: 1.0, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 165, spriteKey: 'enemy_rex' },
-  rat:        { hp: 20,  speed: 2.0, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 50,  spriteKey: 'enemy_rat' },
-  dog:        { hp: 35,  speed: 1.8, damage: 15, kitaReward: 15, baseWidth: 60, baseHeight: 80,  spriteKey: 'enemy_dog' },
-  student:    { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_student' },
-  worker:     { hp: 50,  speed: 1.0, damage: 12, kitaReward: 20, baseWidth: 55, baseHeight: 110, spriteKey: 'enemy_worker' },
-  elite:      { hp: 80,  speed: 0.8, damage: 20, kitaReward: 300, baseWidth: 60, baseHeight: 120, spriteKey: 'enemy_elite' },
-  boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_kap' },
-  boss_ian:   { hp: 900, speed: 0.9, damage: 40, kitaReward: 300, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_ian' },
-  boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_vlogger' },
-  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind' },
-  newDaga1:   { hp: 150, speed: 0.4, damage: 40, kitaReward: 30, baseWidth: 60, baseHeight: 150, spriteKey: 'newDaga1' },
-  ian:        { hp: 150, speed: 0.4, damage: 40, kitaReward: 100, baseWidth: 90, baseHeight: 180, spriteKey: 'ian' },
+  gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_gangster', attackCooldown: 1000 },
+  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach', attackCooldown: 500 },
+  jbhotdog:   { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 55, baseHeight: 160, spriteKey: 'enemy_jbhotdog', attackCooldown: 1000 },
+  bikejor:    { hp: 25,  speed: 2.2, damage: 10, kitaReward: 15, baseWidth: 70, baseHeight: 190, spriteKey: 'enemy_bikejor', attackCooldown: 1000 },
+  kitboard:   { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard', attackCooldown: 1000 },
+  rex:        { hp: 50,  speed: 1.0, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 165, spriteKey: 'enemy_rex', attackCooldown: 1000 },
+  rat:        { hp: 20,  speed: 2.0, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 50,  spriteKey: 'enemy_rat', attackCooldown: 500 },
+  dog:        { hp: 35,  speed: 1.8, damage: 15, kitaReward: 15, baseWidth: 60, baseHeight: 80,  spriteKey: 'enemy_dog', attackCooldown: 800 },
+  student:    { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_student', attackCooldown: 1000 },
+  worker:     { hp: 50,  speed: 1.0, damage: 12, kitaReward: 20, baseWidth: 55, baseHeight: 110, spriteKey: 'enemy_worker', attackCooldown: 1000 },
+  elite:      { hp: 80,  speed: 0.8, damage: 20, kitaReward: 20, baseWidth: 60, baseHeight: 120, spriteKey: 'enemy_elite', attackCooldown: 1500 },
+  newDaga1:   { hp: 100, speed: 0.4, damage: 40, kitaReward: 30, baseWidth: 60, baseHeight: 150, spriteKey: 'newDaga1', attackCooldown: 1200 },
+  //BOSS
+  boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_kap', attackCooldown: 1500 },
+  boss_ian:   { hp: 900, speed: 0.9, damage: 40, kitaReward: 300, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_ian', attackCooldown: 2000 },
+  boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_vlogger', attackCooldown: 2000 },
+  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind', attackCooldown: 2000 },
+  ian:        { hp: 150, speed: 0.4, damage: 40, kitaReward: 100, baseWidth: 90, baseHeight: 180, spriteKey: 'ian', attackCooldown: 2000 },
   // --- RESTORED MISSING ENEMIES ---
-  blonde:     { hp: 70,  speed: 1.4, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_blonde' },
-  asbula:     { hp: 80,  speed: 1.1, damage: 20, kitaReward: 30, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_asbula' },
-  willie:     { hp: 85,  speed: 1.2, damage: 25, kitaReward: 35, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_willie' },
-  fmbad:      { hp: 65,  speed: 1.5, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmbad' },
-  angryfm:    { hp: 60,  speed: 1.6, damage: 18, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_angryfm' },
-  fmteacher:  { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmteacher' },
+  blonde:     { hp: 70,  speed: 1.4, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_blonde', attackCooldown: 1000 },
+  asbula:     { hp: 80,  speed: 1.1, damage: 20, kitaReward: 30, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_asbula', attackCooldown: 1200 },
+  willie:     { hp: 85,  speed: 1.2, damage: 25, kitaReward: 35, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_willie', attackCooldown: 1200 },
+  fmbad:      { hp: 65,  speed: 1.5, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmbad', attackCooldown: 3500 },
+  angryfm:    { hp: 60,  speed: 1.6, damage: 18, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_angryfm', attackCooldown: 1500 },
+  fmteacher:  { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmteacher', attackCooldown: 2000 },
 };
 class PooledEnemy {
   constructor(game) {
@@ -656,8 +657,9 @@ class PooledEnemy {
     this.damage = config.damage;
     this.kitaReward = config.kitaReward;
     this.spriteKey = config.spriteKey;
+    this.attackCooldown = config.attackCooldown || 1000;
 
-    this.lastAttackTime = 0;
+    this.lastAttackTime = Date.now(); // Set to current time so they wait for cooldown before first attack
     this.slowActive = false;
     this.slowDuration = 0;
     this.slowFactor = 1;
@@ -724,7 +726,7 @@ class PooledEnemy {
   }
 
   canAttack() {
-    return (Date.now() - this.lastAttackTime) >= CONSTANTS.ENEMY_ATTACK_COOLDOWN;
+    return (Date.now() - this.lastAttackTime) >= this.attackCooldown;
   }
 
   recordAttack() {
@@ -902,12 +904,11 @@ class PooledEnemy {
                         if (this.game.player) this.game.player.addKita(this.kitaReward || 20);
                         
                         const moneyAudio = this.game.assetLoader?.audio?.sfx_money;
-                        if (moneyAudio) { 
-                            moneyAudio.currentTime = 0; 
-                            moneyAudio.volume = 0.6; 
-                            this._playAudioSafe(moneyAudio); 
-                        }
-                    }
+                        if (moneyAudio) {
+                            moneyAudio.currentTime = 0;
+                            moneyAudio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * 0.15;
+                            this._playAudioSafe(moneyAudio);
+                        }                    }
                 }
             }
         }

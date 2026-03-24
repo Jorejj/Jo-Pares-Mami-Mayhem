@@ -561,7 +561,7 @@ class Player {
           const hitSfx = this.game.assetLoader?.audio?.[hitSfxKey];
           if (hitSfx) {
               hitSfx.currentTime = 0;
-              hitSfx.volume = 0.6; 
+              hitSfx.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
               const p = hitSfx.play();
               if (p && p.catch) p.catch(() => {});
           }

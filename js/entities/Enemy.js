@@ -2,24 +2,24 @@
 // Handles movement, combat, status effects (slow/burn), and rendering.
 
 const ENEMY_TYPES = {
-  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach' }, 
-  newDaga1:   { hp: 25,  speed: 2.0, damage: 10, kitaReward: 15, baseWidth: 60, baseHeight: 100, spriteKey: 'enemy_newDaga1' },
-  gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_gangster' },
-  dog:        { hp: 35,  speed: 1.8, damage: 15, kitaReward: 15, baseWidth: 60, baseHeight: 80,  spriteKey: 'enemy_dog' },
-  boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_kap' },
-  fmteacher:  { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmteacher' },
-  bikejor:    { hp: 35,  speed: 2.2, damage: 15, kitaReward: 15, baseWidth: 70, baseHeight: 190, spriteKey: 'enemy_bikejor' },
-  jbhotdog:   { hp: 50,  speed: 1.5, damage: 12, kitaReward: 20, baseWidth: 55, baseHeight: 160, spriteKey: 'enemy_jbhotdog' },
-  kitboard:   { hp: 60,  speed: 1.3, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard' },
-  rex:        { hp: 70,  speed: 1.0, damage: 20, kitaReward: 30, baseWidth: 50, baseHeight: 165, spriteKey: 'enemy_rex' },
-  ian:        { hp: 500, speed: 0.6, damage: 40, kitaReward: 200, baseWidth: 120, baseHeight: 220, spriteKey: 'ian' },
-  blonde:     { hp: 70,  speed: 1.4, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_blonde' },
-  asbula:     { hp: 80,  speed: 1.1, damage: 20, kitaReward: 30, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_asbula' },
-  willie:     { hp: 85,  speed: 1.2, damage: 25, kitaReward: 35, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_willie' },
-  fmbad:      { hp: 65,  speed: 1.5, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmbad' },
-  angryfm:    { hp: 60,  speed: 1.6, damage: 18, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_angryfm' },
-  boss_ian:   { hp: 900, speed: 0.9, damage: 40, kitaReward: 300, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_ian' },
-  boss_final: { hp: 800, speed: 0.4, damage: 50, kitaReward: 500, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind' }, 
+  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach', attackCooldown: 500 }, 
+  newDaga1:   { hp: 25,  speed: 2.0, damage: 10, kitaReward: 15, baseWidth: 60, baseHeight: 100, spriteKey: 'enemy_newDaga1', attackCooldown: 500 },
+  gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_gangster', attackCooldown: 500 },
+  dog:        { hp: 35,  speed: 1.8, damage: 15, kitaReward: 15, baseWidth: 60, baseHeight: 80,  spriteKey: 'enemy_dog', attackCooldown: 500 },
+  fmteacher:  { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmteacher', attackCooldown: 2000 },
+  bikejor:    { hp: 35,  speed: 2.2, damage: 15, kitaReward: 15, baseWidth: 70, baseHeight: 190, spriteKey: 'enemy_bikejor', attackCooldown: 500 },
+  jbhotdog:   { hp: 50,  speed: 1.5, damage: 12, kitaReward: 20, baseWidth: 55, baseHeight: 160, spriteKey: 'enemy_jbhotdog', attackCooldown: 500 },
+  kitboard:   { hp: 60,  speed: 1.3, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard', attackCooldown: 500 },
+  rex:        { hp: 70,  speed: 1.0, damage: 20, kitaReward: 30, baseWidth: 50, baseHeight: 165, spriteKey: 'enemy_rex', attackCooldown: 500 },
+  ian:        { hp: 500, speed: 0.6, damage: 40, kitaReward: 200, baseWidth: 120, baseHeight: 220, spriteKey: 'ian', attackCooldown: 2000 },
+  blonde:     { hp: 70,  speed: 1.4, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_blonde', attackCooldown: 500 },
+  asbula:     { hp: 80,  speed: 1.1, damage: 20, kitaReward: 30, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_asbula', attackCooldown: 500 },
+  willie:     { hp: 85,  speed: 1.2, damage: 25, kitaReward: 35, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_willie', attackCooldown: 500 },
+  fmbad:      { hp: 65,  speed: 1.5, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmbad', attackCooldown: 2500 },
+  angryfm:    { hp: 60,  speed: 1.6, damage: 18, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_angryfm', attackCooldown: 1500 },
+  boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_kap', attackCooldown: 1500 },
+  boss_ian:   { hp: 900, speed: 0.9, damage: 40, kitaReward: 300, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_ian', attackCooldown: 2000 },
+  boss_final: { hp: 800, speed: 0.4, damage: 50, kitaReward: 500, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind', attackCooldown: 2000 }, 
 };
 
 class Enemy {
@@ -46,8 +46,9 @@ class Enemy {
     this.damage = config.damage;
     this.kitaReward = config.kitaReward;
     this.spriteKey = config.spriteKey;
+    this.attackCooldown = config.attackCooldown || 1000;
 
-    this.lastAttackTime = 0;
+    this.lastAttackTime = Date.now();
     this.slowActive = false; this.slowDuration = 0; this.slowFactor = 1;
     this.burnActive = false; this.burnDuration = 0; this.burnDamagePerTick = 0; this.lastBurnTick = Date.now();
 
@@ -81,8 +82,7 @@ class Enemy {
   }
 
   canAttack() { 
-    const cooldown = CONSTANTS.ENEMY_ATTACK_COOLDOWN || 2000;
-    return (Date.now() - this.lastAttackTime) >= cooldown; 
+    return (Date.now() - this.lastAttackTime) >= this.attackCooldown; 
   }
   
   recordAttack() { this.lastAttackTime = Date.now(); }
@@ -217,7 +217,7 @@ class Enemy {
                         if (this.game.player) this.game.player.addKita(this.kitaReward || 20);
                         
                         const moneyAudio = this.game.assetLoader?.audio?.sfx_money;
-                        if (moneyAudio) { moneyAudio.currentTime = 0; moneyAudio.volume = 0.6; this._playAudioSafe(moneyAudio); }
+                        if (moneyAudio) { moneyAudio.currentTime = 0; moneyAudio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * 0.15; this._playAudioSafe(moneyAudio); }
                     }
                 }
             }

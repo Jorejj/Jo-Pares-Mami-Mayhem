@@ -67,10 +67,25 @@ class Game {
 
   // --- UNIVERSAL QUIT FUNCTION ---
   quitGame() {
-      window.close(); 
+      this.saveCurrentState();
+      alert("Thank you for playing!");
+      
+      window.close();
+      
+      // Fallback for browsers that block direct window.close()
+      // Note: Browsers usually only allow window.close() if the tab was opened via script.
+      // This hack attempts to trick the browser into thinking it was script-opened.
+      const win = window.open("", "_self");
+      if (win) {
+          win.close();
+      }
+      
+      // Secondary fallback: Redirect to about:blank to clear the screen
       setTimeout(() => {
-          alert("Game Saved! Thanks for playing. You can now close this browser tab.");
-      }, 200);
+          if (!window.closed) {
+              window.location.href = "about:blank";
+          }
+      }, 500);
   }
 
   // --- GLOBAL UI AUDIO (SUPER BULLETPROOF) ---
@@ -104,9 +119,12 @@ class Game {
             }
         }
         
+        // Quit is now handled by UIManager with a confirmation modal
+        /*
         if (e.target && e.target.id === 'btn-quit') {
             this.quitGame();
         }
+        */
     });
   }
 
@@ -171,7 +189,11 @@ class Game {
       if (this.currentState === CONSTANTS.STATES.MAIN_MENU) {
         if (key === "n") this.currentState = CONSTANTS.STATES.DIFFICULTY_SELECT;
         else if (key === "l") this.loadSavedGame(); 
-        else if (key === "q") this.quitGame();
+        else if (key === "q") {
+          if (confirm("Are you sure you want to quit?")) {
+            this.quitGame();
+          }
+        }
       }
       else if (this.bossDefeatTimer > 0 && (key === " " || key === "enter")) {
         this._finishBossDefeatDelay();
