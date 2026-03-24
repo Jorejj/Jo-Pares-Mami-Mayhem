@@ -53,13 +53,22 @@ class Projectile {
   onHit(enemy) {
     if (this.type === 'rice') {
       this._applySplashDamage(enemy);
-      const audio = this.game.assetLoader?.audio?.sfx_rice_sizzle; 
-      if (audio) { audio.currentTime = 0; const p = audio.play(); if (p && p.catch) p.catch(()=>{}); }
+      const audio = this.game.assetLoader?.audio?.sfx_rice_sizzle;
+      if (audio) {
+        audio.currentTime = 0;
+        audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * 2.0;
+        const p = audio.play();
+        if (p && p.catch) p.catch(()=>{});
+      }
     } else {
-      const audio = this.game.assetLoader?.audio?.sfx_mami_impact; 
-      if (audio) { audio.currentTime = 0; const p = audio.play(); if (p && p.catch) p.catch(()=>{}); }
-    }
-    this.hasHit = true;
+      const audio = this.game.assetLoader?.audio?.sfx_mami_impact;
+      if (audio) {
+        audio.currentTime = 0;
+        audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * 2.0;
+        const p = audio.play();
+        if (p && p.catch) p.catch(()=>{});
+      }
+    }    this.hasHit = true;
   }
 
   /**
@@ -115,7 +124,12 @@ class Projectile {
         this.isActive = false; // Destroy main bowl
 
         const audio = this.game.assetLoader?.audio?.sfx_pares_split; 
-        if (audio) { audio.currentTime = 0; const p = audio.play(); if (p && p.catch) p.catch(()=>{}); }
+        if (audio) { 
+          audio.currentTime = 0; 
+          audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * 1.0;
+          const p = audio.play(); 
+          if (p && p.catch) p.catch(()=>{}); 
+        }
 
         // Dynamic Scaling: Lvl 1 = 2 splits, Lvl 5 = 6 splits
         const numSplits = this.level + 1;
@@ -166,7 +180,7 @@ class Projectile {
         const missAudio = this.game.assetLoader?.audio?.sfx_miss_ground;
         if (missAudio) { 
           missAudio.currentTime = 0; 
-          missAudio.volume = 0.4 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
+          missAudio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
           const p = missAudio.play(); 
           if (p && p.catch) p.catch(()=>{}); 
         }

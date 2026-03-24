@@ -34,6 +34,11 @@ class SaveManager {
         calamansi: false,
         chili: false,
         garlic: false
+      },
+      audioSettings: {
+        master: 0.5,
+        bgm: 0.5,
+        sfx: 0.5
       }
     };
   }

@@ -176,7 +176,7 @@ class Player {
     const audio = this.game.assetLoader?.audio?.[sfxKey];
     if (audio) { 
         audio.currentTime = 0; 
-        audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
+        audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
         const p = audio.play(); 
         if(p && p.catch) p.catch(()=>{}); 
     }
@@ -332,7 +332,7 @@ class Player {
     const audio = this.game.assetLoader?.audio?.sfx_jo_damage;
     if (audio) { 
         audio.currentTime = 0; 
-        audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
+        audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
         const p = audio.play(); 
         if (p && p.catch) p.catch(()=>{}); 
     }
@@ -561,7 +561,7 @@ class Player {
           const hitSfx = this.game.assetLoader?.audio?.[hitSfxKey];
           if (hitSfx) {
               hitSfx.currentTime = 0;
-              hitSfx.volume = 0.6; 
+              hitSfx.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
               const p = hitSfx.play();
               if (p && p.catch) p.catch(() => {});
           }
@@ -603,7 +603,7 @@ class Player {
     const audio = this.game.assetLoader?.audio?.sfx_slingshot;
     if (audio) { 
       audio.currentTime = 0; 
-      audio.volume = 0.8 * (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
+      audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1); 
       const p = audio.play(); 
       if (p && p.catch) p.catch(() => {}); 
     }

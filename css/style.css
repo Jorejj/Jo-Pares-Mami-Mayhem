@@ -178,11 +178,20 @@ input[type=range] { width: 100%; cursor: pointer; }
   flex-direction: column;
 }
 .section-title {
-  font-size: 28px;
+  font-size: clamp(18px, 2.5vw, 28px);
   color: #c0392b;
   border-bottom: 3px solid #c0392b;
   margin-bottom: 15px;
   font-weight: 900;
+  text-align: left;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 .item-grid {
   display: flex;

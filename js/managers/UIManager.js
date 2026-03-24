@@ -46,8 +46,7 @@ class UIManager {
         const sfx = this.game.assetLoader?.audio?.sfx_click;
         if (sfx) {
           sfx.currentTime = 0;
-          // Set to 100% relative to master volume
-          sfx.volume = this.masterVolume; 
+          sfx.volume = this.masterVolume * this.sfxVolume; 
           sfx.play().catch(()=>{});
         }
       }
@@ -58,7 +57,11 @@ class UIManager {
       'btn-confirm-overlay-yes': () => this._handleOverlayConfirmYes(),
       'btn-confirm-overlay-no': () => this._handleOverlayConfirmNo(),
       'btn-load-game': () => { this.game.loadSavedGame(); },
-      'btn-quit': () => location.reload(),
+      'btn-quit': () => {
+        if (confirm("Are you sure to quit?")) {
+          this.game.quitGame();
+        }
+      },
       'btn-diff-easy': () => this._startNewGame('easy'),
       'btn-diff-medium': () => this._startNewGame('medium'),
       'btn-diff-hard': () => this._startNewGame('hard'),
@@ -190,6 +193,7 @@ class UIManager {
             // Sync all sliders of the same type
             document.querySelectorAll(`.${slider.className}`).forEach(s => s.value = val);
             this._updateAllVolumes();
+            this._saveAudioSettings();
           };
         }
       });
@@ -292,6 +296,41 @@ class UIManager {
     });
   }
 
+  initAudioFromSave() {
+    if (this.game.saveManager && this.game.saveManager.state.audioSettings) {
+      const audio = this.game.saveManager.state.audioSettings;
+      this.masterVolume = audio.master;
+      this.bgmVolume = audio.bgm;
+      this.sfxVolume = audio.sfx;
+      
+      this._updateSliderValues();
+      this._updateAllVolumes();
+    }
+  }
+
+  _updateSliderValues() {
+    const setVal = (ids, val) => {
+      ids.forEach(id => {
+        const slider = document.getElementById(id);
+        if (slider) slider.value = val;
+      });
+    };
+    setVal(['slider-volume-master', 'slider-volume-master-home'], this.masterVolume);
+    setVal(['slider-volume-bgm', 'slider-volume-bgm-home'], this.bgmVolume);
+    setVal(['slider-volume-sfx', 'slider-volume-sfx-home'], this.sfxVolume);
+  }
+
+  _saveAudioSettings() {
+    if (this.game.saveManager) {
+      this.game.saveManager.state.audioSettings = {
+        master: this.masterVolume,
+        bgm: this.bgmVolume,
+        sfx: this.sfxVolume
+      };
+      this.game.saveManager.save();
+    }
+  }
+
   _updateGlobalVolume(vol) {
     if (!this.game.assetLoader || !this.game.assetLoader.audio) return;
     Object.values(this.game.assetLoader.audio).forEach(audio => {
@@ -306,7 +345,7 @@ class UIManager {
       if (audio instanceof Audio) {
         if (key.startsWith('bgm_')) {
           audio.volume = this.masterVolume * this.bgmVolume;
-        } else if (key.startsWith('sfx_')) {
+        } else if (key.startsWith('sfx_') || key.startsWith('v_')) {
           audio.volume = this.masterVolume * this.sfxVolume;
         } else {
           audio.volume = this.masterVolume;
@@ -320,15 +359,9 @@ class UIManager {
     this.bgmVolume = 0.5;
     this.sfxVolume = 0.5;
     
-    const masterSlider = document.getElementById('slider-volume-master');
-    const bgmSlider = document.getElementById('slider-volume-bgm');
-    const sfxSlider = document.getElementById('slider-volume-sfx');
-    
-    if (masterSlider) masterSlider.value = 0.5;
-    if (bgmSlider) bgmSlider.value = 0.5;
-    if (sfxSlider) sfxSlider.value = 0.5;
-    
+    this._updateSliderValues();
     this._updateAllVolumes();
+    this._saveAudioSettings();
   }
   
   _openSettings() {
@@ -584,6 +617,8 @@ class UIManager {
       this._confirmStartNewGame();
     } else if (this.confirmAction === 'quit-home') {
       this._confirmQuitToHome();
+    } else if (this.confirmAction === 'quit-game') {
+      this.game.quitGame();
     }
   }
 

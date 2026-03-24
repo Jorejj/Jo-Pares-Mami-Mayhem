@@ -84,7 +84,7 @@ class BossIan extends Enemy {
     const audio = this.game.assetLoader?.audio?.[key];
     if (!audio || typeof audio.play !== 'function') return;
     audio.currentTime = 0;
-    audio.volume = volume;
+    audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * volume;
     this._playAudioSafe(audio);
   }
 
