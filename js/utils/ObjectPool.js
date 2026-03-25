@@ -584,15 +584,15 @@ const POOLED_ENEMY_TYPES = {
   boss_kap:   { hp: 300, speed: 0.5, damage: 30, kitaReward: 100, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_kap', attackCooldown: 1500 },
   boss_ian:   { hp: 900, speed: 0.9, damage: 40, kitaReward: 300, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_ian', attackCooldown: 2000 },
   boss_diwata:{ hp: 400, speed: 0.6, damage: 25, kitaReward: 150, baseWidth: 120, baseHeight: 220, spriteKey: 'boss_vlogger', attackCooldown: 2000 },
-  boss_final: { hp: 600, speed: 0.4, damage: 40, kitaReward: 300, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind', attackCooldown: 2000 },
+  boss_final: { hp: 600, speed: 0.4, damage: .640, kitaReward: 300, baseWidth: 130, baseHeight: 240, spriteKey: 'boss_mastermind', attackCooldown: 2000 },
   ian:        { hp: 150, speed: 0.4, damage: 40, kitaReward: 100, baseWidth: 90, baseHeight: 180, spriteKey: 'ian', attackCooldown: 2000 },
   // --- RESTORED MISSING ENEMIES ---
   blonde:     { hp: 70,  speed: 1.4, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_blonde', attackCooldown: 1000 },
   asbula:     { hp: 80,  speed: 1.1, damage: 20, kitaReward: 30, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_asbula', attackCooldown: 1200 },
   willie:     { hp: 85,  speed: 1.2, damage: 25, kitaReward: 35, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_willie', attackCooldown: 1200 },
-  fmbad:      { hp: 65,  speed: 1.5, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmbad', attackCooldown: 3500 },
-  angryfm:    { hp: 60,  speed: 1.6, damage: 18, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_angryfm', attackCooldown: 1500 },
-  fmteacher:  { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmteacher', attackCooldown: 2000 },
+  fmbad:      { hp: 65,  speed: 1.5, damage: 15, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmbad', attackCooldown: 4000 },
+  angryfm:    { hp: 60,  speed: 1.6, damage: 18, kitaReward: 25, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_angryfm', attackCooldown: 4000 },
+  fmteacher:  { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_fmteacher', attackCooldown: 4000 },
 };
 class PooledEnemy {
   constructor(game) {

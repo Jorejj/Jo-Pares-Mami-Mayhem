@@ -63,8 +63,6 @@ class AssetLoader {
       boss1_proj: 'assets/animations/boss/boss1_proj.png',
       newDaga1: 'assets/animations/newDaga1.png',
       ian: 'assets/animations/ian.png',
-      chair: 'assets/animations/chair.png',
-      table: 'assets/animations/table.png',
       sack: 'assets/animations/sack.png',
       sack2: 'assets/animations/sack2.png',
       sack_silver: 'assets/animations/silverSack.png',

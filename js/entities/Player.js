@@ -733,10 +733,7 @@ class Player {
 
       ctx.drawImage(sprite, sx, sy, sw, sh, -this.width / 2, -this.height, this.width, this.height);
 
-      const tableImg = this.game.assetLoader?.images?.table;
-      const chairImg = this.game.assetLoader?.images?.chair;
-      if (tableImg && tableImg.complete) ctx.drawImage(tableImg, 76, -90 + 60, 100, 90);
-      if (chairImg && chairImg.complete) { ctx.drawImage(chairImg, 150, -50 + 55, 60, 50); ctx.drawImage(chairImg, 56, -50 + 60, 60, 50); }
+      // Note: Chair and table drawing logic removed as per user request.
       ctx.restore();
 
       let sackImgKey = 'sack';
