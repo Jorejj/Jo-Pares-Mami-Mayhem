@@ -11,7 +11,7 @@ class BossMalu extends Enemy {
   }
 
 init(config = {}) {
-    // --- NEW: DYNAMIC DIFFICULTY SCALING ---
+    // --- FEATURE 3: DYNAMIC DIFFICULTY SCALING (EASY = 1x, MEDIUM = 1.5x, HARD = 2x) ---
     const diffKey = this.game.currentDifficultyKey || 'easy';
     const statMult = diffKey === 'hard' ? 2.0 : (diffKey === 'medium' ? 1.5 : 1.0);
     const speedMult = diffKey === 'hard' ? 1.4 : (diffKey === 'medium' ? 1.2 : 1.0);
@@ -24,27 +24,31 @@ init(config = {}) {
     this.width = config.width ?? 130;
     this.height = config.height ?? 240;
     
-    // Scaled Damage & Reward
-    this.damage = (config.damage ?? 35) * statMult;
+    // Scaled Damage & Kita Reward
+    this.damage = (config.damage ?? 45) * statMult;
     this.kitaReward = (config.kitaReward ?? 1500) * statMult;
 
-    // Scaled Base HP (Applied to all 3 phases!)
-    this.baseHp = (config.baseHp ?? 800) * statMult;
-    this.phase1Hp = this.baseHp;
-    this.phase2Hp = Math.round(this.baseHp * 1.2);
-    this.phase3Hp = Math.round(this.baseHp * 1.5);
-
-    // Set initial HP (No more old 'difficulty.hpMult' here!)
-    this.maxHp = this.phase1Hp; 
-    this.hp = this.maxHp;
-
-    // Scaled Speed
-    const baseSpeed = config.speed ?? 0.6;
-    this.baseSpeed = baseSpeed * speedMult;
-    this.speed = this.baseSpeed;
+    // --- FIXED: Scaled HP properly saved into the dictionaries! ---
+    this.baseHp = (config.baseHp ?? 1000) * statMult;
     
-    // 3. Status Effects (Keep your existing code from here downwards!)
-    this.slowActive = false;
+    this.phaseMax = {
+      KAP: this.baseHp,
+      IAN: Math.round(this.baseHp * 1.2),
+      AURA: Math.round(this.baseHp * 1.5)
+    };
+    
+    this.phaseHp = {
+      KAP: this.phaseMax.KAP,
+      IAN: this.phaseMax.IAN,
+      AURA: this.phaseMax.AURA
+    };
+
+    this.maxHp = this.phaseMax.KAP + this.phaseMax.IAN + this.phaseMax.AURA;
+    this.hp = this.maxHp;
+    
+    // Scaled Speed
+    this.baseSpeed = (config.speed ?? 1.0) * speedMult;
+    this.speed = this.baseSpeed;
 
     this.x = config.spawnX ?? (this.game.canvas.width + 80);
     this.y = config.spawnY ?? (
@@ -63,15 +67,17 @@ init(config = {}) {
     this.phase = 'KAP';
     this.kapState = 'MOVING'; 
     this.attackCounter = 0;
-    this.maxAttacks = diffKey === 'hard' ? 5 : (diffKey === 'easy' ? 2 : 3);
-    this.attackCooldown = diffKey === 'hard' ? 1000 : (diffKey === 'easy' ? 2000 : 1500);
+    
+    // Scaled attack and summon counts
+    this.maxAttacks = diffKey === 'hard' ? 5 : (diffKey === 'medium' ? 4 : 3);
+    this.attackCooldown = diffKey === 'hard' ? 1000 : (diffKey === 'medium' ? 1500 : 2000);
     this.timeSinceLastAttack = 0;
     this.vulnerableTimer = 0;
     this.vulnerableDuration = 5000;
 
     this.ianSummonTimer = 0;
     this.ianSummonInterval = 8000;
-    this.ianSummonCount = diffKey === 'hard' ? 5 : (diffKey === 'easy' ? 2 : 4);
+    this.ianSummonCount = diffKey === 'hard' ? 5 : (diffKey === 'medium' ? 4 : 2);
     this.ianCancelledTimer = 0;
     this.ianCancelledDuration = 4000;
     this.ianCancelledTransitionTimer = 0;
