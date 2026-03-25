@@ -4,17 +4,19 @@
 class BossKap extends Enemy {
 constructor(game) {
     super(game, 'boss_kap');
-    
-    // --- DIFFICULTY SCALING ---
-    const diffKey = this.game.currentDifficultyKey || 'medium';
-    const hpMult = diffKey === 'hard' ? 1.5 : (diffKey === 'easy' ? 0.75 : 1);
-    const speedMult = diffKey === 'hard' ? 1.2 : (diffKey === 'easy' ? 0.8 : 1);
-    const dmgMult = diffKey === 'hard' ? 1.5 : (diffKey === 'easy' ? 0.7 : 1);
 
-    this.maxHp = 300 * hpMult;
+    // --- NEW: SCALING BASELINE (EASY = 1x, MEDIUM = 1.5x, HARD = 2x) ---
+    const diffKey = this.game.currentDifficultyKey || 'easy';
+    const statMult = diffKey === 'hard' ? 2.0 : (diffKey === 'medium' ? 1.5 : 1.0);
+    const speedMult = diffKey === 'hard' ? 1.4 : (diffKey === 'medium' ? 1.2 : 1.0); // Speed scales slightly lower so it's playable
+
+    this.maxHp = 250 * statMult;
     this.hp = this.maxHp;
     this.speed = 0.5 * speedMult;
-    this.damage = 15 * dmgMult; // Scaled damage!
+    this.damage = 15 * statMult;
+    
+    // --- SCALED REWARD! ---
+    this.kitaReward = 500 * statMult; 
     
     this.x = this.game.canvas.width + 50;
     this.y = Math.random() * (this.game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - this.height) + CONSTANTS.GAME_BOTTOM_HALF;
@@ -25,8 +27,9 @@ constructor(game) {
     this.bossPhase = 'MOVING'; 
     this.isInvincible = true;
     this.attackCounter = 0;
-    this.maxAttacks = diffKey === 'hard' ? 5 : (diffKey === 'easy' ? 2 : 3);
-    this.attackCooldown = diffKey === 'hard' ? 1000 : (diffKey === 'easy' ? 2000 : 1500); 
+    
+    this.maxAttacks = diffKey === 'hard' ? 5 : (diffKey === 'medium' ? 4 : 3);
+    this.attackCooldown = diffKey === 'hard' ? 1000 : (diffKey === 'medium' ? 1500 : 2000); 
     this.timeSinceLastAttack = 0;
     this.vulnerableTimer = 0;
     this.vulnerableDuration = 6000;

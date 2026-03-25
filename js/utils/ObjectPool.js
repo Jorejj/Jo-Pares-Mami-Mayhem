@@ -569,7 +569,7 @@ class EnemyPool {
 
 const POOLED_ENEMY_TYPES = {
   gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_gangster', attackCooldown: 1000 },
-  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 1000, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach', attackCooldown: 500 },
+  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach', attackCooldown: 500 },
   jbhotdog:   { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 55, baseHeight: 160, spriteKey: 'enemy_jbhotdog', attackCooldown: 1000 },
   bikejor:    { hp: 25,  speed: 2.2, damage: 10, kitaReward: 15, baseWidth: 70, baseHeight: 190, spriteKey: 'enemy_bikejor', attackCooldown: 1000 },
   kitboard:   { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard', attackCooldown: 1000 },
@@ -648,17 +648,23 @@ class PooledEnemy {
     this.drawX = this.x;
     this.drawY = this.y;
 
-    const difficulty = this.game.levelManager?.currentDifficulty || CONSTANTS.DIFFICULTY.medium;
-    this.maxHp = config.hp * difficulty.hpMult;
+   // --- UNIVERSAL DIFFICULTY SCALING (EASY = 1x, MEDIUM = 1.5x, HARD = 2x) ---
+    const diffKey = this.game.currentDifficultyKey || 'easy';
+    const statMult = diffKey === 'hard' ? 2.0 : (diffKey === 'medium' ? 1.5 : 1.0);
+    const speedMult = diffKey === 'hard' ? 1.4 : (diffKey === 'medium' ? 1.2 : 1.0);
+
+    this.maxHp = config.hp * statMult;
     this.hp = this.maxHp;
 
-    this.baseSpeed = config.speed * difficulty.speedMult;
+    this.baseSpeed = config.speed * speedMult;
     this.speed = this.baseSpeed;
-    this.damage = config.damage;
-    this.kitaReward = config.kitaReward;
+    
+    // Scaled Damage & Kita!
+    this.damage = config.damage * statMult;
+    this.kitaReward = config.kitaReward * statMult;
+    
     this.spriteKey = config.spriteKey;
     this.attackCooldown = config.attackCooldown || 1000;
-
     this.lastAttackTime = Date.now(); // Set to current time so they wait for cooldown before first attack
     this.slowActive = false;
     this.slowDuration = 0;

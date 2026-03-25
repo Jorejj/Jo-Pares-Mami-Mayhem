@@ -10,10 +10,11 @@ class BossIan extends Enemy {
 
 init(config = {}) {
     // 1. Grab difficulty settings
-    const difficulty = this.game.levelManager?.currentDifficulty || CONSTANTS.DIFFICULTY.medium;
-    const diffKey = this.game.currentDifficultyKey || 'medium';
+    const diffKey = this.game.currentDifficultyKey || 'easy';
+    const statMult = diffKey === 'hard' ? 2.0 : (diffKey === 'medium' ? 1.5 : 1.0);
+    const speedMult = diffKey === 'hard' ? 1.4 : (diffKey === 'medium' ? 1.2 : 1.0);
     
-    const baseHp = config.hp ?? 900;
+    const baseHp = config.hp ?? 600;
     const baseSpeed = config.speed ?? 0.9;
 
     // 2. Base Setup
@@ -22,19 +23,17 @@ init(config = {}) {
     this.width = config.width ?? 120;
     this.height = config.height ?? 220;
     
-    // --- FEATURE 3: DIFFICULTY SCALING FOR DAMAGE & SUMMONS ---
-    // Damage scales: Easy (28) -> Medium (40) -> Hard (60)
-    this.damage = (config.damage ?? 40) * (diffKey === 'hard' ? 1.5 : (diffKey === 'easy' ? 0.7 : 1));
+    // --- FEATURE 3: DIFFICULTY SCALING ---
+    this.damage = (config.damage ?? 30) * statMult;
+    this.ianSummonCount = diffKey === 'hard' ? 5 : (diffKey === 'medium' ? 4 : 2);
     
-    // Summons scale: Easy (2) -> Medium (4) -> Hard (5)
-    this.ianSummonCount = diffKey === 'hard' ? 5 : (diffKey === 'easy' ? 2 : 4);
-    
-    this.kitaReward = config.kitaReward ?? 300;
+    // --- SCALED REWARD! ---
+    this.kitaReward = (config.kitaReward ?? 800) * statMult;
 
-    // --- HP & Speed Scaling (Uses your existing CONSTANTS math) ---
-    this.maxHp = baseHp * difficulty.hpMult;
+    // --- HP & Speed Scaling ---
+    this.maxHp = baseHp * statMult;
     this.hp = this.maxHp;
-    this.baseSpeed = baseSpeed * difficulty.speedMult;
+    this.baseSpeed = baseSpeed * speedMult;
     this.speed = this.baseSpeed;
     
     // 3. Status Effects

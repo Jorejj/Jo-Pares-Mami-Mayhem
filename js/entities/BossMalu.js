@@ -11,20 +11,23 @@ class BossMalu extends Enemy {
   }
 
   init(config = {}) {
-    const difficulty = this.game.levelManager?.currentDifficulty || CONSTANTS.DIFFICULTY.medium;
+  const diffKey = this.game.currentDifficultyKey || 'easy';
+    const statMult = diffKey === 'hard' ? 2.0 : (diffKey === 'medium' ? 1.5 : 1.0);
 
     this.type = 'boss_malu';
     this.spriteKey = config.spriteKey || 'boss_mastermind';
     this.projectileSpriteKey = config.projectileSpriteKey || 'boss3_proj';
     this.auraSpriteKey = config.auraSpriteKey || 'boss3_aura';
     
-    const diffKey = this.game.currentDifficultyKey || 'medium';
     this.width = config.width ?? 130;
     this.height = config.height ?? 240;
-    this.damage = (config.damage ?? 45) * (diffKey === 'hard' ? 1.5 : (diffKey === 'easy' ? 0.7 : 1));
-    this.kitaReward = config.kitaReward ?? 1000;
+    
+    // --- SCALED DAMAGE & REWARD! ---
+    this.damage = (config.damage ?? 35) * statMult;
+    this.kitaReward = (config.kitaReward ?? 1500) * statMult;
 
-    this.baseHp = config.baseHp ?? 1000;
+    // --- SCALED HP ---
+    this.baseHp = (config.baseHp ?? 800) * statMult;
     const phase1BaseHp = this.baseHp;
     const phase2BaseHp = Math.round(this.baseHp * 1.2);
     const phase3BaseHp = Math.round(this.baseHp * 1.5);
