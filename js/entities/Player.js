@@ -259,6 +259,7 @@ class Player {
     if (!weapon) return false;
     if (weapon.unlocked) {
         this.game.uiManager.showCustomAlert("ITEM UNLOCKED", "YOU ALREADY HAVE THIS ULAM!");
+        this._playUI('sfx_locked');
         return false;
     }
     if (this.kita < weapon.baseCost) {
@@ -279,6 +280,7 @@ class Player {
     if (!special) return false;
     if (special.unlocked) {
         this.game.uiManager.showCustomAlert("SPECIAL UNLOCKED", "ALREADY HAVE THIS SAWSAWAN!");
+        this._playUI('sfx_locked');
         return false;
     }
     if (this.kita < special.baseCost) {
@@ -530,13 +532,31 @@ class Player {
       });
 
 // 2. Check Collision Against Enemies
+      // 2. Check Collision Against Enemies
       enemies.forEach(enemy => {
         if (!enemy.isAlive || !playerProj.isActive) return;
         const collisionTarget = (typeof enemy.getCollisionRect === 'function') ? enemy.getCollisionRect() : enemy;
+        
         if (Physics.checkCollision(playerProj, collisionTarget)) {
-          const weaponDamage = this.arsenal[playerProj.type]?.damage || playerProj.damage;
+          let weaponDamage = this.arsenal[playerProj.type]?.damage || playerProj.damage || 10;
+
+          // --- UNIVERSAL FEATURE 4: HEAD / BODY / LEG MULTIPLIER ---
+          // playerProj.y is the exact visual center of the food projectile
+          const hitY = playerProj.y; 
+          const enemyTop = enemy.y;
+          const enemyH = enemy.height;
+          
+          // Calculate where the food landed on the enemy's body!
+          if (hitY < enemyTop + (enemyH * 0.25)) {
+              weaponDamage = Math.ceil(weaponDamage * 2.0); // 200% HEADSHOT DAMAGE
+          } else if (hitY > enemyTop + (enemyH * 0.75)) {
+              weaponDamage = Math.ceil(weaponDamage * 0.6); // 60% LEGSHOT DAMAGE
+          }
+
+          // Apply the calculated damage universally to whatever enemy was hit
           enemy.takeDamage(weaponDamage);
 
+          // Apply burn effects if it's Rice
           const isBoss = typeof enemy.type === 'string' && enemy.type.startsWith('boss_');
           if (playerProj.type === 'rice' && typeof enemy.applyBurnStatus === 'function') {
             const burnDamageScaling = [2, 4, 8, 12, 16];
@@ -547,9 +567,8 @@ class Player {
           if (playerProj.onHit) playerProj.onHit(enemy); 
           playerProj.isActive = false;
           
-          // --- FIXED: CUSTOM FOOD IMPACT SOUNDS ---
-          let hitSfxKey = 'sfx_hit'; // Default fallback
-          
+          // Custom Impact Sounds
+          let hitSfxKey = 'sfx_hit'; 
           if (playerProj.type === 'mami') {
               hitSfxKey = 'sfx_mami_impact'; 
           } else if (playerProj.type === 'pares') {

@@ -2,28 +2,34 @@
 // Custom boss class with 3-phase state machine and ranged attacks
 
 class BossKap extends Enemy {
-  constructor(game) {
+constructor(game) {
     super(game, 'boss_kap');
     
-    // Spawn from right side like normal enemies
+    // --- DIFFICULTY SCALING ---
+    const diffKey = this.game.currentDifficultyKey || 'medium';
+    const hpMult = diffKey === 'hard' ? 1.5 : (diffKey === 'easy' ? 0.75 : 1);
+    const speedMult = diffKey === 'hard' ? 1.2 : (diffKey === 'easy' ? 0.8 : 1);
+    const dmgMult = diffKey === 'hard' ? 1.5 : (diffKey === 'easy' ? 0.7 : 1);
+
+    this.maxHp = 300 * hpMult;
+    this.hp = this.maxHp;
+    this.speed = 0.5 * speedMult;
+    this.damage = 15 * dmgMult; // Scaled damage!
+    
     this.x = this.game.canvas.width + 50;
     this.y = Math.random() * (this.game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - this.height) + CONSTANTS.GAME_BOTTOM_HALF;
-    
-    // Target position: center of allowable enemy area
     this.targetX = this.game.canvas.width / 2 - this.width / 2;
     this.targetY = this.game.canvas.height / 2;
     this.hasReachedCenter = false;
     
-    // Boss-specific state machine
-    this.bossPhase = 'MOVING'; // MOVING, ATTACKING, VULNERABLE
+    this.bossPhase = 'MOVING'; 
     this.isInvincible = true;
     this.attackCounter = 0;
-    this.maxAttacks = 3;
-    this.attackCooldown = 1500; // 1.5 seconds between shots
+    this.maxAttacks = diffKey === 'hard' ? 5 : (diffKey === 'easy' ? 2 : 3);
+    this.attackCooldown = diffKey === 'hard' ? 1000 : (diffKey === 'easy' ? 2000 : 1500); 
     this.timeSinceLastAttack = 0;
     this.vulnerableTimer = 0;
-    this.vulnerableDuration = 6000; // 6 seconds of vulnerability
-    
+    this.vulnerableDuration = 6000;
     // Visual feedback
     this.panting = false;
     
@@ -249,7 +255,7 @@ class BossKap extends Enemy {
     const targetX = player.x + player.width / 2;
     const targetY = player.y + player.height / 2;
 
-    enemyProjectilePool.fire(startX, startY, targetX, targetY, 15, 'vial');
+    enemyProjectilePool.fire(startX, startY, targetX, targetY, this.damage, 'vial');
     this._playRandomSfx(
       ['sfx_kap_attack', 'sfx_kap_attack1', 'sfx_kap_attack2', 'sfx_kap_write', 'sfx_kap_break_pen'],
       0.55
@@ -276,13 +282,28 @@ class BossKap extends Enemy {
     ctx.restore();
   }
 
-  takeDamage(damage, ignoreInvincible = false) {
+  takeDamage(damage, ignoreInvincible = false, hitY = null) {
     if (this.state === 'dead') return;
 
     if (this.bossPhase !== 'VULNERABLE' && !ignoreInvincible) {
       this._playSfx('sfx_kap_block', 0.6);
       return;
     }
+
+    let finalDamage = damage;
+    // --- FEATURE 4: HEAD / BODY / LEG MULTIPLIER ---
+    if (hitY !== null && !ignoreInvincible) {
+        const enemyTop = this.y;
+        const enemyH = this.height;
+        if (hitY < enemyTop + (enemyH * 0.25)) {
+            finalDamage = Math.ceil(damage * 2.0); // 200% Headshot
+        } else if (hitY > enemyTop + (enemyH * 0.75)) {
+            finalDamage = Math.ceil(damage * 0.6); // 60% Legshot
+        }
+    }
+
+    this.hurtFlashTimer = 250;
+    this.hp -= finalDamage;
 
     this.hurtFlashTimer = 250;
     this.hp -= damage;

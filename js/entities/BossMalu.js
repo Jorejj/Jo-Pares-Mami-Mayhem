@@ -17,10 +17,11 @@ class BossMalu extends Enemy {
     this.spriteKey = config.spriteKey || 'boss_mastermind';
     this.projectileSpriteKey = config.projectileSpriteKey || 'boss3_proj';
     this.auraSpriteKey = config.auraSpriteKey || 'boss3_aura';
-
+    
+    const diffKey = this.game.currentDifficultyKey || 'medium';
     this.width = config.width ?? 130;
     this.height = config.height ?? 240;
-    this.damage = config.damage ?? 45;
+    this.damage = (config.damage ?? 45) * (diffKey === 'hard' ? 1.5 : (diffKey === 'easy' ? 0.7 : 1));
     this.kitaReward = config.kitaReward ?? 1000;
 
     this.baseHp = config.baseHp ?? 1000;
@@ -58,17 +59,17 @@ class BossMalu extends Enemy {
     this.yDirection = 1;
 
     this.phase = 'KAP';
-    this.kapState = 'MOVING'; // MOVING, ATTACKING, VULNERABLE
+    this.kapState = 'MOVING'; 
     this.attackCounter = 0;
-    this.maxAttacks = 3;
-    this.attackCooldown = 1500;
+    this.maxAttacks = diffKey === 'hard' ? 5 : (diffKey === 'easy' ? 2 : 3);
+    this.attackCooldown = diffKey === 'hard' ? 1000 : (diffKey === 'easy' ? 2000 : 1500);
     this.timeSinceLastAttack = 0;
     this.vulnerableTimer = 0;
     this.vulnerableDuration = 5000;
 
     this.ianSummonTimer = 0;
     this.ianSummonInterval = 8000;
-    this.ianSummonCount = 4;
+    this.ianSummonCount = diffKey === 'hard' ? 5 : (diffKey === 'easy' ? 2 : 4);
     this.ianCancelledTimer = 0;
     this.ianCancelledDuration = 4000;
     this.ianCancelledTransitionTimer = 0;
@@ -566,7 +567,7 @@ class BossMalu extends Enemy {
     }
   }
 
-  takeDamage(damage) {
+  takeDamage(damage, ignoreInvincible = false, hitY = null) {
     if (this.state === 'dead' || !this.isAlive) return;
     this.hurtFlashTimer = 180;
 
@@ -579,7 +580,20 @@ class BossMalu extends Enemy {
       this._enterIanCancelled();
     }
 
-    this._applyPhaseDamage(damage, false);
+    let finalDamage = damage;
+
+    // --- FEATURE 4: HEAD / BODY / LEG MULTIPLIER ---
+    if (hitY !== null && !ignoreInvincible) {
+        const enemyTop = this.y;
+        const enemyH = this.height;
+        if (hitY < enemyTop + (enemyH * 0.25)) {
+            finalDamage = Math.ceil(damage * 2.0); // 200% Headshot
+        } else if (hitY > enemyTop + (enemyH * 0.75)) {
+            finalDamage = Math.ceil(damage * 0.6); // 60% Legshot
+        }
+    }
+
+    this._applyPhaseDamage(finalDamage, ignoreInvincible);
   }
 
   _drawHealthBars(ctx) {

@@ -66,27 +66,18 @@ class Game {
   }
 
   // --- UNIVERSAL QUIT FUNCTION ---
-   quitGame() {
+  quitGame() {
+      // Save progress before quitting
       this.saveCurrentState();
-      alert("Thank you for playing!");
       
+      // Attempt to instantly close the browser tab
       window.close();
       
-      // Fallback for browsers that block direct window.close()
-      // Note: Browsers usually only allow window.close() if the tab was opened via script.
-      // This hack attempts to trick the browser into thinking it was script-opened.
-      const win = window.open("", "_self");
-      if (win) {
-          win.close();
-      }
-      
-      // Secondary fallback: Redirect to about:blank to clear the screen
+      // Fallback: If the browser's security blocks window.close(),
+      // instantly wipe the screen to pitch black so the game visually stops.
       setTimeout(() => {
-          if (!window.closed) {
-              window.location.href = "";
-          }
-      }, 500);
-
+          document.body.innerHTML = "<div style='background:black; width:100vw; height:100vh; display:flex; justify-content:center; align-items:center; color:white; font-family:Arial;'><p>Game saved. You may close this tab.</p></div>";
+      }, 100);
   }
 
   // --- GLOBAL UI AUDIO (SUPER BULLETPROOF) ---
@@ -228,9 +219,15 @@ class Game {
             if (sfx) { sfx.currentTime = 0; sfx.volume = (this.uiManager?.masterVolume || 1) * (this.uiManager?.sfxVolume || 1); sfx.play().catch(()=>{}); }
         }
       }
-      else if (this.currentState === CONSTANTS.STATES.SHOP) {
-        // Keep mouse interaction for shop, but remove number shortcuts to stay consistent.
-        if (key === "enter") {
+     else if (this.currentState === CONSTANTS.STATES.SHOP) {
+        // --- FIXED: RE-ENABLED NUMBER KEYS FOR SHOP ---
+        if (key === "1") { this.shopManager.handleSelection(1); this.uiManager._updateShopUI(); }
+        else if (key === "2") { this.shopManager.handleSelection(2); this.uiManager._updateShopUI(); }
+        else if (key === "3") { this.shopManager.handleSelection(3); this.uiManager._updateShopUI(); }
+        else if (key === "4") { this.shopManager.handleSelection(4); this.uiManager._updateShopUI(); }
+        else if (key === "5") { this.shopManager.handleSelection(5); this.uiManager._updateShopUI(); }
+        else if (key === "6") { this.shopManager.handleSelection(6); this.uiManager._updateShopUI(); }
+        else if (key === "enter") {
           this._finishShoppingAndStartNextLevel();
         }
       }
@@ -715,6 +712,8 @@ _advanceStoryCutscene() {
     if (this.waveManager.isWaveComplete()) {
       const completedLevel = this.levelManager.currentLevel;
       const isBossLevel = (completedLevel % 5 === 0);
+
+      this.player.hp = this.player.maxHp;
 
       // Trigger 8-second delay for boss levels
       if (isBossLevel && this.bossDefeatTimer <= 0) {

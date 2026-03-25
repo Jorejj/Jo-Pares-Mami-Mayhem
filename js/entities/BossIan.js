@@ -8,22 +8,36 @@ class BossIan extends Enemy {
     this.init();
   }
 
-  init(config = {}) {
+init(config = {}) {
+    // 1. Grab difficulty settings
     const difficulty = this.game.levelManager?.currentDifficulty || CONSTANTS.DIFFICULTY.medium;
+    const diffKey = this.game.currentDifficultyKey || 'medium';
+    
     const baseHp = config.hp ?? 900;
     const baseSpeed = config.speed ?? 0.9;
 
+    // 2. Base Setup
     this.type = 'boss_ian';
     this.spriteKey = 'boss_ian';
     this.width = config.width ?? 120;
     this.height = config.height ?? 220;
-    this.damage = config.damage ?? 40;
+    
+    // --- FEATURE 3: DIFFICULTY SCALING FOR DAMAGE & SUMMONS ---
+    // Damage scales: Easy (28) -> Medium (40) -> Hard (60)
+    this.damage = (config.damage ?? 40) * (diffKey === 'hard' ? 1.5 : (diffKey === 'easy' ? 0.7 : 1));
+    
+    // Summons scale: Easy (2) -> Medium (4) -> Hard (5)
+    this.ianSummonCount = diffKey === 'hard' ? 5 : (diffKey === 'easy' ? 2 : 4);
+    
     this.kitaReward = config.kitaReward ?? 300;
 
+    // --- HP & Speed Scaling (Uses your existing CONSTANTS math) ---
     this.maxHp = baseHp * difficulty.hpMult;
     this.hp = this.maxHp;
     this.baseSpeed = baseSpeed * difficulty.speedMult;
     this.speed = this.baseSpeed;
+    
+    // 3. Status Effects
     this.slowActive = false;
     this.slowDuration = 0;
     this.slowFactor = 1;
@@ -32,6 +46,7 @@ class BossIan extends Enemy {
     this.burnDamagePerTick = 0;
     this.lastBurnTick = Date.now();
 
+    // 4. Position & Spawning
     this.centerX = config.centerX ?? (this.game.canvas.width - 250);
     this.centerY = config.centerY ?? (
       CONSTANTS.GAME_BOTTOM_HALF + ((this.game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - this.height) / 2)
@@ -44,6 +59,7 @@ class BossIan extends Enemy {
     this.drawY = this.y;
     this.yDirection = Math.random() > 0.5 ? 1 : -1;
 
+    // 5. Boss Phase & Animation Timers
     this.phase = 'GOING_LIVE';
     this.isEntering = true;
     this.hasSpawnSummoned = false;
@@ -53,6 +69,7 @@ class BossIan extends Enemy {
     this.frameTimer = 0;
     this.frameDelay = 120;
 
+    // 6. Attack & Vulnerability Timers
     this.streamCycleTimer = 0;
     this.streamInterval = 5000;
     this.streamTimer = 0;
@@ -61,11 +78,13 @@ class BossIan extends Enemy {
     this.cancelledDuration = 4000;
     this.stunnedTransitionTimer = 0;
 
+    // 7. Visual Feedback
     this.hurtFlashTimer = 0;
     this.blockedPopupTimer = 0;
     this.blockedPopupText = 'Blocked!';
     this.cancelPulseTimer = 0;
 
+    // 8. Vitality States
     this.damageMultiplier = 1;
     this.isInvincible = false;
     this.deathFrame = 3;
@@ -187,7 +206,7 @@ class BossIan extends Enemy {
     const enemyPool = this.game.waveManager?.enemyPool;
     if (!enemyPool) return;
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < this.ianSummonCount; i++) {
       const guard = enemyPool.get('gangster');
       if (!guard) continue;
 
@@ -395,7 +414,7 @@ class BossIan extends Enemy {
     this._advanceAnimation(delta);
   }
 
-  takeDamage(damage, ignoreInvincible = false) {
+takeDamage(damage, ignoreInvincible = false, hitY = null) {
     if (this.state === 'dead' || !this.isAlive) return;
 
     const guardsActive = this.hasActiveGuards();
@@ -418,7 +437,21 @@ class BossIan extends Enemy {
       this._playSfx('sfx_ian_pain', 0.85);
     }
 
-    const finalDamage = damage * (this.phase === 'CANCELLED' ? 1.5 : 1);
+    // Apply phase damage multiplier first
+    let baseDmg = damage * (this.phase === 'CANCELLED' ? 1.5 : 1);
+    let finalDamage = baseDmg;
+
+    // --- FEATURE 4: HEAD / BODY / LEG MULTIPLIER ---
+    if (hitY !== null && !ignoreInvincible) {
+        const enemyTop = this.y;
+        const enemyH = this.height;
+        if (hitY < enemyTop + (enemyH * 0.25)) {
+            finalDamage = Math.ceil(baseDmg * 2.0); // 200% Headshot
+        } else if (hitY > enemyTop + (enemyH * 0.75)) {
+            finalDamage = Math.ceil(baseDmg * 0.6); // 60% Legshot
+        }
+    }
+
     this.hp -= finalDamage;
     this.hurtFlashTimer = 170;
     this._checkDeath();
