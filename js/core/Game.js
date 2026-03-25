@@ -66,12 +66,26 @@ class Game {
   }
 
   // --- UNIVERSAL QUIT FUNCTION ---
-  quitGame() {
+   quitGame() {
       this.saveCurrentState();
       alert("Thank you for playing!");
       
       window.close();
       
+      // Fallback for browsers that block direct window.close()
+      // Note: Browsers usually only allow window.close() if the tab was opened via script.
+      // This hack attempts to trick the browser into thinking it was script-opened.
+      const win = window.open("", "_self");
+      if (win) {
+          win.close();
+      }
+      
+      // Secondary fallback: Redirect to about:blank to clear the screen
+      setTimeout(() => {
+          if (!window.closed) {
+              window.location.href = "";
+          }
+      }, 500);
 
   }
 
