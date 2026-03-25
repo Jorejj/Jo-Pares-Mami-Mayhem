@@ -78,6 +78,24 @@ const CONSTANTS = {
   MAX_WEAPON_LEVEL: 5,
   WEAPON_UPGRADE_COST_MULTIPLIER: 1.5, // Cost increases by this factor per level
 
+  // ===== CART UPGRADES =====
+  CART_UPGRADES: {
+    maxLevel: 5,
+    baseUpgradeCost: 200,
+    costMultiplier: 1.8,
+    hpBonusPerLevel: 10,
+    names: ['Ordinary Cart', 'Silver Cart', 'Gold Cart', 'Diamond Cart', 'The Legend Cart']
+  },
+
+  // ===== SACK UPGRADES =====
+  SACK_UPGRADES: {
+    maxLevel: 5,
+    baseUpgradeCost: 150,
+    costMultiplier: 1.6,
+    hpBonusPerLevel: 5,
+    names: ['Ordinary Sack', 'Silver Sack', 'Gold Sack', 'Diamond Sack', 'The Legend Sack']
+  },
+
   // ===== SPECIAL ABILITIES (KEY 4 & 5) =====
   SPECIALS: {
     calamansi: {

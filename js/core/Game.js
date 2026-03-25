@@ -129,6 +129,8 @@ class Game {
 
     const state = this.saveManager.state;
     state.kita = this.player.kita;
+    state.cartLevel = this.player.cartLevel;
+    state.sackLevel = this.player.sackLevel;
     state.currentLevel = this.waveManager.currentWave;
     state.currentGameState = this.currentState;
     state.difficultyKey = this.currentDifficultyKey || state.difficultyKey || 'medium';
@@ -509,6 +511,8 @@ _advanceStoryCutscene() {
     this.saveManager.load();
     const state = this.saveManager.state;
     
+    this.player.cartLevel = state.cartLevel || 1;
+    this.player.sackLevel = state.sackLevel || 1;
     const loadedLevel = Math.max(1, Math.min(CONSTANTS.TOTAL_LEVELS, state.currentLevel || 1));
     this.levelManager.currentLevel = loadedLevel;
     this.waveManager.currentWave = loadedLevel;

@@ -77,6 +77,8 @@ class UIManager {
       'btn-shop-calamansi': () => { this.game.shopManager.handleSelection(4); this._updateShopUI(); },
       'btn-shop-chili': () => { this.game.shopManager.handleSelection(5); this._updateShopUI(); },
       'btn-shop-garlic': () => { this.game.shopManager.handleSelection(6); this._updateShopUI(); },
+      'btn-shop-cart': () => { this.game.shopManager.handleSelection(7); this._updateShopUI(); },
+      'btn-shop-sack': () => { this.game.shopManager.handleSelection(8); this._updateShopUI(); },
       'btn-shop-done': () => this._finishShopping(),
       'btn-restart': () => location.reload(),
       'btn-complete-close': () => {
@@ -940,6 +942,9 @@ class UIManager {
     const shopKitaEl = document.getElementById('shop-kita');
     if (shopKitaEl) shopKitaEl.innerText = `${CONSTANTS.CURRENCY_SYMBOL}${player.kita}`;
 
+    // Helper to get image source from AssetLoader
+    const getImgSrc = (key) => this.game.assetLoader.images[key]?.src || '';
+
     // Update Weapons [1, 2, 3]
     ['mami', 'pares', 'rice'].forEach((w, index) => {
       const btn = document.getElementById(`btn-shop-${w}`);
@@ -947,39 +952,133 @@ class UIManager {
       const weapon = player.arsenal[w];
       const upgradeCost = shop.getUpgradeCost(w);
       const isMax = weapon.level >= CONSTANTS.MAX_WEAPON_LEVEL;
-
-      let content = `<span class="item-name" style="pointer-events:none;">[${index + 1}] ${w.toUpperCase()}</span>`;
+      const wSheet = this.game.assetLoader.images.projectilesSheet;
+      
+      // Calculate background position for next level icon
+      // If not unlocked (level 1 in arsenal state usually means first level), show level 1
+      // If unlocked, show weapon.level + 1 (the next upgrade)
+      const nextLevel = weapon.unlocked ? Math.min(weapon.level + 1, 5) : 1;
+      const posX = (nextLevel - 1) * -48;
+      const sheetUrl = wSheet ? wSheet.src : '';
+      
+      let content = `
+        <div class="shop-item-icon-container">
+          <div class="shop-item-icon-spritesheet weapon-${w}" 
+               style="background-image: url('${sheetUrl}'); background-position-x: ${posX}px;"></div>
+        </div>
+        <div class="shop-item-info">
+          <span class="item-name">[${index + 1}] ${w.toUpperCase()}</span>`;
+      
       if (!weapon.unlocked) {
-        content += `<span class="item-price" style="pointer-events:none;">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}</span>`;
+        content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${weapon.baseCost}</span>`;
         btn.disabled = player.kita < weapon.baseCost; 
       } else if (isMax) {
-        content += `<span class="item-price" style="pointer-events:none;">LVL: ${weapon.level} (MAX)</span>`;
+        content += `<span class="item-price">LVL: ${weapon.level} (MAX)</span>`;
         btn.disabled = true; 
       } else {
-        content += `<span class="item-price" style="pointer-events:none;">LVL: ${weapon.level} ➔ ${weapon.level + 1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
+        content += `<span class="item-price">LVL: ${weapon.level} ➔ ${weapon.level + 1} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
         btn.disabled = player.kita < upgradeCost; 
       }
+      content += `</div>`;
       btn.innerHTML = content;
     });
 
-    // --- NEW: Update Specials [4, 5, 6] ---
+    // --- Update Specials [4, 5, 6] ---
     ['calamansi', 'chili', 'garlic'].forEach((s, index) => {
       const btn = document.getElementById(`btn-shop-${s}`);
       if (!btn) return; 
       const special = player.specials[s];
       const cost = special.baseCost;
       const keyMap = ['4', '5', '6'];
+      const specSheet = this.game.assetLoader.images.specialsSheet;
+      const sheetUrl = specSheet ? specSheet.src : '';
 
-      let content = `<span class="item-name" style="pointer-events:none;">[${keyMap[index]}] ${s.toUpperCase()}</span>`;
+      let content = `
+        <div class="shop-item-icon-container">
+          <div class="shop-item-icon-spritesheet special-${s}" 
+               style="background-image: url('${sheetUrl}');"></div>
+        </div>
+        <div class="shop-item-info">
+          <span class="item-name">[${keyMap[index]}] ${s.toUpperCase()}</span>`;
+          
       if (!special.unlocked) {
-        content += `<span class="item-price" style="pointer-events:none;">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
+        content += `<span class="item-price">UNLOCK: ${CONSTANTS.CURRENCY_SYMBOL}${cost}</span>`;
         btn.disabled = player.kita < cost; 
       } else {
-        content += `<span class="item-price" style="pointer-events:none; color:#f39c12">UNLOCKED!</span>`;
+        content += `<span class="item-price" style="color:#f39c12">UNLOCKED!</span>`;
         btn.disabled = true; 
       }
+      content += `</div>`;
       btn.innerHTML = content;
     });
+
+    // --- Update Equipment (Cart) ---
+    const cartBtn = document.getElementById('btn-shop-cart');
+    if (cartBtn) {
+      const cartLevel = player.cartLevel;
+      const upgradeCost = shop.getCartUpgradeCost();
+      const isMax = cartLevel >= CONSTANTS.CART_UPGRADES.maxLevel;
+      const cartNames = CONSTANTS.CART_UPGRADES.names;
+      
+      let iconKey = 'jo_cart';
+      if (cartLevel === 1) iconKey = 'jo_cart_silver'; // Show NEXT upgrade icon
+      else if (cartLevel === 2) iconKey = 'jo_cart_gold';
+      else if (cartLevel === 3) iconKey = 'jo_cart_diamond';
+      else if (cartLevel === 4) iconKey = 'jo_cart_final';
+      else iconKey = 'jo_cart_final';
+
+      let content = `
+        <div class="shop-item-icon-container">
+          <img src="${getImgSrc(iconKey)}" class="shop-item-icon">
+        </div>
+        <div class="shop-item-info">
+          <span class="item-name">[7] ${cartNames[cartLevel - 1].toUpperCase()}</span>`;
+          
+      if (isMax) {
+        content += `<span class="item-price">LVL: ${cartLevel} (MAX)</span>`;
+        cartBtn.disabled = true;
+      } else {
+        const nextName = cartNames[cartLevel];
+        content += `<span class="item-price">UPGRADE TO ${nextName.toUpperCase()} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
+        cartBtn.disabled = player.kita < upgradeCost;
+      }
+      content += `</div>`;
+      cartBtn.innerHTML = content;
+    }
+
+    // --- Update Equipment (Sack) ---
+    const sackBtn = document.getElementById('btn-shop-sack');
+    if (sackBtn) {
+      const sackLevel = player.sackLevel;
+      const upgradeCost = shop.getSackUpgradeCost();
+      const isMax = sackLevel >= CONSTANTS.SACK_UPGRADES.maxLevel;
+      const sackNames = CONSTANTS.SACK_UPGRADES.names;
+
+      let iconKey = 'sack';
+      if (sackLevel === 1) iconKey = 'sack_silver';
+      else if (sackLevel === 2) iconKey = 'sack_gold';
+      else if (sackLevel === 3) iconKey = 'sack_diamond';
+      else if (sackLevel === 4) iconKey = 'sack_final';
+      else iconKey = 'sack_final';
+
+      let content = `
+        <div class="shop-item-icon-container">
+          <img src="${getImgSrc(iconKey)}" class="shop-item-icon">
+        </div>
+        <div class="shop-item-info">
+          <span class="item-name">[8] ${sackNames[sackLevel - 1].toUpperCase()}</span>`;
+          
+      if (isMax) {
+        content += `<span class="item-price">LVL: ${sackLevel} (MAX)</span>`;
+        sackBtn.disabled = true;
+      } else {
+        const nextName = sackNames[sackLevel];
+        content += `<span class="item-price">UPGRADE TO ${nextName.toUpperCase()} | COST: ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost}</span>`;
+        sackBtn.disabled = player.kita < upgradeCost;
+      }
+      content += `</div>`;
+      sackBtn.innerHTML = content;
+    }
   }
 
   draw(ctx) {

@@ -41,6 +41,10 @@ class AssetLoader {
       // Sprites
       player: 'assets/animations/jo1.png', // <-- Updated to PNG with transparency
       jo_cart: 'assets/animations/jo/jo-cart.png',
+      jo_cart_silver: 'assets/animations/jo/silverCart.png',
+      jo_cart_gold: 'assets/animations/jo/goldCart.png',
+      jo_cart_diamond: 'assets/animations/jo/diamondCart.png',
+      jo_cart_final: 'assets/animations/jo/finalUpgradeCart.png',
       //player_hold: 'assets/animations/jo/Jo Catapult.png',
       jo_portrait: 'assets/sprites/cartniJO.jpg',
       catapult: 'assets/sprites/catapult.png',
@@ -63,6 +67,10 @@ class AssetLoader {
       table: 'assets/animations/table.png',
       sack: 'assets/animations/sack.png',
       sack2: 'assets/animations/sack2.png',
+      sack_silver: 'assets/animations/silverSack.png',
+      sack_gold: 'assets/animations/goldSack.png',
+      sack_diamond: 'assets/animations/diamondSack.png',
+      sack_final: 'assets/animations/finalUpgradeSack.png',
       enemy_fmteacher: 'assets/animations/fmteacher.png',
       enemy_blonde: 'assets/animations/blonde.png',
       enemy_asbula: 'assets/animations/asbula.png',

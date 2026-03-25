@@ -27,8 +27,24 @@ class ShopManager {
       case 4: return this.unlockSpecial('calamansi');
       case 5: return this.unlockSpecial('chili');
       case 6: return this.unlockSpecial('garlic'); // --- NEW: Added Garlic Shop Unlock ---
+      case 7: return this.game.player.upgradeCart();
+      case 8: return this.game.player.upgradeSack();
       default: return false;
     }
+  }
+
+  getCartUpgradeCost() {
+    const player = this.game.player;
+    if (player.cartLevel >= CONSTANTS.CART_UPGRADES.maxLevel) return Infinity;
+    const costMultiplier = Math.pow(CONSTANTS.CART_UPGRADES.costMultiplier, player.cartLevel - 1);
+    return Math.ceil(CONSTANTS.CART_UPGRADES.baseUpgradeCost * costMultiplier);
+  }
+
+  getSackUpgradeCost() {
+    const player = this.game.player;
+    if (player.sackLevel >= CONSTANTS.SACK_UPGRADES.maxLevel) return Infinity;
+    const costMultiplier = Math.pow(CONSTANTS.SACK_UPGRADES.costMultiplier, player.sackLevel - 1);
+    return Math.ceil(CONSTANTS.SACK_UPGRADES.baseUpgradeCost * costMultiplier);
   }
 
   getUpgradeCost(weaponName) {
