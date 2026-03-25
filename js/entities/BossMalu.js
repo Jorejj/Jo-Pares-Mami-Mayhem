@@ -10,9 +10,11 @@ class BossMalu extends Enemy {
     this.init();
   }
 
-  init(config = {}) {
-  const diffKey = this.game.currentDifficultyKey || 'easy';
+init(config = {}) {
+    // --- NEW: DYNAMIC DIFFICULTY SCALING ---
+    const diffKey = this.game.currentDifficultyKey || 'easy';
     const statMult = diffKey === 'hard' ? 2.0 : (diffKey === 'medium' ? 1.5 : 1.0);
+    const speedMult = diffKey === 'hard' ? 1.4 : (diffKey === 'medium' ? 1.2 : 1.0);
 
     this.type = 'boss_malu';
     this.spriteKey = config.spriteKey || 'boss_mastermind';
@@ -22,30 +24,27 @@ class BossMalu extends Enemy {
     this.width = config.width ?? 130;
     this.height = config.height ?? 240;
     
-    // --- SCALED DAMAGE & REWARD! ---
+    // Scaled Damage & Reward
     this.damage = (config.damage ?? 35) * statMult;
     this.kitaReward = (config.kitaReward ?? 1500) * statMult;
 
-    // --- SCALED HP ---
+    // Scaled Base HP (Applied to all 3 phases!)
     this.baseHp = (config.baseHp ?? 800) * statMult;
-    const phase1BaseHp = this.baseHp;
-    const phase2BaseHp = Math.round(this.baseHp * 1.2);
-    const phase3BaseHp = Math.round(this.baseHp * 1.5);
-    this.phaseMax = {
-      KAP: phase1BaseHp * difficulty.hpMult,
-      IAN: phase2BaseHp * difficulty.hpMult,
-      AURA: phase3BaseHp * difficulty.hpMult,
-    };
-    this.phaseHp = {
-      KAP: this.phaseMax.KAP,
-      IAN: this.phaseMax.IAN,
-      AURA: this.phaseMax.AURA
-    };
+    this.phase1Hp = this.baseHp;
+    this.phase2Hp = Math.round(this.baseHp * 1.2);
+    this.phase3Hp = Math.round(this.baseHp * 1.5);
 
-    this.maxHp = this.phaseMax.KAP + this.phaseMax.IAN + this.phaseMax.AURA;
+    // Set initial HP (No more old 'difficulty.hpMult' here!)
+    this.maxHp = this.phase1Hp; 
     this.hp = this.maxHp;
-    this.baseSpeed = (config.speed ?? 1.0) * difficulty.speedMult;
+
+    // Scaled Speed
+    const baseSpeed = config.speed ?? 0.6;
+    this.baseSpeed = baseSpeed * speedMult;
     this.speed = this.baseSpeed;
+    
+    // 3. Status Effects (Keep your existing code from here downwards!)
+    this.slowActive = false;
 
     this.x = config.spawnX ?? (this.game.canvas.width + 80);
     this.y = config.spawnY ?? (
