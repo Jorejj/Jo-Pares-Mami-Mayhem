@@ -13,6 +13,8 @@ class Player {
 
     this.maxHp = CONSTANTS.PLAYER_MAX_HP;
     this.hp = CONSTANTS.PLAYER_MAX_HP;
+    this.cartLevel = 1;
+    this.sackLevel = 1;
 
     this.kita = CONSTANTS.PLAYER_START_KITA;
 
@@ -323,6 +325,50 @@ class Player {
     return true;
   }
 
+  upgradeCart() {
+    if (this.cartLevel >= CONSTANTS.CART_UPGRADES.maxLevel) return false;
+
+    const costMultiplier = Math.pow(CONSTANTS.CART_UPGRADES.costMultiplier, this.cartLevel - 1);
+    const upgradeCost = Math.ceil(CONSTANTS.CART_UPGRADES.baseUpgradeCost * costMultiplier);
+
+    if (this.kita < upgradeCost) {
+      this.game.uiManager.showCustomAlert("NOT ENOUGH KITA", `KAILANGAN MO PA NG ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost - this.kita} PARA SA CART UPGRADE!`);
+      this._playUI('sfx_locked');
+      return false;
+    }
+
+    this.kita -= upgradeCost;
+    this.cartLevel++;
+    this.maxHp += CONSTANTS.CART_UPGRADES.hpBonusPerLevel;
+    this.hp += CONSTANTS.CART_UPGRADES.hpBonusPerLevel; // Add 10 health each upgrade as requested
+
+    this.game.saveCurrentState();
+    this._playUI('sfx_cash_register');
+    return true;
+  }
+
+  upgradeSack() {
+    if (this.sackLevel >= CONSTANTS.SACK_UPGRADES.maxLevel) return false;
+
+    const costMultiplier = Math.pow(CONSTANTS.SACK_UPGRADES.costMultiplier, this.sackLevel - 1);
+    const upgradeCost = Math.ceil(CONSTANTS.SACK_UPGRADES.baseUpgradeCost * costMultiplier);
+
+    if (this.kita < upgradeCost) {
+      this.game.uiManager.showCustomAlert("NOT ENOUGH KITA", `KAILANGAN MO PA NG ${CONSTANTS.CURRENCY_SYMBOL}${upgradeCost - this.kita} PARA SA SACK UPGRADE!`);
+      this._playUI('sfx_locked');
+      return false;
+    }
+
+    this.kita -= upgradeCost;
+    this.sackLevel++;
+    this.maxHp += CONSTANTS.SACK_UPGRADES.hpBonusPerLevel;
+    this.hp += CONSTANTS.SACK_UPGRADES.hpBonusPerLevel; // Add 5 health each upgrade as requested
+
+    this.game.saveCurrentState();
+    this._playUI('sfx_cash_register');
+    return true;
+  }
+
   addKita(amount) { 
     if (this.game.bossDefeatTimer > 0) return;
     this.kita += amount; 
@@ -366,6 +412,18 @@ class Player {
     }
 
     this.resetAmmo();
+
+    if (state.cartLevel) {
+      this.cartLevel = state.cartLevel;
+      // Add 10 HP for each cart upgrade (level 1 is base)
+      this.maxHp = CONSTANTS.PLAYER_MAX_HP + (this.cartLevel - 1) * CONSTANTS.CART_UPGRADES.hpBonusPerLevel;
+    }
+
+    if (state.sackLevel) {
+      this.sackLevel = state.sackLevel;
+      // Add 5 HP for each sack upgrade (level 1 is base)
+      this.maxHp += (this.sackLevel - 1) * CONSTANTS.SACK_UPGRADES.hpBonusPerLevel;
+    }
 
     if (state.weaponAmmo) {
       for (const [weaponKey, ammoLeft] of Object.entries(state.weaponAmmo)) {
@@ -664,18 +722,27 @@ class Player {
 
       ctx.save(); ctx.translate(this.x + this.width / 2, this.y + this.height);
 
-      const cartImg = this.game.assetLoader?.images?.jo_cart;
+      let cartImgKey = 'jo_cart';
+      if (this.cartLevel === 2) cartImgKey = 'jo_cart_silver';
+      else if (this.cartLevel === 3) cartImgKey = 'jo_cart_gold';
+      else if (this.cartLevel === 4) cartImgKey = 'jo_cart_diamond';
+      else if (this.cartLevel === 5) cartImgKey = 'jo_cart_final';
+
+      const cartImg = this.game.assetLoader?.images?.[cartImgKey];
       if (cartImg && cartImg.complete) ctx.drawImage(cartImg, -this.width * 2.2, -300 -15, 550, 300);
 
       ctx.drawImage(sprite, sx, sy, sw, sh, -this.width / 2, -this.height, this.width, this.height);
 
-      const tableImg = this.game.assetLoader?.images?.table;
-      const chairImg = this.game.assetLoader?.images?.chair;
-      if (tableImg && tableImg.complete) ctx.drawImage(tableImg, 76, -90 + 60, 100, 90);
-      if (chairImg && chairImg.complete) { ctx.drawImage(chairImg, 150, -50 + 55, 60, 50); ctx.drawImage(chairImg, 56, -50 + 60, 60, 50); }
+      // Note: Chair and table drawing logic removed as per user request.
       ctx.restore();
 
-      const sackImg = this.game.assetLoader?.images?.sack;
+      let sackImgKey = 'sack';
+      if (this.sackLevel === 2) sackImgKey = 'sack_silver';
+      else if (this.sackLevel === 3) sackImgKey = 'sack_gold';
+      else if (this.sackLevel === 4) sackImgKey = 'sack_diamond';
+      else if (this.sackLevel === 5) sackImgKey = 'sack_final';
+
+      const sackImg = this.game.assetLoader?.images?.[sackImgKey];
       if (sackImg && sackImg.complete) ctx.drawImage(sackImg, 0, this.game.canvas.height - 140, 350, 140);
 
       // --- NEW: RELOADING OVERLAY (Text Only) ---

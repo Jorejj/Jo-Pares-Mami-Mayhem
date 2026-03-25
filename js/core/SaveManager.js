@@ -11,6 +11,8 @@ class SaveManager {
     return {
       currentLevel: 1,
       kita: 0,
+      cartLevel: 1,
+      sackLevel: 1,
       hasSeenTutorial: false,
       hasSeenPrologue: false,
       difficultyKey: 'medium',
