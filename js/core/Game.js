@@ -81,11 +81,6 @@ class Game {
       }
       
       // Secondary fallback: Redirect to about:blank to clear the screen
-      setTimeout(() => {
-          if (!window.closed) {
-              window.location.href = "about:blank";
-          }
-      }, 500);
   }
 
   // --- GLOBAL UI AUDIO (SUPER BULLETPROOF) ---
