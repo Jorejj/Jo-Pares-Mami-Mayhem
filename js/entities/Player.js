@@ -30,8 +30,11 @@ class Player {
     this.animationTimer = 0;
     this.currentFrame = 0;
     this.frameSpeed = 250;  
-    this._lastKnownState = null; 
+    this._lastKnownState = null;
 
+    this.hurtOverlayTimer = 0;
+    this.hurtAnimTimer = 0;
+    
     // ===== PROJECTILES (OBJECT POOLING) =====
     this.projectilePool = new ProjectilePool(game, 50);
     this.projectiles = this.projectilePool.getActive();
@@ -374,8 +377,12 @@ class Player {
     this.kita += amount; 
   }
   takeDamage(amount) { 
-    if (this.game.bossDefeatTimer > 0) return;
+    // --- FIXED: Instantly stop taking damage/playing sounds if Jo is dead ---
+    if (this.game.bossDefeatTimer > 0 || this.isDead()) return; 
+    
     this.hp = Math.max(0, this.hp - amount); 
+    this.hurtOverlayTimer = 400;
+    this.hurtAnimTimer = 300;
     
     const audio = this.game.assetLoader?.audio?.sfx_jo_damage;
     if (audio) { 
@@ -489,6 +496,10 @@ class Player {
     }
 
     this.animationTimer += delta;
+
+    // ---> ADD THE HURT TIMERS HERE <---
+    if (this.hurtOverlayTimer > 0) this.hurtOverlayTimer -= delta;
+    if (this.hurtAnimTimer > 0) this.hurtAnimTimer -= delta;
 
     if (this.isFiring) {
       if (this.animationTimer >= 100) {
@@ -648,7 +659,7 @@ class Player {
     
     // ===== ENEMY PROJECTILE vs PLAYER COLLISION =====
     enemyProjectiles.forEach(enemyProj => {
-      if (!enemyProj.isActive) return;
+     if (!enemyProj.isActive || this.isDead()) return;
       
       const dx = this.x + this.width / 2 - enemyProj.x;
       const dy = this.y + this.height / 2 - enemyProj.y;
@@ -710,13 +721,20 @@ class Player {
       else if (state === CONSTANTS.STATES.GAMEOVER) { 
         row = 2; frame = Math.min(4, this.currentFrame); 
       }
-      else if (this.isFiring) { row = 1; frame = this.currentFrame; }
+      else if (this.hurtAnimTimer > 0) {
+        row = 2; frame = 0; // ---> Jo Hurt Sprite Animation! <---
+      }
+      else if (this.isFiring) { 
+        row = 1; frame = this.currentFrame; 
+      }
       else if (this.isDragging) {
         row = 1; 
         const dragDist = Physics.getDistance(this.dragStart.x, this.dragStart.y, this.dragCurrent.x, this.dragCurrent.y);
         frame = Math.min(2, Math.floor(dragDist / 40)); 
       } 
-      else { row = 0; frame = this.currentFrame % 3; }
+      else { 
+        row = 0; frame = this.currentFrame % 3; // Idle
+      }
 
       const sx = frame * sw; const sy = row * sh;
 

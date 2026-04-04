@@ -317,7 +317,7 @@ _advanceStoryCutscene() {
             if (winSfx) {
                 if (this.currentBgmTrack) this.currentBgmTrack.pause();
                 winSfx.currentTime = 0;
-                winSfx.volume = 0.8;
+                winSfx.volume = 0.5;
                 winSfx.play().catch(()=>{});
             }
 
@@ -706,7 +706,7 @@ _advanceStoryCutscene() {
       const sfx = this.assetLoader?.audio?.sfx_defeat;
       if (sfx) { 
           sfx.currentTime = 0; 
-          sfx.volume = 1.0; 
+          sfx.volume = 0.4; 
           const p = sfx.play(); 
           if (p && p.catch) p.catch(()=>{}); 
       }

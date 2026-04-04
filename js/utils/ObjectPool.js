@@ -836,6 +836,13 @@ takeDamage(damage, ignoreInvincible = false, hitY = null) {
     // Combat & movement
     if (this.state !== 'dead' && this.state !== 'fading' && this.state !== 'hurt') {
       const player = this.game.player;
+
+      // --- FIXED: If Jo is dead, stop attacking and just stand there! ---
+      if (player && player.isDead()) {
+          this.state = 'walk'; 
+          return;
+      }
+
       const targetX = player.x + player.width / 2;
       const targetY = player.y + player.height / 2;
 

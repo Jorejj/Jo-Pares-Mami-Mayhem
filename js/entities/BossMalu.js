@@ -150,7 +150,10 @@ init(config = {}) {
     const audio = this.game.assetLoader?.audio?.[key];
     if (!audio || typeof audio.play !== 'function') return;
     audio.currentTime = 0;
-    audio.volume = (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * volume;
+    
+    // --- BOOSTED BOSS SFX VOLUME (* 1.5) ---
+    audio.volume = Math.min(1.0, (this.game.uiManager?.masterVolume || 1) * (this.game.uiManager?.sfxVolume || 1) * volume * 1.5);
+    
     this._playAudioSafe(audio);
   }
 

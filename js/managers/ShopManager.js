@@ -54,7 +54,33 @@ class ShopManager {
     const costMultiplier = Math.pow(CONSTANTS.WEAPON_UPGRADE_COST_MULTIPLIER, weapon.level);
     return Math.ceil(50 * costMultiplier);
   }
+// --- NEW: CHECK IF PLAYER BOUGHT EVERYTHING ---
+  isEverythingMaxed() {
+    const p = this.game.player;
+    if (!p) return false;
+    
+    const w1 = p.arsenal['mami'];
+    const w2 = p.arsenal['pares'];
+    const w3 = p.arsenal['rice'];
+    const s1 = p.specials['calamansi'];
+    const s2 = p.specials['chili'];
+    const s3 = p.specials['garlic'];
+    
+    // Check if weapons are max level
+    const weaponsMaxed = (w1.level >= CONSTANTS.MAX_WEAPON_LEVEL) &&
+                         (w2.unlocked && w2.level >= CONSTANTS.MAX_WEAPON_LEVEL) &&
+                         (w3.unlocked && w3.level >= CONSTANTS.MAX_WEAPON_LEVEL);
+                         
+    // Check if specials are unlocked
+    const specialsMaxed = s1.unlocked && s2.unlocked && s3.unlocked;
 
+    // --- NEW: Check if Cart and Sack are max level! ---
+    const cartMaxed = p.cartLevel >= CONSTANTS.CART_UPGRADES.maxLevel;
+    const sackMaxed = p.sackLevel >= CONSTANTS.SACK_UPGRADES.maxLevel;
+    
+    // The shop will only skip if ALL of these are completely finished
+    return weaponsMaxed && specialsMaxed && cartMaxed && sackMaxed;
+  }
   update(delta) { if (!this.isOpen) return; }
   draw(ctx) {}
 }

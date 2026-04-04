@@ -56,7 +56,12 @@ class UIManager {
       'btn-new-game': () => this._handleNewGameClick(),
       'btn-confirm-overlay-yes': () => this._handleOverlayConfirmYes(),
       'btn-confirm-overlay-no': () => this._handleOverlayConfirmNo(),
-      'btn-load-game': () => { this.game.loadSavedGame(); },
+      'btn-load-game': () => { 
+         this.game.bossDefeatTimer = 0;
+         this.game.overlayTimer = 0;
+         if (this.game.shopManager) this.game.shopManager.close();
+         this.game.loadSavedGame(); 
+      },
       'btn-quit': () => {
         if (confirm("Are you sure to quit?")) {
           this.game.quitGame();
@@ -80,7 +85,15 @@ class UIManager {
       'btn-shop-cart': () => { this.game.shopManager.handleSelection(7); this._updateShopUI(); },
       'btn-shop-sack': () => { this.game.shopManager.handleSelection(8); this._updateShopUI(); },
       'btn-shop-done': () => this._finishShopping(),
-      'btn-restart': () => location.reload(),
+      'btn-retry-wave': () => { 
+         this.game.bossDefeatTimer = 0;
+         this.game.overlayTimer = 0;
+         if (this.game.shopManager) this.game.shopManager.close();
+         
+         this.game.loadSavedGame(); 
+         this.game.player.resetAmmo(); // Fixes the empty ammo bug on retry!
+      },
+      'btn-restart-home': () => location.reload(),
       'btn-complete-close': () => {
         this.game.overlayTimer = 0;
         this.game.overlayType = null;
@@ -981,9 +994,18 @@ class UIManager {
       }
       content += `</div>`;
       btn.innerHTML = content;
-    });
 
-    // --- Update Specials [4, 5, 6] ---
+      // ---> ADD THE NEW WEAPON TOOLTIPS HERE! <---
+      const wDesc = {
+          'mami': "MAMI: Infinite ammo! Fast fire rate. (Upgrades increase damage)",
+          'pares': "PARES: Splits on impact to hit nearby enemies! (Limited ammo)",
+          'rice': "RICE: Burns on impact and on circle contact! (Limited ammo)"
+      };
+      btn.title = wDesc[w] || "";
+
+    }); // <-- This is the end of the Weapons loop
+
+// --- Update Specials [4, 5, 6] ---
     ['calamansi', 'chili', 'garlic'].forEach((s, index) => {
       const btn = document.getElementById(`btn-shop-${s}`);
       if (!btn) return; 
@@ -1010,6 +1032,15 @@ class UIManager {
       }
       content += `</div>`;
       btn.innerHTML = content;
+
+      // ---> ADDED THE SPECIAL TOOLTIPS HERE! <---
+      const sDesc = {
+          'calamansi': "CALAMANSI: Squeezes sour juice to heavily slow down all enemies!",
+          'chili': "CHILI: Spicy explosion that burns all enemies over time!",
+          'garlic': "GARLIC: Drops spiked traps on the ground for massive damage!"
+      };
+      btn.title = sDesc[s] || "";
+
     });
 
     // --- Update Equipment (Cart) ---
@@ -1081,7 +1112,7 @@ class UIManager {
     }
   }
 
-  draw(ctx) {
+draw(ctx) {
     const state = this.game.currentState;
     switch (state) {
       case CONSTANTS.STATES.MAIN_MENU: this._drawSunburst(ctx, '#ffcc00', '#ffb300'); break;
@@ -1108,6 +1139,15 @@ class UIManager {
     
     // NEW: DRAW CINEMATIC OVERLAYS (Start/Finish/Boss)
     this._drawCinematicOverlay(ctx);
+
+    // --- DRAW RED SCREEN OVERLAY WHEN JO GETS HIT ---
+    if (this.game.player && this.game.player.hurtOverlayTimer > 0) {
+      ctx.save();
+      const alpha = Math.min(0.4, this.game.player.hurtOverlayTimer / 400);
+      ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`;
+      ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+      ctx.restore();
+    }
     
     // Draw confirmation modal LAST (highest z-index)
     this._drawConfirmationModal(ctx);
@@ -1172,6 +1212,78 @@ class UIManager {
     ctx.font = `bold 28px "Comic Sans MS", sans-serif`;
     ctx.fillStyle = (type === 'BOSS_WARNING') ? '#fff' : '#f1c40f';
     ctx.fillText(subtext, this.game.canvas.width / 2 - offsetX, barY + barHeight / 2 + 40);
+
+    ctx.restore();
+  }
+
+  _drawCinematicOverlay(ctx) {
+    if (!this.game.overlayType || this.game.overlayTimer <= 0) return;
+
+    const timer = this.game.overlayTimer;
+    const type = this.game.overlayType;
+    const text = this.game.overlayText;
+    const subtext = this.game.overlaySubtext;
+
+    ctx.save();
+
+    // 1. Draw Background Bar (Pixel/Bitmap Style)
+    const barHeight = 180;
+    const barY = (this.game.canvas.height - barHeight) / 2;
+    
+    // Entry/Exit Animation (Sliding from sides)
+    let offsetX = 0;
+    if (timer > 2000) offsetX = (timer - 2000) * 2; // Slide in
+    else if (timer < 500) offsetX = (500 - timer) * 2; // Slide out
+
+    // Dark Semi-transparent background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, barY, this.game.canvas.width, barHeight);
+
+    // Pixelated Borders
+    ctx.strokeStyle = (type === 'BOSS_WARNING') ? '#e74c3c' : '#f1c40f';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(0, barY, this.game.canvas.width, barHeight);
+    
+    // Extra decorative pixel stripes
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fillRect(0, barY - 10, this.game.canvas.width, 4);
+    ctx.fillRect(0, barY + barHeight + 6, this.game.canvas.width, 4);
+
+    // 2. Draw Text
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Main Header
+    const mainSize = (type === 'BOSS_WARNING') ? 80 : 64;
+    ctx.font = `900 ${mainSize}px "Comic Sans MS", sans-serif`;
+    
+    // Pulsing effect for Boss
+    if (type === 'BOSS_WARNING') {
+        const pulse = Math.sin(Date.now() * 0.015) * 10;
+        ctx.font = `900 ${mainSize + pulse}px "Comic Sans MS", sans-serif`;
+    }
+
+    // Shadow
+    ctx.fillStyle = '#000';
+    ctx.fillText(text, this.game.canvas.width / 2 + 4 + offsetX, barY + barHeight / 2 - 20 + 4);
+    
+    // Foreground Color
+    ctx.fillStyle = (type === 'BOSS_WARNING') ? '#e74c3c' : '#fff';
+    ctx.fillText(text, this.game.canvas.width / 2 + offsetX, barY + barHeight / 2 - 20);
+
+    // Subtext
+    ctx.font = `bold 28px "Comic Sans MS", sans-serif`;
+    ctx.fillStyle = (type === 'BOSS_WARNING') ? '#fff' : '#f1c40f';
+    ctx.fillText(subtext, this.game.canvas.width / 2 - offsetX, barY + barHeight / 2 + 40);
+
+    // --- DRAW RED SCREEN OVERLAY WHEN JO GETS HIT ---
+    if (this.game.player && this.game.player.hurtOverlayTimer > 0) {
+      ctx.save();
+      const alpha = Math.min(0.4, this.game.player.hurtOverlayTimer / 400);
+      ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`;
+      ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+      ctx.restore();
+    }
 
     ctx.restore();
   }
