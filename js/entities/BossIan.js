@@ -28,10 +28,9 @@ init(config = {}) {
     this.ianSummonCount = diffKey === 'hard' ? 5 : (diffKey === 'medium' ? 4 : 2);
     
     // --- SCALED REWARD! ---
-    this.kitaReward = (config.kitaReward ?? 800) * statMult;
-
+    this.kitaReward = Math.round((config.kitaReward ?? 800) * statMult);
     // --- HP & Speed Scaling ---
-    this.maxHp = baseHp * statMult;
+    this.maxHp = Math.round(baseHp * statMult);    
     this.hp = this.maxHp;
     this.baseSpeed = baseSpeed * speedMult;
     this.speed = this.baseSpeed;

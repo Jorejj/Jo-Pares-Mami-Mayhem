@@ -13,10 +13,8 @@ constructor(game) {
     this.maxHp = 250 * statMult;
     this.hp = this.maxHp;
     this.speed = 0.5 * speedMult;
-    this.damage = 15 * statMult;
-    
-    // --- SCALED REWARD! ---
-    this.kitaReward = 500 * statMult; 
+    this.damage = Math.round(15 * statMult);
+    this.kitaReward = Math.round(1000 * statMult);
     
     this.x = this.game.canvas.width + 50;
     this.y = Math.random() * (this.game.canvas.height - CONSTANTS.GAME_BOTTOM_HALF - this.height) + CONSTANTS.GAME_BOTTOM_HALF;
@@ -47,7 +45,6 @@ constructor(game) {
     this.deathHoldDuration = 900;
     this.walkSfxTimer = 0;
     this.introPlayed = false;
-    this.kitaReward = 1000;
     this.rewardGiven = false;
   }
 

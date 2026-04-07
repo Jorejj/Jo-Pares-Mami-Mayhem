@@ -25,11 +25,11 @@ init(config = {}) {
     this.height = config.height ?? 240;
     
     // Scaled Damage & Kita Reward
-    this.damage = (config.damage ?? 45) * statMult;
-    this.kitaReward = (config.kitaReward ?? 1500) * statMult;
+    this.damage = Math.round((config.damage ?? 45) * statMult);
+    this.kitaReward = Math.round((config.kitaReward ?? 1500) * statMult);
 
-    // --- FIXED: Scaled HP properly saved into the dictionaries! ---
-    this.baseHp = (config.baseHp ?? 1000) * statMult;
+    // Scaled HP properly saved into the dictionaries!
+    this.baseHp = Math.round((config.baseHp ?? 1000) * statMult);
     
     this.phaseMax = {
       KAP: this.baseHp,

@@ -653,15 +653,16 @@ class PooledEnemy {
     const statMult = diffKey === 'hard' ? 2.0 : (diffKey === 'medium' ? 1.5 : 1.0);
     const speedMult = diffKey === 'hard' ? 1.4 : (diffKey === 'medium' ? 1.2 : 1.0);
 
-    this.maxHp = config.hp * statMult;
+  // FIXED: Added Math.round() to prevent decimals!
+    this.maxHp = Math.round(config.hp * statMult);
     this.hp = this.maxHp;
 
     this.baseSpeed = config.speed * speedMult;
     this.speed = this.baseSpeed;
     
     // Scaled Damage & Kita!
-    this.damage = config.damage * statMult;
-    this.kitaReward = config.kitaReward * statMult;
+    this.damage = Math.round(config.damage * statMult);
+    this.kitaReward = Math.round(config.kitaReward * statMult);
     
     this.spriteKey = config.spriteKey;
     this.attackCooldown = config.attackCooldown || 1000;

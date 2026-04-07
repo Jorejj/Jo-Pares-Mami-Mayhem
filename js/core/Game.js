@@ -505,8 +505,19 @@ _advanceStoryCutscene() {
   }
 
   loadSavedGame() {
-    // Reset jump flag to ensure this session's progress can be auto-saved.
     window.isSecretMenuJumped = false;
+
+    // Vaporize all enemies and projectiles before loading
+    if (this.waveManager) {
+        if (typeof this.waveManager.clearAllEnemies === 'function') {
+            this.waveManager.clearAllEnemies(); 
+        }
+        if (this.waveManager.enemyPool) this.waveManager.enemyPool.releaseAll();
+        if (this.waveManager.enemyProjectilePool) this.waveManager.enemyProjectilePool.releaseAll();
+    }
+    if (this.player && this.player.projectilePool) {
+        this.player.projectilePool.releaseAll();
+    }
 
     this.saveManager.load();
     const state = this.saveManager.state;
@@ -523,27 +534,31 @@ _advanceStoryCutscene() {
     this.currentDifficulty = CONSTANTS.DIFFICULTY[savedDifficultyKey] || CONSTANTS.DIFFICULTY.medium;
     this.levelManager.currentDifficulty = this.currentDifficulty;
     
-    // syncWithSave cleans up stats and removes God Mode overrides.
     this.player.syncWithSave(state);
     
     this.player.hp = this.player.maxHp;
     this.player.isDead = () => { return this.player.hp <= 0; }; 
     
-    if (state.currentGameState === CONSTANTS.STATES.SHOP) {
-      this.currentState = CONSTANTS.STATES.SHOP;
-      this.shopManager.open();
-    } else {
-      // Resume directly to active gameplay so HUD and enemies appear immediately.
-      this.currentState = CONSTANTS.STATES.PLAYING;
-      this.waveManager.startWave(this._getWaveEnemies());
-      this.shopManager.close();
-      this.stageManager.resetDialogue();
-      this.isPlayingStoryAfter = false;
-      this.uiManager.prologueIndex = 0;
-      this.uiManager.prologueCharIndex = 0;
-      this.uiManager.prologueFade = 0;
-      this.player.resetAmmo();
+    // --- FIXED: NEVER load into the shop. Always force straight into the wave! ---
+    this.currentState = CONSTANTS.STATES.PLAYING;
+    if (this.waveManager) {
+        this.waveManager.startWave(this._getWaveEnemies ? this._getWaveEnemies() : []);
     }
+    if (this.shopManager) {
+        this.shopManager.close(); 
+    }
+    if (this.stageManager) {
+        this.stageManager.resetDialogue();
+    }
+    
+    this.isPlayingStoryAfter = false;
+    if (this.uiManager) {
+        this.uiManager.prologueIndex = 0;
+        this.uiManager.prologueCharIndex = 0;
+        this.uiManager.prologueFade = 0;
+    }
+    
+    this.player.resetAmmo();
   }
 
   loop(timestamp) {
