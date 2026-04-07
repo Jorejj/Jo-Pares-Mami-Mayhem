@@ -569,7 +569,7 @@ class EnemyPool {
 
 const POOLED_ENEMY_TYPES = {
   gangster:   { hp: 40,  speed: 1.2, damage: 10, kitaReward: 20, baseWidth: 50, baseHeight: 160, spriteKey: 'enemy_gangster', attackCooldown: 1000 },
-  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 10, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach', attackCooldown: 500 },
+  cockroach:  { hp: 15,  speed: 2.5, damage: 5,  kitaReward: 100000, baseWidth: 40, baseHeight: 60,  spriteKey: 'enemy_cockroach', attackCooldown: 500 },
   jbhotdog:   { hp: 30,  speed: 1.5, damage: 8,  kitaReward: 15, baseWidth: 55, baseHeight: 160, spriteKey: 'enemy_jbhotdog', attackCooldown: 1000 },
   bikejor:    { hp: 25,  speed: 2.2, damage: 10, kitaReward: 15, baseWidth: 70, baseHeight: 190, spriteKey: 'enemy_bikejor', attackCooldown: 1000 },
   kitboard:   { hp: 45,  speed: 1.3, damage: 12, kitaReward: 20, baseWidth: 50, baseHeight: 140, spriteKey: 'enemy_kitboard', attackCooldown: 1000 },

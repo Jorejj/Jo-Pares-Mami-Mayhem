@@ -72,9 +72,15 @@ class UIManager {
       'btn-diff-hard': () => this._startNewGame('hard'),
       'btn-tut-next': () => this._advanceTutorial(),
       'btn-visit-shop': () => { 
-        this.game.currentState = CONSTANTS.STATES.SHOP; 
-        this.game.shopManager.open(); 
-        this._updateShopUI();
+        // --- NEW: If everything is maxed, this button skips the shop and starts the next wave! ---
+        if (this.game.shopManager && typeof this.game.shopManager.isEverythingMaxed === 'function' && this.game.shopManager.isEverythingMaxed()) {
+            this.game._startLevel(); 
+        } else {
+            // Normal progression: Open the shop
+            this.game.currentState = CONSTANTS.STATES.SHOP; 
+            this.game.shopManager.open(); 
+            this._updateShopUI();
+        }
       },
       'btn-shop-mami': () => { this.game.shopManager.handleSelection(1); this._updateShopUI(); },
       'btn-shop-pares': () => { this.game.shopManager.handleSelection(2); this._updateShopUI(); },
@@ -86,12 +92,35 @@ class UIManager {
       'btn-shop-sack': () => { this.game.shopManager.handleSelection(8); this._updateShopUI(); },
       'btn-shop-done': () => this._finishShopping(),
       'btn-retry-wave': () => { 
+         // 1. Forcefully hide the Game Over HTML screen so it doesn't get stuck!
+         const gameOverScreen = document.getElementById('screen-gameover');
+         if (gameOverScreen) gameOverScreen.classList.add('hidden');
+
+         // 2. Kill ghost timers
          this.game.bossDefeatTimer = 0;
          this.game.overlayTimer = 0;
          if (this.game.shopManager) this.game.shopManager.close();
          
+         // 3. Safely wipe all deadly projectiles using getActive()!
+         if (this.game.waveManager && this.game.waveManager.enemyProjectilePool) {
+             const flyingProjectiles = this.game.waveManager.enemyProjectilePool.getActive();
+             if (flyingProjectiles) {
+                 flyingProjectiles.forEach(p => p.isActive = false);
+             }
+         }
+         
+         // 4. Load the game and reset ammo
          this.game.loadSavedGame(); 
-         this.game.player.resetAmmo(); // Fixes the empty ammo bug on retry!
+         this.game.player.resetAmmo(); 
+
+         // 5. Revive Jo to full HP so he doesn't instantly die!
+         if (this.game.player) {
+             this.game.player.hp = this.game.player.maxHp || 100;
+             this.game.player.hurtAnimTimer = 0;
+             this.game.player.hurtOverlayTimer = 0;
+         }
+         
+         this.game.currentState = CONSTANTS.STATES.PLAYING;
       },
       'btn-restart-home': () => location.reload(),
       'btn-complete-close': () => {
