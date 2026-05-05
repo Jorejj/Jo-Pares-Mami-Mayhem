@@ -153,6 +153,18 @@ class Game {
   }
 
   _bindFSMInput() {
+    window.addEventListener("touchstart", (e) => {
+        if (e.target && e.target.closest && e.target.closest('button')) return;
+
+        // Skip Boss Delay
+        if (this.bossDefeatTimer > 0) {
+            this._finishBossDefeatDelay();
+        } 
+        // Advance Cutscenes
+        else if (this.currentState === CONSTANTS.STATES.STORY_CUTSCENE || this.currentState === CONSTANTS.STATES.PROLOGUE) {
+            this._advanceStoryCutscene();
+        }
+    }, { passive: false });
     window.addEventListener("keydown", (e) => {
       const key = e.key.toLowerCase();
 

@@ -77,8 +77,13 @@ class InputHandler {
     e.preventDefault();
     const rect = this.canvas.getBoundingClientRect();
     const touch = e.touches[0];
-    this.mouse.x = touch.clientX - rect.left;
-    this.mouse.y = touch.clientY - rect.top;
+    
+    // --- NEW: Calculate scale so dragging works perfectly on small phone screens ---
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    
+    this.mouse.x = (touch.clientX - rect.left) * scaleX;
+    this.mouse.y = (touch.clientY - rect.top) * scaleY;
   }
 
   isKeyDown(code) {
